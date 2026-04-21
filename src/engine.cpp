@@ -118,12 +118,22 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     if (key == 8 || key == 127) {
         if (!buffer.empty()) {
-            Syllable s = SyllableParser::parse(unicode::to_utf8(last_committed_text));
-            s.remove_last_char();
-            std::vector<char32_t> keys = s.to_keys(method);
-            buffer.clear();
-            for (char32_t k : keys)
-                buffer.push_back(k);
+            std::string word = unicode::to_utf8(last_committed_text);
+            Syllable s = SyllableParser::parse(word);
+
+            // Contextual Backspace: Reconstruct syllable ONLY if it's already valid Vietnamese.
+            // This prevents the buffer from being "reconstructed" into something unintended 
+            // for English or invalid sequences (preserving user's original typing).
+            if (Validator::is_valid(s)) {
+                s.remove_last_char();
+                std::vector<char32_t> keys = s.to_keys(method);
+                buffer.clear();
+                for (char32_t k : keys)
+                    buffer.push_back(k);
+            } else {
+                buffer.pop_back();
+            }
+
             if (buffer.empty()) {
                 last_committed_text.clear();
                 return make_transformation_result(U"");
@@ -267,14 +277,32 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     current_str = raw_str;
 
     // Stage 1: Standard Consonants (dd -> đ)
-    if (current_str.find("dd") != std::string::npos) {
+    // Supports both adjacent 'dd' and floating 'd...d' (e.g. 'dosd' -> 'đó')
+    size_t first_d = current_str.find('d');
+    size_t last_d = current_str.rfind('d');
+    bool has_two_d = (first_d != std::string::npos && last_d != std::string::npos && first_d != last_d);
+
+    if (has_two_d || current_str.find("dd") != std::string::npos) {
         if (!key_consumed && key == 'd' && last_modifier_key == 'd') {
             // Revert double-typing (ddd -> dd)
             unicode::replace_all(current_str, "ddd", "dd");
             last_modifier_key = 0;
             key_consumed = true;
         } else {
-            unicode::replace_all(current_str, "dd", "đ");
+            // Replace first 'd' with 'đ' and remove the second 'd'
+            if (has_two_d) {
+                // Find potential initial 'd'
+                size_t d_pos = current_str.find('d');
+                current_str.replace(d_pos, 1, "đ");
+                // Remove the other 'd' (which is the last one now)
+                size_t d_rem = current_str.rfind('d');
+                if (d_rem != std::string::npos) {
+                    current_str.erase(d_rem, 1);
+                }
+            } else {
+                unicode::replace_all(current_str, "dd", "đ");
+            }
+            
             if (!key_consumed && key == 'd') {
                 last_modifier_key = 'd';
                 key_consumed = true;

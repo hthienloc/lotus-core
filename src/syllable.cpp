@@ -53,10 +53,11 @@ std::string Syllable::to_string(ToneStyle style) const {
             if (v32.size() == 2) {
                 char32_t v0 = v32[0];
                 char32_t v1 = v32[1];
-                // Centering diphthongs: iê, uô, ươ, yê, uơ
-                if ((v0 == 'i' && v1 == U'ê') || (v0 == 'u' && v1 == U'ô') ||
-                    (v0 == U'ư' && v1 == U'ơ') || (v0 == 'y' && v1 == U'ê') ||
-                    (v0 == 'u' && v1 == U'ơ')) {
+                // Centering diphthongs: iê, uô, ươ, yê, uơ (and ASCII equivalents during typing)
+                if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
+                    (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
+                    (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
+                    (v0 == 'y' && (v1 == U'ê' || v1 == 'e'))) {
                     target_idx = 1;
                 } else if (!final_c.empty()) {
                     target_idx = 1;  // e.g., "toán"

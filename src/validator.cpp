@@ -21,6 +21,8 @@ const std::vector<std::string_view> VALID_NUCLEI = {
     "a", "ă", "â", "e", "ê", "i", "o", "ô", "ơ", "u", "ư", "y",
     // Centering Diphthongs
     "ia", "iê", "ua", "uô", "ưa", "ươ", "yê", "ya",
+    // Glide-based Diphthongs
+    "oa", "oe", "oă", "uâ", "uê", "uơ", "uy",
     // Closing Diphthongs
     "ai", "ao", "au", "âu", "ay", "ây", "eo", "êu", "iu", "oi", "ôi", "ơi", "ui", "ưi", "ưu",
     // Triphthongs & Long Vowels
