@@ -333,18 +333,15 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 
         // 4.1. Intelligent Vowel Hooking
         if (allowed_to_hook && !has_pre) {
-            if (current_str.find('u') != std::string::npos &&
-                current_str.find('o') != std::string::npos) {
-                unicode::replace_all(current_str, "u", "ư");
-                unicode::replace_all(current_str, "o", "ơ");
-                tx = true;
-            } else if (current_str.find('u') != std::string::npos) {
+            if (current_str.find('u') != std::string::npos) {
                 unicode::replace_all(current_str, "u", "ư");
                 tx = true;
-            } else if (current_str.find('o') != std::string::npos) {
+            }
+            if (current_str.find('o') != std::string::npos) {
                 unicode::replace_all(current_str, "o", "ơ");
                 tx = true;
-            } else if (current_str.find('a') != std::string::npos) {
+            }
+            if (!tx && current_str.find('a') != std::string::npos) {
                 unicode::replace_all(current_str, "a", "ă");
                 tx = true;
             }
@@ -366,14 +363,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     }
 
     // Tones
-    size_t init_len = 0;
-    for (size_t len = 3; len >= 1; --len) {
-        if (len <= raw_str.size() &&
-            Validator::is_valid_initial(unicode::to_lower(raw_str.substr(0, len)))) {
-            init_len = len;
-            break;
-        }
-    }
+    size_t init_len = Validator::find_longest_initial(unicode::to_utf32(raw_str), 0);
 
     const std::string TONE_KEYS = "sfrxj", REMOVE_KEYS = "z0";
     for (int i = (int)raw_str.length() - 1; i >= (int)init_len; --i) {

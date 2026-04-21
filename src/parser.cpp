@@ -18,23 +18,14 @@ std::string SyllableParser::from_u32(const std::u32string& s) {
 }
 
 bool SyllableParser::is_vowel(char32_t c) {
-    if (c < 128) {
-        char ch = (char)unicode::to_lower(c);
-        return ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u' || ch == 'y';
-    }
-
-    // Combining Marks (0x0300-0x036F)
-    if (c >= 0x0300 && c <= 0x036F)
-        return true;
-
-    // Vietnamese-specific vowel ranges (simplified check)
-    // Most precomposed vowels are in these blocks
-    if (c >= 0x00C0 && c <= 0x024F)
-        return true;  // Very broad Latin block
-    if (c >= 0x1E00 && c <= 0x1EFF)
-        return true;  // Latin Extended Additional (includes most stacked marks)
-
-    return false;
+    char32_t low = unicode::to_lower(c);
+    char32_t stripped = unicode::strip_tone(low);
+    // Standard Vietnamese vowels (and their toned versions)
+    return stripped == 'a' || stripped == U'ă' || stripped == U'â' || 
+           stripped == 'e' || stripped == U'ê' || stripped == 'i' || 
+           stripped == 'o' || stripped == U'ô' || stripped == U'ơ' || 
+           stripped == 'u' || stripped == U'ư' || stripped == 'y' ||
+           (c >= 0x0300 && c <= 0x036F); // Combining Marks
 }
 
 Syllable SyllableParser::parse(const std::string& raw) {
@@ -47,18 +38,10 @@ Syllable SyllableParser::parse(const std::string& raw) {
     size_t n = input.size();
 
     // 1. Find Initial (Longest match for known Vietnamese initials)
-    // Try longest match (3, 2, 1 chars)
-    for (size_t len = 3; len >= 1; --len) {
-        if (i + len <= n) {
-            std::string prefix = from_u32(input.substr(i, len));
-            std::string lower_prefix = unicode::to_lower(prefix);
-            if (Validator::is_valid_initial(lower_prefix)) {
-                s.initial = prefix;
-                i += len;
-
-                break;
-            }
-        }
+    size_t init_len = Validator::find_longest_initial(input, i);
+    if (init_len > 0) {
+        s.initial = from_u32(input.substr(i, init_len));
+        i += init_len;
     }
 
     // Special Case: "q" as initial
@@ -112,29 +95,10 @@ Syllable SyllableParser::parse(const std::string& raw) {
     while (i < n && is_vowel(input[i])) {
         // Hoist tone from precomposed characters
         if (s.tone == Tone::NONE) {
-            char32_t cp = input[i];
-            char32_t stripped = unicode::strip_tone(cp);
-            if (stripped != cp) {
-                // Determine tone by comparison or brute force (strip_tone returns base)
-                // Use a simple exhaustive check since there are only 5 tone marks.
-                const char32_t BASE = stripped;
-                // Sắc (0301)
-                if (cp == unicode::to_utf32(
-                              unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x81"))[0])
-                    s.tone = Tone::ACUTE;
-                else if (cp == unicode::to_utf32(
-                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x80"))[0])
-                    s.tone = Tone::GRAVE;
-                else if (cp == unicode::to_utf32(
-                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x89"))[0])
-                    s.tone = Tone::HOOK;
-                else if (cp == unicode::to_utf32(
-                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x83"))[0])
-                    s.tone = Tone::TILDE;
-                else if (cp == unicode::to_utf32(
-                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\xA3"))[0])
-                    s.tone = Tone::DOT;
-                input[i] = stripped;  // Use visual base for component
+            Tone t = unicode::get_tone(input[i]);
+            if (t != Tone::NONE) {
+                s.tone = t;
+                input[i] = unicode::strip_tone(input[i]);
             }
         }
         i++;

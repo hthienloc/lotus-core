@@ -5,41 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "lotus_engine/common.h"
+
 namespace lotus_engine {
-
-/**
- * @brief Engine trung tâm điều phối việc gõ tiếng Việt.
- */
-enum class InputMethod { TELEX, VNI };
-
-/**
- * @brief Dấu thanh trong tiếng Việt.
- */
-enum class Tone : uint8_t {
-    NONE = 0,  // Ngang
-    ACUTE,     // Sắc
-    GRAVE,     // Huyền
-    HOOK,      // Hỏi
-    TILDE,     // Ngã
-    DOT        // Nặng
-};
-
-/**
- * @brief Kiểu bỏ dấu tiếng Việt (mới/cũ).
- */
-enum class ToneStyle {
-    OLD,  // hòa, họa (kiểu cũ)
-    NEW   // hoà, hoạ (kiểu mới, mặc định)
-};
-
-/**
- * @brief Tùy chọn xử lý phím 'w' tự do (Telex).
- */
-enum class FreeWOption {
-    OFF,        // w -> w
-    NON_START,  // w -> ư (nếu không phải ký tự đầu tiên)
-    ALWAYS      // w -> ư (ở mọi nơi)
-};
 
 /**
  * @brief Cấu trúc mô phỏng một âm tiết tiếng Việt chuẩn: (C1)(G)V(C2) + T.

@@ -3,20 +3,20 @@
 #include "lotus_engine/unicode.h"
 
 #include <algorithm>
-#include <array>
 #include <string_view>
+#include <vector>
 
 namespace lotus_engine {
 
 namespace {
 
-constexpr std::array<std::string_view, 28> VALID_INITIALS = {
+const std::vector<std::string_view> VALID_INITIALS = {
     "b", "c", "d", "đ",  "g",  "h",  "k",  "l",  "m",  "n",  "p",  "q",  "r",  "s",
     "t", "v", "x", "ch", "gh", "gi", "kh", "ng", "nh", "ph", "qu", "th", "tr", "ngh"};
 
-constexpr std::array<std::string_view, 2> VALID_GLIDES = {"o", "u"};
+const std::vector<std::string_view> VALID_GLIDES = {"o", "u"};
 
-constexpr std::array<std::string_view, 40> VALID_NUCLEI = {
+const std::vector<std::string_view> VALID_NUCLEI = {
     // Monophthongs
     "a", "ă", "â", "e", "ê", "i", "o", "ô", "ơ", "u", "ư", "y",
     // Centering Diphthongs
@@ -26,13 +26,26 @@ constexpr std::array<std::string_view, 40> VALID_NUCLEI = {
     // Triphthongs & Long Vowels
     "iêu", "yêu", "uôi", "ươi", "ươu"};
 
-constexpr std::array<std::string_view, 12> VALID_FINALS = {"c", "ch", "m", "n", "ng", "nh",
-                                                           "p", "t",  "i", "y", "o",  "u"};
+const std::vector<std::string_view> VALID_FINALS = {"c", "ch", "m", "n", "ng", "nh",
+                                                            "p", "t",  "i", "y", "o",  "u"};
 
 }  // namespace
 
 bool Validator::is_valid_initial(std::string_view initial) {
     return std::find(VALID_INITIALS.begin(), VALID_INITIALS.end(), initial) != VALID_INITIALS.end();
+}
+
+size_t Validator::find_longest_initial(const std::u32string& input, size_t start_pos) {
+    size_t n = input.size();
+    for (size_t len = 3; len >= 1; --len) {
+        if (start_pos + len <= n) {
+            std::string prefix = unicode::to_utf8(input.substr(start_pos, len));
+            if (is_valid_initial(unicode::to_lower(prefix))) {
+                return len;
+            }
+        }
+    }
+    return 0;
 }
 
 bool Validator::is_valid(const Syllable& syllable) {

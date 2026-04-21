@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "lotus_engine/common.h"
+
 namespace lotus_engine {
 namespace unicode {
 
@@ -449,6 +451,31 @@ inline char32_t strip_tone(char32_t cp) {
             return U'y';
         default:
             return cp;
+    }
+}
+
+/**
+ * @brief Returns the Tone of a precomposed Vietnamese character.
+ */
+inline Tone get_tone(char32_t cp) {
+    switch (cp) {
+        case U'á': case U'ắ': case U'ấ': case U'é': case U'ế': case U'í': 
+        case U'ó': case U'ố': case U'ớ': case U'ú': case U'ứ': case U'ý':
+            return Tone::ACUTE;
+        case U'à': case U'ằ': case U'ầ': case U'è': case U'ề': case U'ì':
+        case U'ò': case U'ồ': case U'ờ': case U'ù': case U'ừ': case U'ỳ':
+            return Tone::GRAVE;
+        case U'ả': case U'ẳ': case U'ẩ': case U'ẻ': case U'ể': case U'ỉ':
+        case U'ỏ': case U'ổ': case U'ở': case U'ủ': case U'ử': case U'ỷ':
+            return Tone::HOOK;
+        case U'ã': case U'ẵ': case U'ẫ': case U'ẽ': case U'ễ': case U'ĩ':
+        case U'õ': case U'ỗ': case U'ỡ': case U'ũ': case U'ữ': case U'ỹ':
+            return Tone::TILDE;
+        case U'ạ': case U'ặ': case U'ậ': case U'ẹ': case U'ệ': case U'ị':
+        case U'ọ': case U'ộ': case U'ợ': case U'ụ': case U'ự': case U'ỵ':
+            return Tone::DOT;
+        default:
+            return Tone::NONE;
     }
 }
 
