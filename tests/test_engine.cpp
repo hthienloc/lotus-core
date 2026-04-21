@@ -240,6 +240,10 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "muaw", "mưa");
     assert_typing(engine, "uaw", "ưa");
 
+    // Standard English compatibility (w at start should not hook vowels)
+    assert_typing(engine, "what", "what");
+    assert_typing(engine, "when", "when");
+
     std::cout << "test_engine_telex_hooks PASSED" << std::endl;
 }
 

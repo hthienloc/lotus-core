@@ -292,8 +292,12 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
                         current_str.find("ơ") != std::string::npos ||
                         current_str.find("ă") != std::string::npos);
 
-        // 4.1. Intelligent Vowel Hooking (Always enabled in TELEX)
-        if (!has_pre) {
+        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
+        // Only allowed to hook vowels if NOT at start OR if explicitly ALWAYS.
+        bool allowed_to_hook = (free_w == FreeWOption::ALWAYS) || !is_start;
+
+        // 4.1. Intelligent Vowel Hooking
+        if (allowed_to_hook && !has_pre) {
             if (current_str.find('u') != std::string::npos &&
                 current_str.find('o') != std::string::npos) {
                 unicode::replace_all(current_str, "u", "ư");
@@ -312,7 +316,6 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
 
         // 4.2. Standalone/Fallback W -> ư (Gated by FreeW settings)
-        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
         bool allowed_standalone = (free_w == FreeWOption::ALWAYS) || 
                                   (free_w == FreeWOption::NON_START && !is_start);
         
