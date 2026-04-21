@@ -51,10 +51,7 @@ void test_engine_telex_vowels() {
     assert_typing(engine, "aa", "â");
     assert_typing(engine, "ee", "ê");
     assert_typing(engine, "oo", "ô");
-    assert_typing(engine, "aw", "ă");
-    assert_typing(engine, "ow", "ơ");
-    assert_typing(engine, "uw", "ư");
-    assert_typing(engine, "uow", "ươ");
+    // Note: w-based hooks moved to test_engine_telex_hooks
     std::cout << "test_engine_telex_vowels PASSED" << std::endl;
 }
 
@@ -186,10 +183,9 @@ void test_engine_linguistic_regression() {
     assert_typing(engine, "muoons", "muốn");
 
     // 3. Late Hook Modifier (Free w)
+    // Note: Detailed w-hook cases covered in test_engine_telex_hooks
     assert_typing(engine, "rangw", "răng");
-    assert_typing(engine, "rangwf", "rằng");
     assert_typing(engine, "traw", "tră");
-    assert_typing(engine, "uow", "ươ");
 
     // 4. Special 'gi' and 'qu' handling
     assert_typing(engine, "gif", "gì");
