@@ -250,7 +250,8 @@ void test_engine_telex_free_w() {
     assert_typing(engine, "uw", "ư");   // Explicit pair 'uw' transforms
     assert_typing(engine, "ow", "ơ");   // Explicit pair 'ow' transforms
     assert_typing(engine, "uow", "ươ"); // Explicit 'uow' transforms
-    assert_typing(engine, "tw", "tw");  // 'w' not after u/o remains 'w'
+    assert_typing(engine, "nhungw", "nhưng"); // Intelligent hook allowed in OFF
+    assert_typing(engine, "tw", "tw");  // 'w' not hooking anything remains 'w'
 
     std::cout << "test_engine_telex_free_w PASSED" << std::endl;
 }

@@ -286,17 +286,14 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     }
 
     // Stage 4: Intelligent/Free Hook (u/o/a + w -> ư/ơ/ă or standalone w -> ư)
-    // Only works if free_w != OFF, unless we are completing a hook started in Stage 3.
     if (raw_str.find('w') != std::string::npos) {
         bool tx = false;
         bool has_pre = (current_str.find("ư") != std::string::npos ||
                         current_str.find("ơ") != std::string::npos ||
                         current_str.find("ă") != std::string::npos);
 
-        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
-        bool allowed = (free_w == FreeWOption::ALWAYS) || (free_w == FreeWOption::NON_START && !is_start);
-
-        if (allowed && !has_pre) {
+        // 4.1. Intelligent Vowel Hooking (Always enabled in TELEX)
+        if (!has_pre) {
             if (current_str.find('u') != std::string::npos &&
                 current_str.find('o') != std::string::npos) {
                 unicode::replace_all(current_str, "u", "ư");
@@ -312,15 +309,21 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
                 unicode::replace_all(current_str, "a", "ă");
                 tx = true;
             }
-            if (!tx && (current_str == "w" || current_str.find('w') != std::string::npos)) {
+        }
+
+        // 4.2. Standalone/Fallback W -> ư (Gated by FreeW settings)
+        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
+        bool allowed_standalone = (free_w == FreeWOption::ALWAYS) || 
+                                  (free_w == FreeWOption::NON_START && !is_start);
+        
+        if (!tx && !has_pre && allowed_standalone) {
+            if (current_str == "w" || current_str.find('w') != std::string::npos) {
                 unicode::replace_all(current_str, "w", "ư");
+                tx = true;
             }
         }
-        
-        // If it was consumed as an explicit hook or an allowed free hook, mark it.
-        // Special case: if OFF, only consume if has_pre (meaning Stage 3 did something).
-        bool should_consume = (allowed || has_pre);
-        if (!key_consumed && key == 'w' && should_consume)
+
+        if (!key_consumed && key == 'w' && (tx || has_pre))
             key_consumed = true;
     }
 
