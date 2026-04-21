@@ -228,30 +228,42 @@ void test_engine_rebuild_state() {
 
     std::cout << "test_engine_rebuild_state PASSED" << std::endl;
 }
+void test_engine_telex_hooks() {
+    Engine engine;
+
+    // Standard adjacent hooks
+    assert_typing(engine, "uw", "ư");
+    assert_typing(engine, "ow", "ơ");
+    assert_typing(engine, "aw", "ă");
+    assert_typing(engine, "uow", "ươ");
+
+    // Standard word-final intelligent hooks (Should work in standard TELEX)
+    assert_typing(engine, "nhungw", "nhưng");
+    assert_typing(engine, "duongw", "dương");
+    assert_typing(engine, "dduowngf", "đường");
+    assert_typing(engine, "muaw", "mưa");
+    assert_typing(engine, "uaw", "ưa");
+
+    std::cout << "test_engine_telex_hooks PASSED" << std::endl;
+}
+
 void test_engine_telex_free_w() {
     Engine engine;
 
-    // 1. ALWAYS (Default)
+    // 1. ALWAYS - Generic w -> ư everywhere
     engine.set_free_w(FreeWOption::ALWAYS);
-    assert_typing(engine, "w", "ư");
-    assert_typing(engine, "uw", "ư");
-    assert_typing(engine, "uow", "ươ");
+    assert_typing(engine, "w", "ư");     // Standalone
+    assert_typing(engine, "tw", "tư");   // After consonant
 
-    // 2. NON_START
+    // 2. NON_START - Generic w -> ư only if not first char
     engine.set_free_w(FreeWOption::NON_START);
-    assert_typing(engine, "w", "w");    // 'w' at start remains 'w'
-    assert_typing(engine, "uw", "ư");   // 'w' after 'u' transforms
-    assert_typing(engine, "uow", "ươ"); // 'w' after 'uo' transforms
-    assert_typing(engine, "uaw", "ưa"); // 'w' after 'ua' transforms
+    assert_typing(engine, "w", "w");     // First char -> stays w
+    assert_typing(engine, "tw", "tư");   // Not first char -> becomes ư
 
-    // 3. OFF
+    // 3. OFF - Generic w -> w always (unless it was a standard hook)
     engine.set_free_w(FreeWOption::OFF);
-    assert_typing(engine, "w", "w");    // Standalone remains 'w'
-    assert_typing(engine, "uw", "ư");   // Explicit pair 'uw' transforms
-    assert_typing(engine, "ow", "ơ");   // Explicit pair 'ow' transforms
-    assert_typing(engine, "uow", "ươ"); // Explicit 'uow' transforms
-    assert_typing(engine, "nhungw", "nhưng"); // Intelligent hook allowed in OFF
-    assert_typing(engine, "tw", "tw");  // 'w' not hooking anything remains 'w'
+    assert_typing(engine, "w", "w");     // Standalone remains w
+    assert_typing(engine, "tw", "tw");   // Non-hooking consonant + w -> remains tw
 
     std::cout << "test_engine_telex_free_w PASSED" << std::endl;
 }
