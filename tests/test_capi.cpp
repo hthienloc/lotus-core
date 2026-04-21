@@ -1,6 +1,7 @@
 #include "lotus_engine/capi.h"
-#include <stdio.h>
+
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 void test_capi_basic() {
@@ -8,7 +9,7 @@ void test_capi_basic() {
     assert(engine != NULL);
 
     lotus_modifiers_t mods = {false, false};
-    
+
     // Type 'h'
     lotus_result_t res = lotus_engine_process_key(engine, 'h', mods);
     // The engine may return replacement (1) with 0 backspaces for the first char
@@ -41,13 +42,13 @@ void test_capi_basic() {
 void test_capi_tone_style() {
     lotus_engine_t* engine = lotus_engine_create();
     lotus_modifiers_t mods = {false, false};
-    
+
     // NEW style (hoà) - Default
     lotus_engine_process_key(engine, 'h', mods);
     lotus_engine_process_key(engine, 'o', mods);
     lotus_engine_process_key(engine, 'a', mods);
     lotus_result_t res = lotus_engine_process_key(engine, 'f', mods);
-    assert(res.chars[2] == 0x00E0); // à
+    assert(res.chars[2] == 0x00E0);  // à
 
     lotus_engine_reset(engine);
 
@@ -58,7 +59,7 @@ void test_capi_tone_style() {
     lotus_engine_process_key(engine, 'a', mods);
     res = lotus_engine_process_key(engine, 'f', mods);
     // Mark on glide 'o'
-    assert(res.chars[1] == 0x00F2); // ò
+    assert(res.chars[1] == 0x00F2);  // ò
     assert(res.chars[2] == 'a');
 
     lotus_engine_destroy(engine);

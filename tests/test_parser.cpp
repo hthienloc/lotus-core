@@ -1,6 +1,7 @@
-#include <iostream>
-#include <cassert>
 #include "lotus_engine/parser.h"
+
+#include <cassert>
+#include <iostream>
 
 using namespace lotus_engine;
 
@@ -14,7 +15,7 @@ void test_parser_basic() {
     assert(s2.initial == "h");
     assert(s2.glide.has_value() && s2.glide.value() == 'o');
     assert(s2.vowel == "a");
-    
+
     std::cout << "test_parser_basic PASSED" << std::endl;
 }
 

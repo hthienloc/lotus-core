@@ -1,6 +1,7 @@
 #include "lotus_engine/capi.h"
-#include <iostream>
+
 #include <cassert>
+#include <iostream>
 
 void test_capi_integration() {
     lotus_engine_t* engine = lotus_engine_create();
@@ -18,8 +19,8 @@ void test_capi_integration() {
 
     // Characters: h (U+0068), ò (U+00F2), a (U+0061)
     assert(res.count == 3);
-    assert(res.chars[0] == 0x0068); 
-    assert(res.chars[1] == 0x00F2); 
+    assert(res.chars[0] == 0x0068);
+    assert(res.chars[1] == 0x00F2);
     assert(res.chars[2] == 0x0061);
 
     // Resetting engine
@@ -34,21 +35,21 @@ void test_capi_integration() {
 
     // Characters: h (U+0068), o (U+006F), à (U+00E0)
     assert(res.count == 3);
-    assert(res.chars[0] == 0x0068); 
-    assert(res.chars[1] == 0x006F); 
+    assert(res.chars[0] == 0x0068);
+    assert(res.chars[1] == 0x006F);
     assert(res.chars[2] == 0x00E0);
 
     // Resetting engine
     lotus_engine_reset(engine);
-    
+
     // 2. VNI Input
     lotus_engine_set_method(engine, LOTUS_METHOD_VNI);
     lotus_engine_process_key(engine, 'v', mods);
     lotus_engine_process_key(engine, 'i', mods);
     lotus_engine_process_key(engine, 'e', mods);
-    lotus_engine_process_key(engine, '6', mods); // 6 -> ê
+    lotus_engine_process_key(engine, '6', mods);  // 6 -> ê
     lotus_engine_process_key(engine, 't', mods);
-    res = lotus_engine_process_key(engine, '5', mods); // 5 -> nặng (ệ)
+    res = lotus_engine_process_key(engine, '5', mods);  // 5 -> nặng (ệ)
 
     // việt -> v (U+0076), i (U+0069), ệ (U+1EC7), t (U+0074)
     assert(res.count == 4);

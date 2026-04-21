@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /**
  * @brief Opaque handle to a Vietnamese Engine instance.
@@ -16,17 +16,14 @@ typedef struct lotus_engine_t lotus_engine_t;
 /**
  * @brief Input methods.
  */
-typedef enum {
-    LOTUS_METHOD_TELEX = 0,
-    LOTUS_METHOD_VNI   = 1
-} lotus_method_t;
+typedef enum { LOTUS_METHOD_TELEX = 0, LOTUS_METHOD_VNI = 1 } lotus_method_t;
 
 /**
  * @brief Tone placement styles.
  */
 typedef enum {
-    LOTUS_TONE_OLD = 0, // hòa
-    LOTUS_TONE_NEW = 1  // hoà (Default)
+    LOTUS_TONE_OLD = 0,  // hòa
+    LOTUS_TONE_NEW = 1   // hoà (Default)
 } lotus_tone_style_t;
 
 /**
@@ -34,7 +31,7 @@ typedef enum {
  */
 typedef enum {
     LOTUS_LOG_LEVEL_DEBUG = 0,
-    LOTUS_LOG_LEVEL_INFO  = 1,
+    LOTUS_LOG_LEVEL_INFO = 1,
     LOTUS_LOG_LEVEL_ERROR = 2
 } lotus_log_level_t;
 
@@ -49,10 +46,10 @@ typedef void (*lotus_log_callback_t)(lotus_log_level_t level, const char* messag
  * @brief Result structure for a key processing action.
  */
 typedef struct {
-    uint8_t action;     // 0: pass-through, 1: transformation
-    uint8_t backspace;  // Number of characters to delete
-    uint8_t count;      // Number of new characters in 'chars'
-    uint32_t chars[32]; // Buffer of UTF-32 characters
+    uint8_t action;      // 0: pass-through, 1: transformation
+    uint8_t backspace;   // Number of characters to delete
+    uint8_t count;       // Number of new characters in 'chars'
+    uint32_t chars[32];  // Buffer of UTF-32 characters
 } lotus_result_t;
 
 /**
@@ -65,7 +62,7 @@ typedef struct {
 
 /**
  * @brief Create a new engine instance.
- * @return A pointer to the newly created lotus_engine_t instance. 
+ * @return A pointer to the newly created lotus_engine_t instance.
  *         Must be destroyed with lotus_engine_destroy.
  */
 lotus_engine_t* lotus_engine_create();
@@ -83,7 +80,8 @@ void lotus_engine_destroy(lotus_engine_t* engine);
  * @param mods Active modifier keys (Shift, Caps Lock).
  * @return A lotus_result_t structure containing the required UI actions.
  */
-lotus_result_t lotus_engine_process_key(lotus_engine_t* engine, uint32_t key, lotus_modifiers_t mods);
+lotus_result_t lotus_engine_process_key(lotus_engine_t* engine, uint32_t key,
+                                        lotus_modifiers_t mods);
 
 /**
  * @brief Reset engine state (clears the composition buffer).
@@ -111,7 +109,8 @@ void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t styl
  * @param trigger The shortcut trigger string.
  * @param replacement The expansion string.
  */
-void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger, const char* replacement);
+void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
+                               const char* replacement);
 
 /**
  * @brief Set the global logging callback to capture diagnostic info from the engine.
@@ -123,4 +122,4 @@ void lotus_engine_set_log_callback(lotus_log_callback_t callback);
 }
 #endif
 
-#endif // LOTUS_ENGINE_CAPI_H
+#endif  // LOTUS_ENGINE_CAPI_H

@@ -1,4 +1,5 @@
 #include "lotus_engine/log.h"
+
 #include <mutex>
 
 namespace lotus_engine {
@@ -18,4 +19,4 @@ void emit_log(LogLevel level, const std::string& message) {
     }
 }
 
-} // namespace lotus_engine
+}  // namespace lotus_engine

@@ -1,25 +1,18 @@
 #pragma once
 
 #include "lotus_engine/types.h"
-#include <string>
-#include <vector>
+
 #include <functional>
 #include <map>
+#include <string>
+#include <vector>
 
 namespace lotus_engine {
 
-/**
- * @brief Engine trung tâm điều phối việc gõ tiếng Việt.
- */
-enum class InputMethod {
-    TELEX,
-    VNI
-};
-
 class Engine {
-public:
+   public:
     Engine();
-    
+
     void set_method(InputMethod method) { this->method = method; }
     InputMethod get_method() const { return method; }
 
@@ -46,24 +39,32 @@ public:
      */
     void add_shortcut(const std::string& trigger, const std::string& replacement);
 
-private:
+   private:
+    // Helper methods for refactoring
+    void apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+                               Tone& tone_state);
+    void apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+                             Tone& tone_state);
+    EngineResult make_transformation_result(const std::u32string& final_u32);
+
     std::u32string buffer;
     char32_t last_modifier_key = 0;
-    std::u32string last_committed_text; 
+    std::u32string last_committed_text;
     std::map<std::string, std::string> shortcuts;
     WordHistory word_history;
     char32_t last_boundary_key = 0;
     InputMethod method;
     ToneStyle tone_style = ToneStyle::NEW;
-    
+
     // Internal English whitelist (simplified)
     bool is_english_word(const std::string& word) const {
-        static const std::vector<std::string> whitelist = {
-            "test", "expect", "date", "status", "nurses", "bass", "issue", "message"
-        };
-        for (const auto& w : whitelist) if (w == word) return true;
+        static const std::vector<std::string> whitelist = {"test",   "expect", "date",  "status",
+                                                           "nurses", "bass",   "issue", "message"};
+        for (const auto& w : whitelist)
+            if (w == word)
+                return true;
         return false;
     }
 };
 
-} // namespace lotus_engine
+}  // namespace lotus_engine

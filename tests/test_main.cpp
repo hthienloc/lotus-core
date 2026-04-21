@@ -59,7 +59,7 @@ int main() {
     test_capi_run_all();
     test_capi_integration();
     test_engine_linguistic_regression();
-    
+
     std::cout << "All tests PASSED!" << std::endl;
     return 0;
 }

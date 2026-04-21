@@ -1,10 +1,11 @@
 #include "lotus_engine/engine.h"
-#include <iostream>
-#include <chrono>
-#include <vector>
-#include <fstream>
-#include <numeric>
+
 #include <algorithm>
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include <vector>
 
 using namespace lotus_engine;
 
@@ -29,9 +30,9 @@ int main() {
 
     for (char c : full_text) {
         auto start = std::chrono::high_resolution_clock::now();
-        
+
         engine.process_key(c, {});
-        
+
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> diff = end - start;
         latencies_ms.push_back(diff.count());
@@ -39,7 +40,7 @@ int main() {
 
     double sum = std::accumulate(latencies_ms.begin(), latencies_ms.end(), 0.0);
     double avg = sum / latencies_ms.size();
-    
+
     auto max_it = std::max_element(latencies_ms.begin(), latencies_ms.end());
     double max_latency = *max_it;
 

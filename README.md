@@ -12,7 +12,7 @@
 ## Features
 
 | Feature | Description |
-|---|---|
+| :--- | :--- |
 | 🔤 **TELEX & VNI** | Full support for both standard Vietnamese input methods |
 | 🧠 **Phonotactic Validator** | Validates syllable structure (Initial · Glide · Nucleus · Final) against Vietnamese orthographic rules |
 | 🔁 **Resilient Recovery** | Auto-reverts invalid compositions and preserves raw keystrokes (e.g. `tests`, `nurses`) |
@@ -103,7 +103,7 @@ target_link_libraries(my_app PRIVATE lotus_engine_core)
 
 ## Architecture
 
-```
+```text
 lotus-engine/
 ├── include/lotus_engine/   # Public headers (C++ + C-API)
 │   ├── capi.h              # Stable C-API
@@ -131,7 +131,7 @@ See [`ARCHITECTURE.md`](ARCHITECTURE.md) for full details.
 Measured on release build (`-O2`), 10,000 consecutive keypresses:
 
 | Metric | Value |
-|---|---|
+| :--- | :--- |
 | Average latency | **0.014 ms** |
 | Peak latency | **0.14 ms** |
 | Target SLA | < 1.0 ms ✅ |

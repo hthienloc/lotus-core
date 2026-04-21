@@ -1,6 +1,8 @@
 #include "lotus_engine/parser.h"
-#include "lotus_engine/validator.h"
+
 #include "lotus_engine/unicode.h"
+#include "lotus_engine/validator.h"
+
 #include <algorithm>
 #include <unordered_set>
 
@@ -20,14 +22,17 @@ bool SyllableParser::is_vowel(char32_t c) {
         char ch = (char)unicode::to_lower(c);
         return ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u' || ch == 'y';
     }
-    
+
     // Combining Marks (0x0300-0x036F)
-    if (c >= 0x0300 && c <= 0x036F) return true;
+    if (c >= 0x0300 && c <= 0x036F)
+        return true;
 
     // Vietnamese-specific vowel ranges (simplified check)
     // Most precomposed vowels are in these blocks
-    if (c >= 0x00C0 && c <= 0x024F) return true; // Very broad Latin block
-    if (c >= 0x1E00 && c <= 0x1EFF) return true; // Latin Extended Additional (includes most stacked marks)
+    if (c >= 0x00C0 && c <= 0x024F)
+        return true;  // Very broad Latin block
+    if (c >= 0x1E00 && c <= 0x1EFF)
+        return true;  // Latin Extended Additional (includes most stacked marks)
 
     return false;
 }
@@ -35,7 +40,8 @@ bool SyllableParser::is_vowel(char32_t c) {
 Syllable SyllableParser::parse(const std::string& raw) {
     Syllable s;
     std::u32string input = to_u32(raw);
-    if (input.empty()) return s;
+    if (input.empty())
+        return s;
 
     size_t i = 0;
     size_t n = input.size();
@@ -49,7 +55,7 @@ Syllable SyllableParser::parse(const std::string& raw) {
             if (Validator::is_valid_initial(lower_prefix)) {
                 s.initial = prefix;
                 i += len;
-                
+
                 break;
             }
         }
@@ -58,16 +64,17 @@ Syllable SyllableParser::parse(const std::string& raw) {
     // Special Case: "q" as initial
     std::string lower_initial = unicode::to_lower(s.initial);
     if (lower_initial == "qu") {
-        s.initial = s.initial.substr(0, s.initial.size() - 1); // "q" or "Q"
+        s.initial = s.initial.substr(0, s.initial.size() - 1);  // "q" or "Q"
         s.glide = 'u';
     } else if (lower_initial == "gi") {
         // Vietnamese rule for 'gi':
         // 1. If followed by another vowel (e.g., 'gia', 'giáo'), 'gi' is the initial.
-        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is vowel.
+        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is
+        // vowel.
         bool followed_by_vowel = (i < n && is_vowel(input[i]));
         if (!followed_by_vowel) {
-            s.initial = s.initial.substr(0, s.initial.size() - 1); // "g"
-            i--; // Put 'i' back to be parsed as the vowel nucleus
+            s.initial = s.initial.substr(0, s.initial.size() - 1);  // "g"
+            i--;  // Put 'i' back to be parsed as the vowel nucleus
         }
     }
 
@@ -75,10 +82,10 @@ Syllable SyllableParser::parse(const std::string& raw) {
     if (i < n && !s.glide.has_value()) {
         char32_t c = input[i];
         char32_t lower_c = unicode::to_lower(c);
-        if (i + 1 < n && is_vowel(input[i+1])) {
-            char32_t next_v = unicode::to_lower(unicode::strip_tone(input[i+1]));
+        if (i + 1 < n && is_vowel(input[i + 1])) {
+            char32_t next_v = unicode::to_lower(unicode::strip_tone(input[i + 1]));
             bool should_be_glide = false;
-            
+
             if (lower_c == 'o') {
                 // 'o' is glide only in: oa, oe, oă
                 if (next_v == 'a' || next_v == 'e' || next_v == U'ă') {
@@ -86,7 +93,8 @@ Syllable SyllableParser::parse(const std::string& raw) {
                 }
             } else if (lower_c == 'u') {
                 // 'u' is glide only in: uâ, uê, uơ, uy
-                // Note: 'ua', 'uô', 'ui', 'ưu' are nucleus diphthongs (except for 'q' which is handled)
+                // Note: 'ua', 'uô', 'ui', 'ưu' are nucleus diphthongs (except for 'q' which is
+                // handled)
                 if (next_v == U'â' || next_v == U'ê' || next_v == U'ơ' || next_v == 'y') {
                     should_be_glide = true;
                 }
@@ -102,6 +110,33 @@ Syllable SyllableParser::parse(const std::string& raw) {
     // 3. Vowel Nucleus
     size_t vowel_start = i;
     while (i < n && is_vowel(input[i])) {
+        // Hoist tone from precomposed characters
+        if (s.tone == Tone::NONE) {
+            char32_t cp = input[i];
+            char32_t stripped = unicode::strip_tone(cp);
+            if (stripped != cp) {
+                // Determine tone by comparison or brute force (strip_tone returns base)
+                // Use a simple exhaustive check since there are only 5 tone marks.
+                const char32_t BASE = stripped;
+                // Sắc (0301)
+                if (cp == unicode::to_utf32(
+                              unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x81"))[0])
+                    s.tone = Tone::ACUTE;
+                else if (cp == unicode::to_utf32(
+                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x80"))[0])
+                    s.tone = Tone::GRAVE;
+                else if (cp == unicode::to_utf32(
+                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x89"))[0])
+                    s.tone = Tone::HOOK;
+                else if (cp == unicode::to_utf32(
+                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\x83"))[0])
+                    s.tone = Tone::TILDE;
+                else if (cp == unicode::to_utf32(
+                                   unicode::normalize_nfc(unicode::to_utf8(BASE) + "\xCC\xA3"))[0])
+                    s.tone = Tone::DOT;
+                input[i] = stripped;  // Use visual base for component
+            }
+        }
         i++;
     }
     if (i > vowel_start) {
@@ -116,4 +151,4 @@ Syllable SyllableParser::parse(const std::string& raw) {
     return s;
 }
 
-} // namespace lotus_engine
+}  // namespace lotus_engine
