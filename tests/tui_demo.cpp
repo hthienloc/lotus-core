@@ -113,7 +113,7 @@ void print_status(const Engine& engine) {
     std::cout << " | \33[1;36m[F4] \33[0mHooks: " << (engine.get_std_uo() ? "ON" : "OFF") << std::endl;
 }
 
-int main(int argc, char** argv) {
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     Engine engine;
     Modifiers mods;
     std::u32string screen;
