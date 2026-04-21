@@ -80,6 +80,11 @@ void lotus_engine_set_std_uo(lotus_engine_t* engine, bool enabled) {
         engine->core.set_std_uo(enabled);
 }
 
+void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled) {
+    if (engine)
+        engine->core.set_auto_restore(enabled);
+}
+
 void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
                                const char* replacement) {
     if (!engine || !trigger || !replacement)

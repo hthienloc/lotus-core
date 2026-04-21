@@ -223,7 +223,22 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     Syllable s = SyllableParser::parse(current_str);
     s.tone = tone_state;
 
-    return make_transformation_result(unicode::to_utf32(s.to_string(tone_style)));
+    std::string final_v_word = s.to_string(tone_style);
+    std::string raw_word = unicode::to_utf8(buffer);
+
+    // Stage 7: Real-time English Auto-Restore
+    // Trigger restoration if:
+    // 1. The word explicitly matches our English whitelist (are, for, she...)
+    // 2. The word has an impossible Vietnamese initial (sh, wh, br...)
+    
+    bool is_english = is_english_word(raw_word);
+    bool invalid_initial = !s.initial.empty() && !Validator::is_valid_initial(s.initial);
+    
+    if (auto_restore && (is_english || invalid_initial)) {
+        return make_transformation_result(buffer);
+    }
+
+    return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,

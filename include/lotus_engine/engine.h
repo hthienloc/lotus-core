@@ -25,6 +25,9 @@ class Engine {
     void set_std_uo(bool enabled) { this->std_uo = enabled; }
     bool get_std_uo() const { return std_uo; }
 
+    void set_auto_restore(bool enabled) { this->auto_restore = enabled; }
+    bool get_auto_restore() const { return auto_restore; }
+
     /**
      * @brief Xử lý một phím gõ mới.
      * @param key Mã Unicode (UTF-32) của phím gõ.
@@ -69,11 +72,14 @@ class Engine {
     ToneStyle tone_style = ToneStyle::NEW;
     FreeWOption free_w = FreeWOption::NON_START;
     bool std_uo = false;
+    bool auto_restore = true;
 
     // Internal English whitelist (simplified)
     bool is_english_word(const std::string& word) const {
-        static const std::vector<std::string> whitelist = {"test",   "expect", "date",  "status",
-                                                           "nurses", "bass",   "issue", "message"};
+        static const std::vector<std::string> whitelist = {
+            "test", "expect", "date", "status", "nurses", "bass", "issue", "message",
+            "are", "were", "she", "for", "and", "the", "always", "after"
+        };
         for (const auto& w : whitelist)
             if (w == word)
                 return true;

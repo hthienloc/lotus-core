@@ -240,10 +240,14 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "muaw", "mưa");
     assert_typing(engine, "uaw", "ưa");
 
-    // Standard English compatibility (w at start should not hook vowels)
+    // Standard English compatibility (w at start, or invalid Vietnamese results like ảe)
     assert_typing(engine, "what", "what");
     assert_typing(engine, "where", "where");
     assert_typing(engine, "when", "when");
+    assert_typing(engine, "are", "are");
+    assert_typing(engine, "were", "were");
+    assert_typing(engine, "she", "she");
+    assert_typing(engine, "for", "for");
 
     std::cout << "test_engine_telex_hooks PASSED" << std::endl;
 }
