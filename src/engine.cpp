@@ -227,8 +227,16 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 }
 
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
-                                   Tone& tone_state) {
+                                 Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
+
+    // English Compatibility: If word starts with 'w', we treat it as an English word 
+    // and skip Vietnamese transformations (unless mode is ALWAYS).
+    bool is_start_w = (raw_str.size() > 0 && (raw_str[0] == 'w' || raw_str[0] == 'W'));
+    if (is_start_w && free_w != FreeWOption::ALWAYS) {
+        return;
+    }
+
     current_str = raw_str;
 
     // Stage 1: Standard Consonants (dd -> đ)

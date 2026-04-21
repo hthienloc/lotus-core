@@ -242,6 +242,7 @@ void test_engine_telex_hooks() {
 
     // Standard English compatibility (w at start should not hook vowels)
     assert_typing(engine, "what", "what");
+    assert_typing(engine, "where", "where");
     assert_typing(engine, "when", "when");
 
     std::cout << "test_engine_telex_hooks PASSED" << std::endl;
