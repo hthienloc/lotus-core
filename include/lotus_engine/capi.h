@@ -65,36 +65,51 @@ typedef struct {
 
 /**
  * @brief Create a new engine instance.
+ * @return A pointer to the newly created lotus_engine_t instance. 
+ *         Must be destroyed with lotus_engine_destroy.
  */
 lotus_engine_t* lotus_engine_create();
 
 /**
  * @brief Destroy an engine instance.
+ * @param engine The engine instance to destroy.
  */
 void lotus_engine_destroy(lotus_engine_t* engine);
 
 /**
- * @brief Process a key press.
+ * @brief Process a key press and return a transformation result.
+ * @param engine The engine instance.
+ * @param key The UTF-32 key code to process.
+ * @param mods Active modifier keys (Shift, Caps Lock).
+ * @return A lotus_result_t structure containing the required UI actions.
  */
 lotus_result_t lotus_engine_process_key(lotus_engine_t* engine, uint32_t key, lotus_modifiers_t mods);
 
 /**
- * @brief Reset engine state.
+ * @brief Reset engine state (clears the composition buffer).
+ * @param engine The engine instance.
  */
 void lotus_engine_reset(lotus_engine_t* engine);
 
 /**
- * @brief Configure input method.
+ * @brief Configure the input method (Telex or VNI).
+ * @param engine The engine instance.
+ * @param method The input method to use.
  */
 void lotus_engine_set_method(lotus_engine_t* engine, lotus_method_t method);
 
 /**
- * @brief Configure tone placement style.
+ * @brief Configure the tone placement style.
+ * @param engine The engine instance.
+ * @param style The tone style (Old or New).
  */
 void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t style);
 
 /**
- * @brief Add a shortcut.
+ * @brief Add a custom shortcut for string expansion.
+ * @param engine The engine instance.
+ * @param trigger The shortcut trigger string.
+ * @param replacement The expansion string.
  */
 void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger, const char* replacement);
 

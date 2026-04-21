@@ -1,8 +1,9 @@
 # Lotus Engine
 
-[![CI](https://github.com/fcitx5-lotus/es-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/fcitx5-lotus/es-engine/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)]()
+[![CI](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml)
+[![Latency](https://img.shields.io/badge/avg%20latency-0.016%20ms-brightgreen)](https://github.com/fcitx5-lotus/lotus-engine)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 
 > **Lotus Engine** is a high-performance Vietnamese input processing core — phonologically accurate, zero-dependency, and embeddable via a stable C-API.
 
@@ -28,8 +29,8 @@
 **Requirements:** `cmake ≥ 3.15`, `g++ / clang++` with C++20 support.
 
 ```bash
-git clone https://github.com/fcitx5-lotus/es-engine.git
-cd es-engine
+git clone https://github.com/fcitx5-lotus/lotus-engine.git
+cd lotus-engine
 cmake -B build
 cmake --build build -j$(nproc)
 ```
@@ -103,7 +104,7 @@ target_link_libraries(my_app PRIVATE lotus_engine_core)
 ## Architecture
 
 ```
-es-engine/
+lotus-engine/
 ├── include/lotus_engine/   # Public headers (C++ + C-API)
 │   ├── capi.h              # Stable C-API
 │   ├── engine.h            # C++20 Engine class
@@ -156,4 +157,4 @@ clang-tidy src/*.cpp -- -std=c++20 -Iinclude
 
 ## License
 
-MIT © [fcitx5-lotus contributors](https://github.com/fcitx5-lotus)
+GPL v3 © [fcitx5-lotus contributors](https://github.com/fcitx5-lotus)

@@ -60,23 +60,39 @@ Syllable SyllableParser::parse(const std::string& raw) {
     if (lower_initial == "qu") {
         s.initial = s.initial.substr(0, s.initial.size() - 1); // "q" or "Q"
         s.glide = 'u';
-    } else if (lower_initial == "gi" && n > i && is_vowel(input[i])) {
-        // "gi" + vowel (e.g. gia): initial is "g", vowel is "ia"? 
-        // No, Vietnamese tradition: initial "gi", vowel is the rest. 
-        // BUT if it's just "gì", then initial "gi", vowel "i".
-        // Let's keep "gi" as initial for now as per ALL_INITIALS.
+    } else if (lower_initial == "gi") {
+        // Vietnamese rule for 'gi':
+        // 1. If followed by another vowel (e.g., 'gia', 'giáo'), 'gi' is the initial.
+        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is vowel.
+        bool followed_by_vowel = (i < n && is_vowel(input[i]));
+        if (!followed_by_vowel) {
+            s.initial = s.initial.substr(0, s.initial.size() - 1); // "g"
+            i--; // Put 'i' back to be parsed as the vowel nucleus
+        }
     }
 
     // 2. Glide
     if (i < n && !s.glide.has_value()) {
         char32_t c = input[i];
         char32_t lower_c = unicode::to_lower(c);
-        if ((lower_c == 'o' || lower_c == 'u') && i + 1 < n && is_vowel(input[i+1])) { // o, u
-            // Special Case: 'ua' and 'uô' are diphthong nuclei, not glide+nucleus
-            char32_t next_stripped = unicode::strip_tone(input[i+1]);
-            if (lower_c == 'u' && (next_stripped == 'a' || next_stripped == U'ô')) { // u + (a, ô)
-                // stay in nucleus
-            } else {
+        if (i + 1 < n && is_vowel(input[i+1])) {
+            char32_t next_v = unicode::to_lower(unicode::strip_tone(input[i+1]));
+            bool should_be_glide = false;
+            
+            if (lower_c == 'o') {
+                // 'o' is glide only in: oa, oe, oă
+                if (next_v == 'a' || next_v == 'e' || next_v == U'ă') {
+                    should_be_glide = true;
+                }
+            } else if (lower_c == 'u') {
+                // 'u' is glide only in: uâ, uê, uơ, uy
+                // Note: 'ua', 'uô', 'ui', 'ưu' are nucleus diphthongs (except for 'q' which is handled)
+                if (next_v == U'â' || next_v == U'ê' || next_v == U'ơ' || next_v == 'y') {
+                    should_be_glide = true;
+                }
+            }
+
+            if (should_be_glide) {
                 s.glide = (char)lower_c;
                 i++;
             }

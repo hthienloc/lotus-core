@@ -1,6 +1,6 @@
 # ANTIGRAVITY Context & Guidelines
 
-This file provides context for AI agents working on the `es-engine` project.
+This file provides context for AI agents working on the `lotus-engine` project.
 
 ## Agent Persona
 

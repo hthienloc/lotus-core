@@ -228,5 +228,28 @@ void test_engine_linguistic_regression() {
     assert(res.count == 4);
     assert(res.backspace == 3);
     
+    // 4. Reported Bug: nois -> nói (Previously resulted in noí)
+    assert_typing(engine, "nois", "nói");
+    assert_typing(engine, "tuis", "túi");
+    assert_typing(engine, "muas", "múa");
+    assert_typing(engine, "mua", "mua");
+    assert_typing(engine, "muoons", "muốn");
+
+    // 5. Late Hook Modifier (Free w)
+    assert_typing(engine, "rangw", "răng");
+    assert_typing(engine, "rangwf", "rằng");
+    assert_typing(engine, "traw", "tră");
+    assert_typing(engine, "uow", "ươ");
+    assert_typing(engine, "uo", "uo");
+    assert_typing(engine, "uow", "ươ");
+
+    // 6. Special 'gi' and 'qu' handling
+    assert_typing(engine, "gif", "gì");
+    assert_typing(engine, "gin", "gin");
+    assert_typing(engine, "gia", "gia");
+    assert_typing(engine, "giar", "giả");
+    assert_typing(engine, "quaf", "quà");
+    assert_typing(engine, "qu", "qu");
+
     printf("test_engine_linguistic_regression PASSED\n");
 }

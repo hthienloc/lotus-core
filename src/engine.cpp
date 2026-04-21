@@ -205,6 +205,7 @@ EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
             bool transformed = false;
             size_t u_pos = current_str.find('u');
             size_t o_pos = current_str.find('o');
+            size_t a_pos = current_str.find('a');
             
             if (u_pos != std::string::npos && o_pos != std::string::npos) {
                 // uo -> ươ
@@ -217,6 +218,9 @@ EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
             } else if (o_pos != std::string::npos) {
                 current_str.replace(o_pos, 1, "ơ");
                 transformed = true;
+            } else if (a_pos != std::string::npos) {
+                current_str.replace(a_pos, 1, "ă");
+                transformed = true;
             }
             
             if (transformed) {
@@ -227,14 +231,25 @@ EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
             }
         }
 
-        // Stage 3 & 4: Mark and Remove
+        // Determine initial consonant length to avoid treats its parts as modifiers (e.g., 'r' in 'tr')
+        size_t init_len = 0;
+        for (size_t len = 3; len >= 1; --len) {
+            if (len <= raw_str.size()) {
+                std::string prefix = raw_str.substr(0, len);
+                if (Validator::is_valid_initial(unicode::to_lower(prefix))) {
+                    init_len = len;
+                    break;
+                }
+            }
+        }
+
         const std::string TONE_KEYS = "sfrxj";
         const std::string REMOVE_KEYS = "z0";
         
-        for (int i = (int)raw_str.length() - 1; i >= 0; --i) {
+        for (int i = (int)raw_str.length() - 1; i >= (int)init_len; --i) {
             char k = raw_str[i];
             bool is_potential_mod = (TONE_KEYS.find(k) != std::string::npos || REMOVE_KEYS.find(k) != std::string::npos);
-            if (i > 0 && is_potential_mod) {
+            if (is_potential_mod) {
                 if (k == 's') tone_state = Tone::ACUTE;
                 else if (k == 'f') tone_state = Tone::GRAVE;
                 else if (k == 'r') tone_state = Tone::HOOK;
@@ -264,7 +279,7 @@ EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
             std::u32string c32 = unicode::to_utf32(current_str);
             for (size_t i = 0; i < c32.size(); ++i) {
                 char32_t cp = c32[i];
-                if (i > 0 && cp < 128) {
+                if (i >= init_len && cp < 128) {
                     char ch = (char)cp;
                     if (is_mod(ch)) continue;
                 }
