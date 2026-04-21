@@ -1,0 +1,59 @@
+# Lotus Engine — C/C++ clang-format style
+# Based on Google style with project-specific adjustments
+
+BasedOnStyle: Google
+Language: Cpp
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# Column limit
+ColumnLimit: 100
+
+# Braces
+BreakBeforeBraces: Attach
+
+# Alignment
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+
+# Include sorting
+SortIncludes: CaseSensitive
+IncludeCategories:
+  - Regex: '^"lotus_engine/'     # Project headers first
+    Priority: 1
+  - Regex: '^<[a-z_]+>'          # System/STL headers
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+
+# Spacing
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+
+# Newlines
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+EmptyLineBeforeAccessModifier: LogicalBlock
+
+# Pointers and references
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Function declarations
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Lambda
+LambdaBodyIndentation: Signature
+
+# C++20
+Standard: c++20

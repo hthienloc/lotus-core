@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_test:
+    name: Build & Test (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror"
+
+    - name: Build tests
+      run: cmake --build build --target lotus_tests -j4
+
+    - name: Build TUI demo
+      run: cmake --build build --target lotus_tui -j4
+      
+    - name: Run Engine Tests
+      working-directory: build
+      run: ./lotus_tests

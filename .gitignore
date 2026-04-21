@@ -1,0 +1,70 @@
+# ========================
+# Build artifacts
+# ========================
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.make
+install_manifest.txt
+
+# ========================
+# Compiled binaries & libs
+# ========================
+*.o
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.exe
+diag_*
+
+# ========================
+# Generated files
+# ========================
+compile_commands.json
+benchmark_results.csv
+*.log
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================
+# CLion
+# ========================
+cmake-build-debug/
+cmake-build-release/
+
+# ========================
+# Python cache (rename script, etc.)
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# ========================
+# Test outputs
+# ========================
+*.gcno
+*.gcda
+*.gcov
+
+# ========================
+# Package / install artifacts
+# ========================
+_install/
+dist/
+*.tar.gz
+*.zip
