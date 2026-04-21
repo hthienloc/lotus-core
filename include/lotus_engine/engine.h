@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lotus_engine/types.h"
+#include "lotus_engine/linguistics.h"
 
 #include <functional>
 #include <map>
@@ -74,16 +75,9 @@ class Engine {
     bool std_uo = false;
     bool auto_restore = true;
 
-    // Internal English whitelist (simplified)
+    // Internal English detection using rule-based linguistics
     bool is_english_word(const std::string& word) const {
-        static const std::vector<std::string> whitelist = {
-            "test", "expect", "date", "status", "nurses", "bass", "issue", "message",
-            "are", "were", "she", "for", "and", "the", "always", "after"
-        };
-        for (const auto& w : whitelist)
-            if (w == word)
-                return true;
-        return false;
+        return Linguistics::is_likely_english(word);
     }
 };
 

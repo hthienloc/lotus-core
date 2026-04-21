@@ -3,6 +3,7 @@
 #include "lotus_engine/parser.h"
 #include "lotus_engine/unicode.h"
 #include "lotus_engine/validator.h"
+#include "lotus_engine/linguistics.h"
 
 #include <algorithm>
 #include <cstring>
@@ -227,15 +228,20 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     std::string raw_word = unicode::to_utf8(buffer);
 
     // Stage 7: Real-time English Auto-Restore
-    // Trigger restoration if:
-    // 1. The word explicitly matches our English whitelist (are, for, she...)
-    // 2. The word has an impossible Vietnamese initial (sh, wh, br...)
+    // Priority 1: If raw input matches English whitelist, ALWAYS restore.
+    bool whitelist_match = Linguistics::is_on_whitelist(raw_word);
     
-    bool is_english = is_english_word(raw_word);
+    bool is_valid_vn = Validator::is_valid(s);
+    bool is_english_pattern = Linguistics::is_likely_english(raw_word);
     bool invalid_initial = !s.initial.empty() && !Validator::is_valid_initial(s.initial);
     
-    if (auto_restore && (is_english || invalid_initial)) {
-        return make_transformation_result(buffer);
+    if (auto_restore) {
+        if (whitelist_match) {
+            return make_transformation_result(buffer);
+        }
+        if (!is_valid_vn && (is_english_pattern || invalid_initial)) {
+            return make_transformation_result(buffer);
+        }
     }
 
     return make_transformation_result(unicode::to_utf32(final_v_word));
@@ -245,8 +251,13 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
                                  Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
 
-    // English Compatibility: If word starts with 'w', we treat it as an English word 
-    // and skip Vietnamese transformations (unless mode is ALWAYS).
+    // English Compatibility: If word matches English patterns or whitelist, 
+    // bypass transformations.
+    if (Linguistics::is_definite_english(raw_str)) {
+        return;
+    }
+
+    // Leading-W Guard (Specific to Free-W logic)
     bool is_start_w = (raw_str.size() > 0 && (raw_str[0] == 'w' || raw_str[0] == 'W'));
     if (is_start_w && free_w != FreeWOption::ALWAYS) {
         return;
@@ -419,6 +430,12 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
+    
+    // English Compatibility
+    if (Linguistics::is_definite_english(raw_str)) {
+        return;
+    }
+
     bool has_mod = false;
     for (int i = 0; i < (int)raw_str.length(); ++i) {
         char k = raw_str[i];

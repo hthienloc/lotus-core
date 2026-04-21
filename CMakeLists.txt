@@ -13,6 +13,7 @@ add_library(lotus_engine_core STATIC
     src/validator.cpp
     src/parser.cpp
     src/engine.cpp
+    src/linguistics.cpp
     src/log.cpp
     src/capi.cpp
 )
@@ -24,6 +25,7 @@ add_library(lotus_engine_core_shared SHARED
     src/validator.cpp
     src/parser.cpp
     src/engine.cpp
+    src/linguistics.cpp
     src/log.cpp
     src/capi.cpp
 )

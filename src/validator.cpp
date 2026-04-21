@@ -36,8 +36,11 @@ bool Validator::is_valid_initial(std::string_view initial) {
 }
 
 bool Validator::is_valid(const Syllable& syllable) {
-    if (syllable.vowel.empty() && !syllable.glide.has_value())
-        return false;
+    if (syllable.vowel.empty() && !syllable.glide.has_value()) {
+        if (syllable.initial.empty())
+            return false;
+        return is_valid_initial(unicode::to_lower(syllable.initial));
+    }
 
     // 1. Component Set Checks
     if (!syllable.initial.empty()) {
