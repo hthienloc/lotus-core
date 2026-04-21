@@ -102,7 +102,19 @@ void Engine::rebuild_from_text(const std::string& text) {
     }
 }
 
-EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
+EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
+    char32_t key = original_key;
+    if (std_uo) {
+        if (key == '[')
+            key = U'ư';
+        else if (key == ']')
+            key = U'ơ';
+        else if (key == '{')
+            key = U'Ư';
+        else if (key == '}')
+            key = U'Ơ';
+    }
+
     if (key == 8 || key == 127) {
         if (!buffer.empty()) {
             Syllable s = SyllableParser::parse(unicode::to_utf8(last_committed_text));

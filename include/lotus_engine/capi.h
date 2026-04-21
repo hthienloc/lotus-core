@@ -120,6 +120,13 @@ void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t styl
 void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option);
 
 /**
+ * @brief Configure the manual hook keys option ([,] -> ư,ơ).
+ * @param engine The engine instance.
+ * @param enabled True to enable [ and ] as Vietnamese hooks.
+ */
+void lotus_engine_set_std_uo(lotus_engine_t* engine, bool enabled);
+
+/**
  * @brief Add a custom shortcut for string expansion.
  * @param engine The engine instance.
  * @param trigger The shortcut trigger string.

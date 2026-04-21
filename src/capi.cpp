@@ -75,6 +75,11 @@ void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option) {
     engine->core.set_free_w(o);
 }
 
+void lotus_engine_set_std_uo(lotus_engine_t* engine, bool enabled) {
+    if (engine)
+        engine->core.set_std_uo(enabled);
+}
+
 void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
                                const char* replacement) {
     if (!engine || !trigger || !replacement)

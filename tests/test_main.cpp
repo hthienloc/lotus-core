@@ -42,6 +42,7 @@ int main() {
     void test_engine_linguistic_regression();
     void test_engine_rebuild_state();
     void test_engine_telex_free_w();
+    void test_engine_manual_hook_keys();
 
     test_engine_telex_basic();
     test_engine_telex_vowels();
@@ -63,6 +64,7 @@ int main() {
     test_engine_linguistic_regression();
     test_engine_rebuild_state();
     test_engine_telex_free_w();
+    test_engine_manual_hook_keys();
 
     std::cout << "All tests PASSED!" << std::endl;
     return 0;

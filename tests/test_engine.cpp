@@ -252,3 +252,28 @@ void test_engine_telex_free_w() {
 
     std::cout << "test_engine_telex_free_w PASSED" << std::endl;
 }
+
+void test_engine_manual_hook_keys() {
+    Engine engine;
+
+    // 1. Disabled (Default)
+    assert_typing(engine, "[", "[");
+    assert_typing(engine, "]", "]");
+
+    // 2. Enabled
+    engine.set_std_uo(true);
+    assert_typing(engine, "[", "ư");
+    assert_typing(engine, "]", "ơ");
+    assert_typing(engine, "{", "Ư");
+    assert_typing(engine, "}", "Ơ");
+
+    // 3. Integration with tones
+    assert_typing(engine, "[s", "ứ");
+    assert_typing(engine, "]f", "ờ");
+
+    // 4. Word integration
+    assert_typing(engine, "v]ng", "vơng");
+    assert_typing(engine, "v]ngf", "vờng");
+
+    std::cout << "test_engine_manual_hook_keys PASSED" << std::endl;
+}
