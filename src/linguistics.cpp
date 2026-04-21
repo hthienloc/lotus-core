@@ -18,8 +18,8 @@ constexpr std::array<std::string_view, 10> INVALID_FINALS = {
 };
 
 // Common English words that are short and conflict with TELEX markers
-constexpr std::array<std::string_view, 12> ENGLISH_WHITELIST = {
-    "are", "were", "she", "for", "and", "the", "always", "after", "how", "what", "where", "when"
+constexpr std::array<std::string_view, 13> ENGLISH_WHITELIST = {
+    "are", "were", "she", "for", "and", "the", "always", "after", "how", "what", "where", "when", "test"
 };
 
 } // namespace
@@ -51,7 +51,7 @@ bool Linguistics::contains_english_cluster(const std::string& word) {
     std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
     
     for (auto cluster : ENGLISH_CLUSTERS) {
-        if (lower.find(cluster) != std::string::npos) {
+        if (lower.find(cluster) == 0) {
             return true;
         }
     }

@@ -251,6 +251,8 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "brand", "brand");
     assert_typing(engine, "string", "string");
     assert_typing(engine, "how", "how");
+    assert_typing(engine, "chusc", "chúc");
+    assert_typing(engine, "test ", "test ");
 
     std::cout << "test_engine_telex_hooks PASSED" << std::endl;
 }
