@@ -1,24 +1,24 @@
 #include "lotus_engine/linguistics.h"
 
 #include <algorithm>
-#include <array>
 #include <string_view>
+#include <vector>
 
 namespace lotus_engine {
 
 namespace {
 
-constexpr std::array<std::string_view, 26> ENGLISH_CLUSTERS = {
+const std::vector<std::string_view> ENGLISH_CLUSTERS = {
     "br", "cl", "cr", "dr", "dw", "fl", "fr", "gl", "gr", "pl", "pr", "sc", "scr", "sh", "shr",
     "sk", "sl", "sm", "sn", "sp", "spl", "spr", "squ", "st", "str", "sw"
 };
 
-constexpr std::array<std::string_view, 10> INVALID_FINALS = {
+const std::vector<std::string_view> INVALID_FINALS = {
     "b", "d", "g", "k", "l", "r", "s", "v", "x", "z"
 };
 
 // Common English words that are short and conflict with TELEX markers
-constexpr std::array<std::string_view, 0> ENGLISH_WHITELIST = {};
+const std::vector<std::string_view> ENGLISH_WHITELIST = {};
 
 } // namespace
 
