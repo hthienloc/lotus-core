@@ -21,9 +21,6 @@ void type_into(Engine& engine, std::u32string& screen, const std::string& keys,
             for (int i = 0; i < (int)res.count; i++)
                 screen.push_back(res.chars[i]);
         }
-        if (c == 8 || c == 127) {
-            printf("BSP: input=%d res.backspace=%d res.count=%d chars[0]=%d\n", (int)c, (int)res.backspace, (int)res.count, (int)res.chars[0]);
-        }
     }
 }
 
