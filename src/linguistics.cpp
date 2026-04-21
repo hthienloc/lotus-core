@@ -8,9 +8,9 @@ namespace lotus_engine {
 
 namespace {
 
-constexpr std::array<std::string_view, 19> ENGLISH_CLUSTERS = {
-    "br", "cl", "cr", "dr", "fl", "fr", "gl", "gr", "pl", "pr", "sc", "sh", 
-    "sk", "sl", "sm", "sn", "sp", "st", "str"
+constexpr std::array<std::string_view, 26> ENGLISH_CLUSTERS = {
+    "br", "cl", "cr", "dr", "dw", "fl", "fr", "gl", "gr", "pl", "pr", "sc", "scr", "sh", "shr",
+    "sk", "sl", "sm", "sn", "sp", "spl", "spr", "squ", "st", "str", "sw"
 };
 
 constexpr std::array<std::string_view, 10> INVALID_FINALS = {
@@ -39,12 +39,23 @@ bool Linguistics::is_likely_english(const std::string& word) {
     if (word.empty()) return false;
     if (is_definite_english(word)) return true;
     if (has_impossible_final(word)) return true;
-    
+
+    // Check for English 'y' consonant (y followed by o, u, a, e, i)
+    // In Vietnamese, initial 'y' is only followed by 'ê' or nothing.
+    if (word.length() >= 2 && ::tolower(word[0]) == 'y') {
+        char second = ::tolower(word[1]);
+        if (second == 'o' || second == 'u' || second == 'a' || second == 'e' || second == 'i') {
+            return true;
+        }
+    }
+
     // Check for misplaced tone markers (s, r, f, x, j in the middle)
-    if (word.length() >= 3) {
-        for (size_t i = 1; i < word.length() - 1; ++i) {
+    if (word.length() >= 3) {        for (size_t i = 1; i < word.length() - 1; ++i) {
             char c = ::tolower(word[i]);
             if (c == 's' || c == 'r' || c == 'f' || c == 'x' || c == 'j') {
+                // If it's a double-typed escape (e.g. 'ass'), don't treat as misplaced
+                if (c == ::tolower(word[i + 1]))
+                    continue;
                 return true;
             }
         }

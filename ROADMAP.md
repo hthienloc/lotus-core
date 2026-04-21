@@ -26,8 +26,8 @@ Mục tiêu: Đưa Lotus Engine lên tầm cao mới về độ thông minh và 
 
 ### 1. Surrounding Text & State Reconstruction
 
-- [ ] **State Reconstruction**: Phát triển logic tái cấu trúc trạng thái engine từ text thuần (`rebuild_from_text`). Cho phép nạp phím gõ từ một từ đã có sẵn.
-- [ ] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
+- [x] **State Reconstruction**: Phát triển logic tái cấu trúc trạng thái engine từ text thuần (`rebuild_from_text`). Cho phép nạp phím gõ từ một từ đã có sẵn.
+- [x] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
 - [ ] **Fcitx5 Surrounding Text**: Tích hợp sâu với API surrounding-text của Fcitx5 để đồng bộ hóa trạng thái gõ và xóa.
 
 ### 2. Rigorous Validation & Maintenance

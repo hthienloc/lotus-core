@@ -234,16 +234,17 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     bool is_valid_vn = Validator::is_valid(s);
     bool is_english_pattern = Linguistics::is_likely_english(raw_word);
     bool invalid_initial = !s.initial.empty() && !Validator::is_valid_initial(s.initial);
-    
+    bool malformed_syllable =
+        s.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
+
     if (auto_restore) {
         if (whitelist_match) {
             return make_transformation_result(buffer);
         }
-        if (!is_valid_vn && (is_english_pattern || invalid_initial)) {
+        if (!is_valid_vn && (is_english_pattern || invalid_initial || malformed_syllable)) {
             return make_transformation_result(buffer);
         }
     }
-
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
@@ -483,6 +484,28 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
         result.chars[i] = final_u32[i];
     last_committed_text = final_u32;
     return result;
+}
+
+bool Engine::is_english_word(const std::string& word) const {
+    if (Linguistics::is_on_whitelist(word))
+        return true;
+
+    // If it's valid Vietnamese after transformation, don't force English
+    std::string transformed = word;
+    Tone tone = Tone::NONE;
+    bool consumed = false;
+    // Temporary engine-like apply (simplified)
+    if (method == InputMethod::TELEX) {
+        const_cast<Engine*>(this)->apply_telex_modifiers(transformed, 0, consumed, tone);
+    } else {
+        const_cast<Engine*>(this)->apply_vni_modifiers(transformed, 0, consumed, tone);
+    }
+    Syllable s = SyllableParser::parse(transformed);
+    s.tone = tone;
+    if (Validator::is_valid(s))
+        return false;
+
+    return Linguistics::is_likely_english(word);
 }
 
 }  // namespace lotus_engine

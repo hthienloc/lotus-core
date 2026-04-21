@@ -14,9 +14,9 @@ class SyllableParser {
      * Thuật toán sử dụng Longest Match cho phụ âm đầu và cuối.
      */
     static Syllable parse(const std::string& raw);
+    static bool is_vowel(char32_t c);
 
    private:
-    static bool is_vowel(char32_t c);
     static std::u32string to_u32(const std::string& s);
     static std::string from_u32(const std::u32string& s);
 };

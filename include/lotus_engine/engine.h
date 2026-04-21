@@ -76,9 +76,7 @@ class Engine {
     bool auto_restore = true;
 
     // Internal English detection using rule-based linguistics
-    bool is_english_word(const std::string& word) const {
-        return Linguistics::is_likely_english(word);
-    }
+    bool is_english_word(const std::string& word) const;
 };
 
 }  // namespace lotus_engine

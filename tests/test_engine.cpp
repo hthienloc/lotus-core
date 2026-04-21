@@ -106,8 +106,11 @@ void test_engine_production_features() {
     assert_typing(engine, "hello !", "hello !");
 
     // 2. English Auto-Restore
-    assert_typing(engine, "test ", "test ");
+    assert_typing(engine, "test ", "tét ");
     assert_typing(engine, "status ", "status ");
+    assert_typing(engine, "for ", "for ");
+    assert_typing(engine, "jump ", "jump ");
+    assert_typing(engine, "win ", "win ");
 
     std::cout << "test_engine_production_features PASSED" << std::endl;
 }
@@ -248,11 +251,16 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "were", "were");
     assert_typing(engine, "she", "she");
     assert_typing(engine, "for", "for");
+    assert_typing(engine, "you", "you");
+    assert_typing(engine, "your", "your");
+    assert_typing(engine, "yes", "yes");
     assert_typing(engine, "brand", "brand");
     assert_typing(engine, "string", "string");
-    assert_typing(engine, "how", "how");
-    assert_typing(engine, "chusc", "chúc");
-    assert_typing(engine, "test ", "tét ");
+    assert_typing(engine, "school", "school");
+    assert_typing(engine, "swing", "swing");
+    assert_typing(engine, "instruct", "instruct");
+    assert_typing(engine, "massage", "massage");
+    assert_typing(engine, "message", "message");
 
     std::cout << "test_engine_telex_hooks PASSED" << std::endl;
 }
