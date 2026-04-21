@@ -257,30 +257,44 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     handle_v_mod("oo", "ô", 'o');
 
     // Stage 3: W-based Modifiers (uo+w->ươ, uw->ư, etc)
-    if (raw_str.find('w') != std::string::npos) {
-        if (current_str.find("uo") != std::string::npos)
-            unicode::replace_all(current_str, "uo", "ươ");
-        if (current_str.find("uaw") != std::string::npos)
-            unicode::replace_all(current_str, "uaw", "ưa");
-        if (current_str.find("aw") != std::string::npos)
-            unicode::replace_all(current_str, "aw", "ă");
-        if (current_str.find("ow") != std::string::npos)
-            unicode::replace_all(current_str, "ow", "ơ");
-        if (current_str.find("uw") != std::string::npos)
-            unicode::replace_all(current_str, "uw", "ư");
-        if (!key_consumed && key == 'w')
-            key_consumed = true;
+    if (free_w != FreeWOption::OFF && raw_str.find('w') != std::string::npos) {
+        bool can_transform = true;
+        if (free_w == FreeWOption::NON_START) {
+            // Find if 'w' is at start. Since Stage 3 looks for patterns, 
+            // we check if the w is at index 0 of raw_str.
+            if (raw_str.size() > 0 && raw_str[0] == 'w') {
+                // If the only 'w' is at index 0, we might need caution.
+                // However, standard Telex 'uw' usually isn't at start.
+            }
+        }
+
+        if (can_transform) {
+            if (current_str.find("uo") != std::string::npos)
+                unicode::replace_all(current_str, "uo", "ươ");
+            if (current_str.find("uaw") != std::string::npos)
+                unicode::replace_all(current_str, "uaw", "ưa");
+            if (current_str.find("aw") != std::string::npos)
+                unicode::replace_all(current_str, "aw", "ă");
+            if (current_str.find("ow") != std::string::npos)
+                unicode::replace_all(current_str, "ow", "ơ");
+            if (current_str.find("uw") != std::string::npos)
+                unicode::replace_all(current_str, "uw", "ư");
+            if (!key_consumed && key == 'w')
+                key_consumed = true;
+        }
     }
 
     // Stage 4: Free-W (u/o/a + w -> ư/ơ/ă)
-    // This allows typing 'w' at the end of a word to hook vowels.
-    if (raw_str.find('w') != std::string::npos) {
+    if (free_w != FreeWOption::OFF && raw_str.find('w') != std::string::npos) {
         bool tx = false;
-        // Don't re-hook if already hooked by Stage 3
         bool has_pre = (current_str.find("ư") != std::string::npos ||
                         current_str.find("ơ") != std::string::npos ||
                         current_str.find("ă") != std::string::npos);
-        if (!has_pre) {
+        
+        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
+        bool allowed = (free_w == FreeWOption::ALWAYS) || (free_w == FreeWOption::NON_START && !is_start);
+
+        if (allowed && !has_pre) {
             if (current_str.find('u') != std::string::npos &&
                 current_str.find('o') != std::string::npos) {
                 unicode::replace_all(current_str, "u", "ư");
@@ -300,7 +314,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
                 unicode::replace_all(current_str, "w", "ư");
             }
         }
-        if (!key_consumed && key == 'w')
+        if (!key_consumed && key == 'w' && (allowed || has_pre))
             key_consumed = true;
     }
 
@@ -339,13 +353,14 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     }
 
     // Stripping
+    bool w_is_mod = (free_w != FreeWOption::OFF);
     bool should_strip =
         (tone_state != Tone::NONE || raw_str.find_last_of("z0") != std::string::npos ||
-         (raw_str.size() > 1 && raw_str.find('w') != std::string::npos));
+         (w_is_mod && raw_str.size() > 1 && raw_str.find('w') != std::string::npos));
     if (should_strip) {
         auto is_mod_key = [&](unsigned char c) {
             return TONE_KEYS.find(c) != std::string::npos ||
-                   REMOVE_KEYS.find(c) != std::string::npos || c == 'w';
+                   REMOVE_KEYS.find(c) != std::string::npos || (w_is_mod && c == 'w');
         };
         std::string stripped = "";
         std::u32string c32 = unicode::to_utf32(current_str);

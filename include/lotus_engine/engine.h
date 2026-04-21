@@ -19,6 +19,9 @@ class Engine {
     void set_tone_style(ToneStyle style) { this->tone_style = style; }
     ToneStyle get_tone_style() const { return tone_style; }
 
+    void set_free_w(FreeWOption option) { this->free_w = option; }
+    FreeWOption get_free_w() const { return free_w; }
+
     /**
      * @brief Xử lý một phím gõ mới.
      * @param key Mã Unicode (UTF-32) của phím gõ.
@@ -61,6 +64,7 @@ class Engine {
     char32_t last_boundary_key = 0;
     InputMethod method;
     ToneStyle tone_style = ToneStyle::NEW;
+    FreeWOption free_w = FreeWOption::ALWAYS;
 
     // Internal English whitelist (simplified)
     bool is_english_word(const std::string& word) const {

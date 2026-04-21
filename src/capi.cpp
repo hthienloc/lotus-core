@@ -62,6 +62,19 @@ void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t styl
     engine->core.set_tone_style(s);
 }
 
+void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option) {
+    if (!engine)
+        return;
+    FreeWOption o;
+    if (option == LOTUS_FREE_W_OFF)
+        o = FreeWOption::OFF;
+    else if (option == LOTUS_FREE_W_NON_START)
+        o = FreeWOption::NON_START;
+    else
+        o = FreeWOption::ALWAYS;
+    engine->core.set_free_w(o);
+}
+
 void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
                                const char* replacement) {
     if (!engine || !trigger || !replacement)

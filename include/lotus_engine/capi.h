@@ -27,6 +27,15 @@ typedef enum {
 } lotus_tone_style_t;
 
 /**
+ * @brief Free-W options (Telex).
+ */
+typedef enum {
+    LOTUS_FREE_W_OFF = 0,        // w -> w
+    LOTUS_FREE_W_NON_START = 1,  // w -> ư (unless at start)
+    LOTUS_FREE_W_ALWAYS = 2      // w -> ư everywhere
+} lotus_free_w_t;
+
+/**
  * @brief Log levels for internal diagnostic messages.
  */
 typedef enum {
@@ -102,6 +111,13 @@ void lotus_engine_set_method(lotus_engine_t* engine, lotus_method_t method);
  * @param style The tone style (Old or New).
  */
 void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t style);
+
+/**
+ * @brief Configure the Free-W option (Telex).
+ * @param engine The engine instance.
+ * @param option The Free-W option (Off, Non-start, Always).
+ */
+void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option);
 
 /**
  * @brief Add a custom shortcut for string expansion.

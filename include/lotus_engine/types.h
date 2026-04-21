@@ -33,6 +33,15 @@ enum class ToneStyle {
 };
 
 /**
+ * @brief Tùy chọn xử lý phím 'w' tự do (Telex).
+ */
+enum class FreeWOption {
+    OFF,        // w -> w
+    NON_START,  // w -> ư (nếu không phải ký tự đầu tiên)
+    ALWAYS      // w -> ư (ở mọi nơi)
+};
+
+/**
  * @brief Cấu trúc mô phỏng một âm tiết tiếng Việt chuẩn: (C1)(G)V(C2) + T.
  */
 struct Syllable {

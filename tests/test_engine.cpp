@@ -228,3 +228,27 @@ void test_engine_rebuild_state() {
 
     std::cout << "test_engine_rebuild_state PASSED" << std::endl;
 }
+void test_engine_telex_free_w() {
+    Engine engine;
+
+    // 1. ALWAYS (Default)
+    engine.set_free_w(FreeWOption::ALWAYS);
+    assert_typing(engine, "w", "ư");
+    assert_typing(engine, "uw", "ư");
+    assert_typing(engine, "uow", "ươ");
+
+    // 2. NON_START
+    engine.set_free_w(FreeWOption::NON_START);
+    assert_typing(engine, "w", "w");    // 'w' at start remains 'w'
+    assert_typing(engine, "uw", "ư");   // 'w' after 'u' transforms
+    assert_typing(engine, "uow", "ươ"); // 'w' after 'uo' transforms
+    assert_typing(engine, "uaw", "ưa"); // 'w' after 'ua' transforms
+
+    // 3. OFF
+    engine.set_free_w(FreeWOption::OFF);
+    assert_typing(engine, "w", "w");
+    assert_typing(engine, "uw", "uw");
+    assert_typing(engine, "uow", "uow");
+
+    std::cout << "test_engine_telex_free_w PASSED" << std::endl;
+}
