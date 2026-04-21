@@ -246,9 +246,11 @@ void test_engine_telex_free_w() {
 
     // 3. OFF
     engine.set_free_w(FreeWOption::OFF);
-    assert_typing(engine, "w", "w");
-    assert_typing(engine, "uw", "uw");
-    assert_typing(engine, "uow", "uow");
+    assert_typing(engine, "w", "w");    // Standalone remains 'w'
+    assert_typing(engine, "uw", "ư");   // Explicit pair 'uw' transforms
+    assert_typing(engine, "ow", "ơ");   // Explicit pair 'ow' transforms
+    assert_typing(engine, "uow", "ươ"); // Explicit 'uow' transforms
+    assert_typing(engine, "tw", "tw");  // 'w' not after u/o remains 'w'
 
     std::cout << "test_engine_telex_free_w PASSED" << std::endl;
 }
