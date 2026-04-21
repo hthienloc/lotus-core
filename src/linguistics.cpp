@@ -18,9 +18,7 @@ constexpr std::array<std::string_view, 10> INVALID_FINALS = {
 };
 
 // Common English words that are short and conflict with TELEX markers
-constexpr std::array<std::string_view, 13> ENGLISH_WHITELIST = {
-    "are", "were", "she", "for", "and", "the", "always", "after", "how", "what", "where", "when", "test"
-};
+constexpr std::array<std::string_view, 0> ENGLISH_WHITELIST = {};
 
 } // namespace
 
@@ -33,7 +31,6 @@ bool Linguistics::is_on_whitelist(const std::string& word) {
 
 bool Linguistics::is_definite_english(const std::string& word) {
     if (word.empty()) return false;
-    if (is_on_whitelist(word)) return true;
     if (contains_english_cluster(word)) return true;
     return false;
 }
@@ -42,6 +39,17 @@ bool Linguistics::is_likely_english(const std::string& word) {
     if (word.empty()) return false;
     if (is_definite_english(word)) return true;
     if (has_impossible_final(word)) return true;
+    
+    // Check for misplaced tone markers (s, r, f, x, j in the middle)
+    if (word.length() >= 3) {
+        for (size_t i = 1; i < word.length() - 1; ++i) {
+            char c = ::tolower(word[i]);
+            if (c == 's' || c == 'r' || c == 'f' || c == 'x' || c == 'j') {
+                return true;
+            }
+        }
+    }
+    
     return false;
 }
 

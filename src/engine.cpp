@@ -419,6 +419,11 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         std::string stripped = "";
         std::u32string c32 = unicode::to_utf32(current_str);
         for (size_t i = 0; i < c32.size(); ++i) {
+            // Protection: Never strip at index 0 if it's a tone marker (e.g. 'for' -> 'f' is kept)
+            if (i == 0 && is_mod_key((unsigned char)c32[i])) {
+                stripped += unicode::to_utf8(c32[i]);
+                continue;
+            }
             if (i >= init_len && c32[i] < 128 && is_mod_key((unsigned char)c32[i]))
                 continue;
             stripped += unicode::to_utf8(c32[i]);
