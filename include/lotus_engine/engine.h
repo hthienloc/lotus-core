@@ -64,7 +64,7 @@ class Engine {
     char32_t last_boundary_key = 0;
     InputMethod method;
     ToneStyle tone_style = ToneStyle::NEW;
-    FreeWOption free_w = FreeWOption::ALWAYS;
+    FreeWOption free_w = FreeWOption::NON_START;
 
     // Internal English whitelist (simplified)
     bool is_english_word(const std::string& word) const {
