@@ -201,3 +201,30 @@ void test_engine_linguistic_regression() {
 
     printf("test_engine_linguistic_regression PASSED\n");
 }
+void test_engine_rebuild_state() {
+    Engine engine;
+
+    // 1. Rebuild from single word
+    engine.rebuild_from_text("hòa");
+    std::u32string screen = unicode::to_utf32("hòa");
+    type_into(engine, screen, "\b");
+    assert(unicode::to_utf8(screen) == "hò");
+
+    // 2. Rebuild from sentence
+    engine.rebuild_from_text("xin chào");
+    screen = unicode::to_utf32("xin chào");
+    type_into(engine, screen, "\b");
+    assert(unicode::to_utf8(screen) == "xin chà");
+    type_into(engine, screen, "\b");
+    assert(unicode::to_utf8(screen) == "xin ch");
+
+    // 3. Backspace into history
+    type_into(engine, screen, "\b\b"); // delete "ch"
+    assert(unicode::to_utf8(screen) == "xin ");
+    type_into(engine, screen, "\b"); // delete " "
+    assert(unicode::to_utf8(screen) == "xin");
+    type_into(engine, screen, "a"); // "xina"
+    assert(unicode::to_utf8(screen) == "xina");
+
+    std::cout << "test_engine_rebuild_state PASSED" << std::endl;
+}

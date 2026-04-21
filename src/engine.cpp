@@ -29,6 +29,79 @@ void Engine::reset() {
     last_committed_text.clear();
 }
 
+void Engine::rebuild_from_text(const std::string& text) {
+    reset();
+    word_history.clear();
+    if (text.empty())
+        return;
+
+    std::vector<std::string> words;
+    std::string current_word;
+    for (char32_t c : unicode::to_utf32(text)) {
+        bool is_boundary = (c == ' ' || c == '\r' || c == '\n' ||
+                            (c < 128 && (ispunct((int)c) || c == '\t')));
+        if (is_boundary) {
+            if (!current_word.empty()) {
+                words.push_back(current_word);
+                current_word.clear();
+            }
+            words.push_back(unicode::to_utf8(std::u32string(1, c)));
+        } else {
+            current_word += unicode::to_utf8(std::u32string(1, c));
+        }
+    }
+    if (!current_word.empty()) {
+        words.push_back(current_word);
+    }
+
+    if (words.empty())
+        return;
+
+    // Last word becomes the active buffer
+    std::string last_word = words.back();
+    words.pop_back();
+
+    for (const auto& w : words) {
+        word_history.push(unicode::to_utf32(w));
+        // If the word we just pushed ends in a boundary, we should set last_boundary_key
+        std::u32string w32 = unicode::to_utf32(w);
+        if (!w32.empty()) {
+            char32_t last_c = w32.back();
+            bool is_boundary = (last_c == ' ' || last_c == '\r' || last_c == '\n' ||
+                                (last_c < 128 && (ispunct((int)last_c) || last_c == '\t')));
+            if (is_boundary) {
+                last_boundary_key = last_c;
+            } else {
+                last_boundary_key = 0; // Word doesn't end in boundary
+            }
+        }
+    }
+
+    // Process last word
+    Syllable s = SyllableParser::parse(last_word);
+    std::vector<char32_t> keys = s.to_keys(method);
+    buffer.clear();
+    for (char32_t k : keys)
+        buffer.push_back(k);
+    last_committed_text = unicode::to_utf32(last_word);
+    // If last_word is a boundary, set it
+    std::u32string last32 = unicode::to_utf32(last_word);
+    if (!last32.empty()) {
+        char32_t last_c = last32.back();
+        bool is_boundary = (last_c == ' ' || last_c == '\r' || last_c == '\n' ||
+                            (last_c < 128 && (ispunct((int)last_c) || last_c == '\t')));
+        if (is_boundary) {
+            last_boundary_key = last_c;
+            // If it's a boundary, the buffer should be empty and the word pushed to history
+            word_history.push(last32);
+            buffer.clear();
+            last_committed_text.clear();
+        } else {
+            last_boundary_key = 0;
+        }
+    }
+}
+
 EngineResult Engine::process_key(char32_t key, const Modifiers& mods) {
     if (key == 8 || key == 127) {
         if (!buffer.empty()) {

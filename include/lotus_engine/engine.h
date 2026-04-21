@@ -39,6 +39,12 @@ class Engine {
      */
     void add_shortcut(const std::string& trigger, const std::string& replacement);
 
+    /**
+     * @brief Tái cấu trúc trạng thái engine từ một đoạn text có sẵn.
+     * @param text Đoạn text nguồn (vd: "xin chào")
+     */
+    void rebuild_from_text(const std::string& text);
+
    private:
     // Helper methods for refactoring
     void apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,

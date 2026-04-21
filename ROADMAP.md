@@ -20,30 +20,24 @@
   - Hỗ trợ đổi style bỏ dấu (Kiểu cũ `hòa` vs Kiểu mới `hoà`).
   - Export C-API (`liblotus_engine_core.so`) ổn định cho `fcitx5-lotus`.
 
-## Active Phase: Advanced Engine Capabilities
+## Active Phase: State Reconstruction & Context Awareness
 
-Mục tiêu: Đưa Lotus Engine lên tầm cao mới về độ thông minh và chính xác.
+Mục tiêu: Đưa Lotus Engine lên tầm cao mới về độ thông minh và trải nghiệm người dùng thực tế.
 
-### 1. Surrounding Text & Context Awareness
+### 1. Surrounding Text & State Reconstruction
 
-- [ ] **State Reconstruction**: Phát triển logic tái cấu trúc state engine từ text thuần (`rebuild_from_text`).
-- [ ] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa lỗi tiếng Việt ở bất kỳ đâu trong từ.
-- [ ] **Word-History integration**: Kết nối sâu hơn với buffer của trình soạn thảo để đồng bộ hóa trạng thái gõ.
+- [ ] **State Reconstruction**: Phát triển logic tái cấu trúc trạng thái engine từ text thuần (`rebuild_from_text`). Cho phép nạp phím gõ từ một từ đã có sẵn.
+- [ ] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
+- [ ] **Fcitx5 Surrounding Text**: Tích hợp sâu với API surrounding-text của Fcitx5 để đồng bộ hóa trạng thái gõ và xóa.
 
-### 2. Rigorous Phonotactic Validation
+### 2. Rigorous Validation & Maintenance
 
-- [ ] **Matrix-based Validation**: Chuyển đổi từ regex sang ma trận CV/VC (Consonant-Vowel/Vowel-Consonant) toàn diện.
-- [ ] **Spell-Prevention**: Ngăn chặn gõ các tổ hợp phím không có thực trong tiếng Việt ngay từ phím nhấn đầu tiên (ví dụ: `qqu`, `ww`).
-- [ ] **Dialect Tuning**: Tùy chỉnh các quy tắc ghép vần theo vùng miền hoặc chuẩn từ điển.
+- [ ] **Enhanced Validation**: Cải thiện `Validator` để ngăn chặn gõ các tổ hợp phím vô lý (ví dụ: `qqu`, `ww`) mà không cần làm quá phức tạp kiến trúc.
+- [ ] **Integration Test Coverage**: Mở rộng bộ test tích hợp với các ứng dụng thực tế (Chromium, Firefox, LibreOffice) để giải quyết các lỗi mất phím.
+- [ ] **CI & Automation**: Hoàn thiện luồng CI GitHub Actions và chuẩn hóa hệ thống logging.
 
-### 3. Advanced Transformation Architecture
+## Long-term Research (Pha tương lai)
 
-- [ ] **Structured Composition**: Di chuyển từ raw buffer sang đồ thị biến đổi (Transformation Graph) để quản lý undo/redo chính xác.
-- [ ] **Dynamic Re-marking**: Tự động nhảy dấu (Tone Jumping) thông minh hơn khi thay đổi cấu trúc nucleus.
-- [ ] **Memory Tuning**: Giảm RAM footprint (< 512KB) cho các thiết bị nhúng.
-
-## Ongoing Maintenance
-
-- [ ] **Integration Test Coverage**: Mở rộng bộ test tích hợp với các ứng dụng thực tế (Chromium, Firefox, LibreOffice).
-- [ ] **Logging & CI**: Chuẩn hóa hệ thống log và hoàn thiện CI GitHub Actions.
-- [ ] **Documentation**: Cập nhật tài liệu kỹ thuật cho các kỹ sư muốn tích hợp logic lõi.
+- [ ] **Matrix-based Validation**: Chuyển đổi sang ma trận CV/VC nếu cần độ chính xác 100% về phương ngữ.
+- [ ] **Memory & Performance**: Tiếp tục tối ưu RAM footprint (< 512KB) và latency.
+- [ ] **Structured Composition Graph**: Chỉ thực hiện nếu phát hiện các giới hạn của buffer phẳng trong việc xử lý Undo/Redo phức tạp.
