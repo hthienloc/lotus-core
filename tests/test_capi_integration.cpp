@@ -1,62 +1,45 @@
 #include "lotus_engine/capi.h"
+#include "lotus_engine/unicode.h"
 
 #include <cassert>
 #include <iostream>
+
+using namespace lotus_engine;
+
+void assert_capi_typing(lotus_engine_t* engine, const std::string& input,
+                        const std::string& expected) {
+    lotus_engine_reset(engine);
+    lotus_modifiers_t mods = {false, false};
+    lotus_result_t res;
+    for (char c : input) {
+        res = lotus_engine_process_key(engine, (char32_t)c, mods);
+    }
+    std::u32string res_u32;
+    for (int i = 0; i < res.count; i++)
+        res_u32.push_back(res.chars[i]);
+    std::string got = unicode::to_utf8(res_u32);
+    if (got != expected) {
+        printf("C-API FAIL: typing '%s' expected '%s' got '%s'\n", input.c_str(), expected.c_str(),
+               got.c_str());
+        assert(false);
+    }
+}
 
 void test_capi_integration() {
     lotus_engine_t* engine = lotus_engine_create();
     assert(engine != nullptr);
 
-    lotus_modifiers_t mods = {false, false};
-
     // 1. Basic Telex Input (hòa vs hoà)
-    // Style: OLD -> "hòa" (Mark on 'o')
     lotus_engine_set_tone_style(engine, LOTUS_TONE_OLD);
-    lotus_engine_process_key(engine, 'h', mods);
-    lotus_engine_process_key(engine, 'o', mods);
-    lotus_engine_process_key(engine, 'a', mods);
-    lotus_result_t res = lotus_engine_process_key(engine, 'f', mods);
+    assert_capi_typing(engine, "hof", "hò");
+    assert_capi_typing(engine, "hoaf", "hòa");
 
-    // Characters: h (U+0068), ò (U+00F2), a (U+0061)
-    assert(res.count == 3);
-    assert(res.chars[0] == 0x0068);
-    assert(res.chars[1] == 0x00F2);
-    assert(res.chars[2] == 0x0061);
-
-    // Resetting engine
-    lotus_engine_reset(engine);
-
-    // Style: NEW -> "hoà" (Mark on 'a')
     lotus_engine_set_tone_style(engine, LOTUS_TONE_NEW);
-    lotus_engine_process_key(engine, 'h', mods);
-    lotus_engine_process_key(engine, 'o', mods);
-    lotus_engine_process_key(engine, 'a', mods);
-    res = lotus_engine_process_key(engine, 'f', mods);
-
-    // Characters: h (U+0068), o (U+006F), à (U+00E0)
-    assert(res.count == 3);
-    assert(res.chars[0] == 0x0068);
-    assert(res.chars[1] == 0x006F);
-    assert(res.chars[2] == 0x00E0);
-
-    // Resetting engine
-    lotus_engine_reset(engine);
+    assert_capi_typing(engine, "hoaf", "hoà");
 
     // 2. VNI Input
     lotus_engine_set_method(engine, LOTUS_METHOD_VNI);
-    lotus_engine_process_key(engine, 'v', mods);
-    lotus_engine_process_key(engine, 'i', mods);
-    lotus_engine_process_key(engine, 'e', mods);
-    lotus_engine_process_key(engine, '6', mods);  // 6 -> ê
-    lotus_engine_process_key(engine, 't', mods);
-    res = lotus_engine_process_key(engine, '5', mods);  // 5 -> nặng (ệ)
-
-    // việt -> v (U+0076), i (U+0069), ệ (U+1EC7), t (U+0074)
-    assert(res.count == 4);
-    assert(res.chars[0] == 0x0076);
-    assert(res.chars[1] == 0x0069);
-    assert(res.chars[2] == 0x1EC7);
-    assert(res.chars[3] == 0x0074);
+    assert_capi_typing(engine, "vie65t", "việt");
 
     lotus_engine_destroy(engine);
     std::cout << "test_capi_integration PASSED" << std::endl;

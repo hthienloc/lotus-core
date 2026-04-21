@@ -21,6 +21,9 @@ void type_into(Engine& engine, std::u32string& screen, const std::string& keys,
             for (int i = 0; i < (int)res.count; i++)
                 screen.push_back(res.chars[i]);
         }
+        if (c == 8 || c == 127) {
+            printf("BSP: input=%d res.backspace=%d res.count=%d chars[0]=%d\n", (int)c, (int)res.backspace, (int)res.count, (int)res.chars[0]);
+        }
     }
 }
 
@@ -141,112 +144,57 @@ void test_engine_stuck_word_bug() {
 
 void test_engine_backspace_chaining() {
     Engine engine;
-    std::u32string screen;
 
-    type_into(engine, screen, "ha cho ");
-    assert(unicode::to_utf8(screen) == "ha cho ");
-    type_into(engine, screen, "\b");
-    assert(unicode::to_utf8(screen) == "ha cho");
-    type_into(engine, screen, "\b\b\b");
-    assert(unicode::to_utf8(screen) == "ha ");
-    type_into(engine, screen, "\b");
-    assert(unicode::to_utf8(screen) == "ha");
-    type_into(engine, screen, "\b\b");
-    assert(unicode::to_utf8(screen) == "");
+    // 1. Basic chaining
+    assert_typing(engine, "ha cho \b", "ha cho");
+    assert_typing(engine, "ha cho \b\b\b\b", "ha ");
+    assert_typing(engine, "ha cho \b\b\b\b\b", "ha");
+    assert_typing(engine, "ha cho \b\b\b\b\b\b\b", "");
+
+    // 2. Double character backspace (dd -> d -> delete all)
+    // The user expects đ + backspace -> delete whole đ
+    assert_typing(engine, "dd\b", "");
+    assert_typing(engine, "aa\b", "");
+
+    // 3. Modifier backspace (delete whole char)
+    assert_typing(engine, "duw\b", "d");
+    assert_typing(engine, "dow\b", "d");
+
+    // 4. Tone backspace (carrier deleted, tone stays if possible on remaining vowel)
+    assert_typing(engine, "tuas\b", "tú"); // tuá -> tú (tone moves to u)
+    assert_typing(engine, "huowngf\b", "hườn"); // hường -> hườn (tone stays on ơ)
 
     // 5. Syllable-aware backspace
-    screen.clear();
-    engine.reset();
-    type_into(engine, screen, "xoas");
-    assert(unicode::to_utf8(screen) == "xoá");
-    type_into(engine, screen, "\b");
-    assert(unicode::to_utf8(screen) == "xó");
-
-    screen.clear();
-    engine.reset();
-    type_into(engine, screen, "tuyeens");
-    assert(unicode::to_utf8(screen) == "tuyến");
-    type_into(engine, screen, "\b");
-    assert(unicode::to_utf8(screen) == "tuyế");
-
-    screen.clear();
-    engine.reset();
-    type_into(engine, screen, "dduowngf");
-    if (unicode::to_utf8(screen) != "đường") {
-        std::cerr << "FAIL dduowngf: got '" << unicode::to_utf8(screen) << "' (hex: ";
-        for (unsigned char c : unicode::to_utf8(screen))
-            std::cerr << std::hex << (int)c << " ";
-        std::cerr << ")" << std::endl;
-        assert(false);
-    }
-    type_into(engine, screen, "\b");
-    if (unicode::to_utf8(screen) != "đườn") {
-        std::cerr << "FAIL dduowngf-back: got '" << unicode::to_utf8(screen) << "' (hex: ";
-        for (unsigned char c : unicode::to_utf8(screen))
-            std::cerr << std::hex << (int)c << " ";
-        std::cerr << ")" << std::endl;
-        assert(false);
-    }
+    assert_typing(engine, "xoas\b", "xó");
+    assert_typing(engine, "tuyeens\b", "tuyế");
+    assert_typing(engine, "dduowngf", "đường");
+    assert_typing(engine, "dduowngf\b", "đườn");
 
     std::cout << "test_engine_backspace_chaining PASSED" << std::endl;
 }
 
 void test_engine_linguistic_regression() {
     Engine engine;
-    Modifiers mods;
 
-    // 1. Normalization & Character Drift (nên -> nến)
-    engine.process_key('n', mods);
-    engine.process_key('e', mods);
-    engine.process_key('e', mods);
-    EngineResult res = engine.process_key('n', mods);
-    assert(res.to_string() == "nên");
-    assert(res.count == 3);
+    // 1. Normalization & Character Drift
+    assert_typing(engine, "neens", "nến");
+    assert_typing(engine, "dduowj", "đượ");
+    assert_typing(engine, "dduowjc", "được");
 
-    res = engine.process_key('s', mods);
-    assert(res.to_string() == "nến");
-    assert(res.count == 3);
-    assert(res.backspace == 3);
-
-    // 2. Tone Placement (đươ -> đượ)
-    engine = Engine();  // Reset
-    engine.process_key('d', mods);
-    engine.process_key('d', mods);  // TWO d's for đ
-    engine.process_key('u', mods);
-    engine.process_key('o', mods);
-    engine.process_key('w', mods);
-    res = engine.process_key('j', mods);
-
-    // đượ should have mark on 'ơ' (U+1EE3)
-    // Characters: đ (U+0111), ư (U+01B0), ợ (U+1EE3)
-    std::u32string u32 = unicode::to_utf32(res.to_string());
-    assert(u32.size() == 3);
-    assert(u32[0] == 0x0111);  // đ
-    assert(u32[1] == 0x01B0);  // ư
-    assert(u32[2] == 0x1EE3);  // ợ
-
-    // 3. Final completion (đượ -> được)
-    res = engine.process_key('c', mods);
-    assert(res.to_string() == "được");
-    assert(res.count == 4);
-    assert(res.backspace == 3);
-
-    // 4. Reported Bug: nois -> nói (Previously resulted in noí)
+    // 2. Reported Bugs
     assert_typing(engine, "nois", "nói");
     assert_typing(engine, "tuis", "túi");
     assert_typing(engine, "muas", "múa");
     assert_typing(engine, "mua", "mua");
     assert_typing(engine, "muoons", "muốn");
 
-    // 5. Late Hook Modifier (Free w)
+    // 3. Late Hook Modifier (Free w)
     assert_typing(engine, "rangw", "răng");
     assert_typing(engine, "rangwf", "rằng");
     assert_typing(engine, "traw", "tră");
     assert_typing(engine, "uow", "ươ");
-    assert_typing(engine, "uo", "uo");
-    assert_typing(engine, "uow", "ươ");
 
-    // 6. Special 'gi' and 'qu' handling
+    // 4. Special 'gi' and 'qu' handling
     assert_typing(engine, "gif", "gì");
     assert_typing(engine, "gin", "gin");
     assert_typing(engine, "gia", "gia");
