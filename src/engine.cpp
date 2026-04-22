@@ -292,6 +292,13 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     }
 
     std::string final_v_word = s.to_string(tone_style);
+
+    // Normalize buffer to canonical keys for valid Vietnamese syllables to ensure deterministic behavior
+    if (is_valid_vn) {
+        std::vector<char32_t> canonical = s.to_keys(method);
+        buffer.assign(canonical.begin(), canonical.end());
+    }
+
     LOTUS_LOG_DEBUG("[Pipeline] Final: " + final_v_word);
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
@@ -328,13 +335,43 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
         return true;
     } else {
         auto recovered = word_history.pop();
-        last_boundary_key = 0;
         if (!recovered.empty()) {
-            buffer = recovered;
-            (void)process_key(0, mods);
-            result.action = 1;
-            result.backspace = 1;
-            result.count = 0;
+            char32_t rc = recovered[0];
+            bool is_boundary = (recovered.size() == 1 && 
+                                (rc == ' ' || rc == '\t' || rc == '\r' || rc == '\n' || 
+                                (rc < 128 && ispunct((int)rc))));
+            
+            if (is_boundary) {
+                // Recovered a boundary (space/punct), delete it from screen
+                result.action = 1;
+                result.backspace = 1;
+                result.count = 0;
+                reset();
+
+                // PEEK/POP the preceding word if available to allow late-editing
+                auto prev_word = word_history.pop();
+                if (!prev_word.empty()) {
+                    // Re-parse the word string into keys
+                    Syllable s = SyllableParser::parse(prev_word);
+                    std::vector<char32_t> keys = s.to_keys(method);
+                    buffer.assign(keys.begin(), keys.end());
+                    last_committed_text = prev_word;
+                    LOTUS_LOG_DEBUG("[Backspace] Reclaimed word: '" + unicode::to_utf8(prev_word) + "'");
+                }
+                last_boundary_key = 0;
+            } else {
+                // Recovered a full word, reclaim it into the active buffer
+                Syllable s = SyllableParser::parse(recovered);
+                s.remove_last_char();
+                
+                // Set the buffer to the shortened canonical state
+                std::vector<char32_t> keys = s.to_keys(method);
+                buffer.assign(keys.begin(), keys.end());
+                
+                result = process_key(0, mods);
+                // The backspace count is exactly the visual width of the recovered word
+                result.backspace = (uint8_t)unicode::display_width(unicode::to_utf8(recovered));
+            }
             return true;
         }
     }
@@ -356,8 +393,6 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
                          (key < 128 && (ispunct((int)key) || key == '\t')));
     if (!is_boundary) return false;
 
-    if (!buffer.empty()) word_history.push(buffer);
-    
     std::string raw_word = unicode::to_utf8(buffer);
     if (is_english_word(raw_word)) {
         std::u32string output = buffer;
@@ -368,6 +403,25 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
         last_boundary_key = key;
         return true;
     }
+
+    // Push the transformed word and THEN the boundary to history for exact sync
+    if (!buffer.empty()) {
+        std::string current_str = unicode::to_utf8(buffer);
+        Tone tone_state = Tone::NONE;
+        bool consumed = false;
+        
+        if (method == InputMethod::TELEX) {
+            apply_telex_modifiers(current_str, 0, consumed, tone_state);
+        } else {
+            apply_vni_modifiers(current_str, 0, consumed, tone_state);
+        }
+
+        current_str = unicode::normalize_nfc(current_str);
+        Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
+        if (tone_state != Tone::NONE) s.tone = tone_state;
+        word_history.push(unicode::to_utf32(s.to_string(tone_style)));
+    }
+    word_history.push({key});
 
     if (handle_shortcuts(key, result)) return true;
 
@@ -694,6 +748,11 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
     result.backspace = (uint8_t)last_committed_text.size();
     result.count = (uint8_t)std::min((size_t)32, final_u32.size());
     for (int i = 0; i < result.count; i++) result.chars[i] = final_u32[i];
+
+    LOTUS_LOG_DEBUG("[Pipeline] Result: BS=" + std::to_string((int)result.backspace) + 
+                    ", Count=" + std::to_string((int)result.count) + 
+                    ", PrevText='" + unicode::to_utf8(last_committed_text) + "'");
+
     last_committed_text = final_u32;
     return result;
 }

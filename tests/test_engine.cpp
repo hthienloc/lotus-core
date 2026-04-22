@@ -266,13 +266,72 @@ void test_engine_smart_typing() {
     std::cout << "  [PASS] Smart typing (Auto-Caps, Double-Space)" << std::endl;
 }
 
+/**
+ * @brief Verifies backspace behavior after punctuation.
+ */
+void test_engine_punctuation_backspace() {
+    Engine engine;
+    Modifiers mods;
+    std::u32string screen;
+
+    // Type "thử. "
+    type_into(engine, screen, "thuwr. ");
+    assert(unicode::to_utf8(screen) == "thử. ");
+
+    // Backspace: deletes ' '
+    auto res0 = engine.process_key(127, mods);
+    for (int i = 0; i < res0.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res0.count; i++) screen.push_back(res0.chars[i]);
+    assert(unicode::to_utf8(screen) == "thử.");
+
+    // Backspace: deletes '.'
+    auto res1 = engine.process_key(127, mods);
+    for (int i = 0; i < res1.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res1.count; i++) screen.push_back(res1.chars[i]);
+    assert(unicode::to_utf8(screen) == "thử");
+
+    // Backspace again: deletes 'ử' -> "thư"
+    auto res2 = engine.process_key(127, mods);
+    for (int i = 0; i < res2.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res2.count; i++) screen.push_back(res2.chars[i]);
+    assert(unicode::to_utf8(screen) == "th");
+
+    std::cout << "  [PASS] Punctuation backspace handling" << std::endl;
+}
+
 // ============================================================================
 // [ 4. Interactive State & Edge Cases ]
 // ============================================================================
 
-/**
- * @brief Interactive backspacing through multiple words and complex syllables.
- */
+void test_engine_reproduction_user() {
+    Engine engine;
+    Modifiers mods;
+    std::u32string screen;
+
+    // Type "thử. "
+    type_into(engine, screen, "thuwr. ");
+    assert(unicode::to_utf8(screen) == "thử. ");
+
+    // BS1: delete space
+    auto res1 = engine.process_key(127, mods);
+    for (int i = 0; i < res1.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res1.count; i++) screen.push_back(res1.chars[i]);
+    assert(unicode::to_utf8(screen) == "thử.");
+
+    // BS2: delete dot
+    auto res2 = engine.process_key(127, mods);
+    for (int i = 0; i < res2.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res2.count; i++) screen.push_back(res2.chars[i]);
+    assert(unicode::to_utf8(screen) == "thử");
+
+    // BS3: recover word and delete ử -> th
+    auto res3 = engine.process_key(127, mods);
+    for (int i = 0; i < res3.backspace; i++) if (!screen.empty()) screen.pop_back();
+    for (int i = 0; i < res3.count; i++) screen.push_back(res3.chars[i]);
+    assert(unicode::to_utf8(screen) == "th");
+
+    std::cout << "  [PASS] User reproduction case" << std::endl;
+}
 void test_engine_backspace_chaining() {
     Engine engine;
     assert_typing(engine, "ha cho \b", "ha cho");
@@ -307,6 +366,7 @@ void test_engine_linguistic_regression() {
 void test_engine_stuck_word_bug() {
     Engine engine;
     std::u32string screen;
+    
     type_into(engine, screen, "cho tooi ");
     assert(unicode::to_utf8(screen) == "cho t\xC3\xB4i ");
     type_into(engine, screen, "\b"); // Restore 'tôi'
