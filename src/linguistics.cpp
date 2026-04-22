@@ -1,24 +1,21 @@
 #include "lotus_engine/linguistics.h"
-
+#include "lotus_engine/constants.h"
+#include "lotus_engine/unicode.h"
 #include <algorithm>
+#include <string>
 #include <string_view>
 #include <vector>
 
 namespace lotus_engine {
 
+using namespace lotus_engine::constants;
+
 namespace {
 
-const std::vector<std::string_view> ENGLISH_CLUSTERS = {
-    "br", "cl", "cr", "dr", "dw", "fl", "fr", "gl", "gr", "pl", "pr", "sc", "scr", "sh", "shr",
-    "sk", "sl", "sm", "sn", "sp", "spl", "spr", "squ", "st", "str", "sw"
-};
-
-const std::vector<std::string_view> INVALID_FINALS = {
-    "b", "d", "f", "g", "j", "k", "l", "r", "s", "v", "x", "z"
-};
-
 // Common English words that are short and conflict with TELEX markers
-const std::vector<std::string_view> ENGLISH_WHITELIST = {};
+const std::vector<std::string_view> ENGLISH_WHITELIST = {
+    "for", "to", "if", "of", "is", "was", "by", "from", "are", "with", "the"
+};
 
 } // namespace
 
@@ -49,8 +46,9 @@ bool Linguistics::is_likely_english(const std::string& word) {
         }
     }
 
-    // Check for misplaced tone markers (s, r, f, x, j in the middle)
-    if (word.length() >= 3) {        for (size_t i = 1; i < word.length() - 1; ++i) {
+    // Check for misplaced tone markers (s, r, f, x, j in the middle of a word)
+    if (word.length() >= 3) {
+        for (size_t i = 1; i < word.length() - 1; ++i) {
             char c = ::tolower(word[i]);
             if (c == 's' || c == 'r' || c == 'f' || c == 'x' || c == 'j') {
                 // If it's a double-typed escape (e.g. 'ass'), don't treat as misplaced

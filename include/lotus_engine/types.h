@@ -10,51 +10,64 @@
 namespace lotus_engine {
 
 /**
- * @brief Cấu trúc mô phỏng một âm tiết tiếng Việt chuẩn: (C1)(G)V(C2) + T.
+ * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
+ * 
+ * Components:
+ * - C1: Initial Consonant (Phụ âm đầu)
+ * - G: Glide (Âm đệm)
+ * - V: Vowel Nucleus (Hạt nhân nguyên âm)
+ * - C2: Final Coda (Phụ âm cuối)
+ * - T: Tone (Dấu thanh)
  */
 struct Syllable {
-    std::string initial;        // Phụ âm đầu (C1): b, ch, ngh...
-    std::optional<char> glide;  // Âm đệm (G): o, u
-    std::string vowel;          // Hạt nhân nguyên âm (V): a, ă, ê, iê...
-    std::string final_c;        // Phụ âm cuối (C2): n, ng, ch, i, y...
-    Tone tone = Tone::NONE;     // Dấu thanh (T)
+    std::u32string initial;        ///< Initial Consonant (e.g., b, ch, ngh)
+    std::optional<char32_t> glide;  ///< Glide (e.g., o, u)
+    std::u32string vowel;          ///< Vowel Nucleus (e.g., a, ă, ê, iê)
+    std::u32string final_c;        ///< Final Coda (e.g., n, ng, ch, i, y)
+    Tone tone = Tone::NONE;        ///< Tone mark
 
     /**
-     * @brief Chuyển đổi âm tiết về dạng chuỗi UTF-8.
-     * @param style Kiểu bỏ dấu (Mới/Cũ).
+     * @brief Converts the syllable to a UTF-8 string.
+     * @param style The tone placement style to use.
+     * @return std::string UTF-8 representation of the syllable.
      */
     std::string to_string(ToneStyle style = ToneStyle::NEW) const;
 
     /**
-     * @brief Kiểm tra xem âm tiết có trống hay không.
+     * @brief Checks if the syllable is empty (no components set).
      */
     bool is_empty() const {
         return initial.empty() && !glide.has_value() && vowel.empty() && final_c.empty();
     }
 
     /**
-     * @brief Xoá 1 đơn vị ký tự hiển thị cuối cùng của âm tiết.
-     * Ví dụ: xoá (x-o-a-s) -> xó (x-o-s), tuyến (t-u-y-e-e-n-s) -> tuyế.
+     * @brief Removes the last visual character unit from the syllable.
+     * 
+     * Handles complex Vietnamese character promote/demote logic.
+     * Example: xó (x-o-s) -> xo (x-o), tuyến (t-u-y-e-e-n-s) -> tuyế.
      */
     void remove_last_char();
 
     /**
-     * @brief Chuyển đổi trạng thái âm tiết hiện tại thành chuỗi phím gõ (Telex/VNI).
+     * @brief Decomposes the current syllable back into raw input keys.
+     * @param method The input method (TELEX/VNI) to use for decomposition.
+     * @return std::vector<char32_t> A vector of UTF-32 key codes.
      */
     std::vector<char32_t> to_keys(InputMethod method) const;
 };
 
 /**
- * @brief Các modifiers điều khiển việc gõ (Shift, CapsLock...).
+ * @brief Active keyboard modifier states.
  */
 struct Modifiers {
-    bool shift = false;
-    bool caps_lock = false;
-    bool ctrl = false;
+    bool shift = false;     ///< Shift key state
+    bool caps_lock = false; ///< Caps Lock state
+    bool ctrl = false;      ///< Ctrl key state
 };
 
 /**
- * @brief Ring buffer for word history (last committed words).
+ * @brief A fixed-capacity ring buffer that stores the most recently committed words.
+ * Used to support cross-word backspace and English auto-restore.
  */
 struct WordHistory {
     static constexpr size_t CAPACITY = 10;
@@ -62,6 +75,9 @@ struct WordHistory {
     size_t head = 0;
     size_t size = 0;
 
+    /**
+     * @brief Appends a word to the history, evicting the oldest entry if over capacity.
+     */
     void push(const std::u32string& word) {
         data[head] = word;
         head = (head + 1) % CAPACITY;
@@ -69,6 +85,10 @@ struct WordHistory {
             size++;
     }
 
+    /**
+     * @brief Removes and returns the most recently committed word.
+     * @return The most recent word, or an empty string if the history is empty.
+     */
     std::u32string pop() {
         if (size == 0)
             return U"";
@@ -77,6 +97,9 @@ struct WordHistory {
         return data[head];
     }
 
+    /**
+     * @brief Clears the entire word history.
+     */
     void clear() {
         head = 0;
         size = 0;
@@ -84,32 +107,36 @@ struct WordHistory {
 };
 
 /**
- * @brief Kết quả trả về sau mỗi phím gõ (FFI-compatible).
+ * @brief Result structure returned after each key press, containing instructions for the frontend.
+ * Designed to be FFI-compatible (C ABI).
  */
 struct EngineResult {
     /**
      * @brief Output characters in UTF-32.
-     * Fixed size for FFI compatibility. 'count' defines valid entries.
+     * Fixed size for FFI compatibility. 'count' defines the number of valid entries.
      */
     uint32_t chars[32];
 
     /**
-     * @brief Operation for frontend: 0=Pass, 1=Send (Insert/Replace), 2=Restore (English Fix)
+     * @brief Control action for the frontend.
+     * - 0: Pass (No transformation)
+     * - 1: Send (Insert or Replace with 'chars')
+     * - 2: Restore (Fix for English detection restoration)
      */
     uint8_t action;
 
     /**
-     * @brief Number of characters to delete BEFORE inserting 'chars'.
+     * @brief Number of characters to delete using backspace BEFORE inserting 'chars'.
      */
     uint8_t backspace;
 
     /**
-     * @brief Number of valid characters in 'chars' array.
+     * @brief The number of valid characters in the 'chars' array.
      */
     uint8_t count;
 
     /**
-     * @brief Helper to convert result to UTF-8 string.
+     * @brief Helper to convert the result into a UTF-8 string.
      */
     std::string to_string() const;
 };

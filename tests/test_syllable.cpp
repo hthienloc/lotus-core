@@ -7,8 +7,8 @@ using namespace lotus_engine;
 
 void test_syllable_to_string_basic() {
     Syllable s;
-    s.initial = "h";
-    s.vowel = "a";
+    s.initial = U"h";
+    s.vowel = U"a";
     assert(s.to_string() == "ha");
     std::cout << "test_syllable_to_string_basic PASSED" << std::endl;
 }
@@ -16,7 +16,7 @@ void test_syllable_to_string_basic() {
 void test_syllable_is_empty() {
     Syllable s;
     assert(s.is_empty());
-    s.initial = "b";
+    s.initial = U"b";
     assert(!s.is_empty());
     std::cout << "test_syllable_is_empty PASSED" << std::endl;
 }

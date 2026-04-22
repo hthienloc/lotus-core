@@ -7,13 +7,28 @@
 
 namespace lotus_engine {
 
+/**
+ * @brief Parses a UTF-32 encoded string into a structured @ref Syllable.
+ *
+ * Implements context-sensitive Vietnamese parsing rules including:
+ * - Longest-match initial consonant detection.
+ * - Glide disambiguation (e.g., 'gi' vs 'g' + vowel 'i').
+ * - Pre-composed tone extraction.
+ */
 class SyllableParser {
    public:
     /**
-     * @brief Phân tích một chuỗi tiếng Việt thô thành các thành phần âm tiết.
-     * Thuật toán sử dụng Longest Match cho phụ âm đầu và cuối.
+     * @brief Parses a UTF-32 character sequence into a Syllable structure.
+     * @param input The raw input string in UTF-32 encoding.
+     * @return Syllable The parsed syllable components.
      */
-    static Syllable parse(const std::string& raw);
+    static Syllable parse(const std::u32string& input);
+
+    /**
+     * @brief Checks whether a UTF-32 codepoint is a Vietnamese vowel.
+     * @param c The character to test.
+     * @return true if the character is a vowel or combining mark.
+     */
     static bool is_vowel(char32_t c);
 
    private:

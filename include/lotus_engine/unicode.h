@@ -365,6 +365,13 @@ inline std::string to_lower(const std::string& input) {
     return to_utf8(u32);
 }
 
+inline std::u32string to_lower(const std::u32string& input) {
+    std::u32string res = input;
+    for (auto& cp : res)
+        cp = to_lower(cp);
+    return res;
+}
+
 inline std::string to_upper(const std::string& input) {
     std::u32string u32 = to_utf32(input);
     for (auto& cp : u32)

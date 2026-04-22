@@ -142,7 +142,9 @@ void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
 void lotus_engine_set_log_callback(lotus_log_callback_t callback);
 
 /**
- * @brief Bật/tắt tính năng tự động khôi phục từ tiếng Anh.
+ * @brief Enables or disables automatic English word restoration.
+ * @param engine The engine instance.
+ * @param enabled True to enable, false to disable.
  */
 void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled);
 

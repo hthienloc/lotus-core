@@ -1,21 +1,11 @@
 #include "lotus_engine/parser.h"
-
 #include "lotus_engine/unicode.h"
 #include "lotus_engine/validator.h"
+#include "lotus_engine/constants.h"
 
 #include <algorithm>
-#include <unordered_set>
 
 namespace lotus_engine {
-
-// Helper for UTF conversion
-std::u32string SyllableParser::to_u32(const std::string& s) {
-    return unicode::to_utf32(s);
-}
-
-std::string SyllableParser::from_u32(const std::u32string& s) {
-    return unicode::to_utf8(s);
-}
 
 bool SyllableParser::is_vowel(char32_t c) {
     char32_t low = unicode::to_lower(c);
@@ -28,91 +18,74 @@ bool SyllableParser::is_vowel(char32_t c) {
            (c >= 0x0300 && c <= 0x036F); // Combining Marks
 }
 
-Syllable SyllableParser::parse(const std::string& raw) {
+Syllable SyllableParser::parse(const std::u32string& input) {
     Syllable s;
-    std::u32string input = to_u32(raw);
-    if (input.empty())
-        return s;
+    if (input.empty()) return s;
 
-    size_t i = 0;
     size_t n = input.size();
 
     // 1. Find Initial (Longest match for known Vietnamese initials)
-    size_t init_len = Validator::find_longest_initial(input, i);
-    if (init_len > 0) {
-        s.initial = from_u32(input.substr(i, init_len));
-        i += init_len;
-    }
-
-    // Special Case: "q" as initial
-    std::string lower_initial = unicode::to_lower(s.initial);
-    if (lower_initial == "qu") {
-        s.initial = s.initial.substr(0, s.initial.size() - 1);  // "q" or "Q"
-        s.glide = 'u';
-    } else if (lower_initial == "gi") {
+    size_t initial_len = Validator::find_longest_initial(input, 0);
+    if (initial_len > 0) {
+        s.initial = input.substr(0, initial_len);
         // Vietnamese rule for 'gi':
         // 1. If followed by another vowel (e.g., 'gia', 'giáo'), 'gi' is the initial.
-        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is
-        // vowel.
-        bool followed_by_vowel = (i < n && is_vowel(input[i]));
-        if (!followed_by_vowel) {
-            s.initial = s.initial.substr(0, s.initial.size() - 1);  // "g"
-            i--;  // Put 'i' back to be parsed as the vowel nucleus
+        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is vowel.
+        if (s.initial == U"gi" || s.initial == U"Gi") {
+            if (input.size() == 2 || !is_vowel(input[2])) {
+                s.initial = s.initial.substr(0, 1);
+                initial_len = 1;
+            }
         }
     }
 
+    size_t pos = initial_len;
+    if (pos >= n) return s;
+
     // 2. Glide
-    if (i < n && !s.glide.has_value()) {
-        char32_t c = input[i];
-        char32_t lower_c = unicode::to_lower(c);
-        if (i + 1 < n && is_vowel(input[i + 1])) {
-            char32_t next_v = unicode::to_lower(unicode::strip_tone(input[i + 1]));
-            bool should_be_glide = false;
-
-            if (lower_c == 'o') {
-                // 'o' is glide only in: oa, oe, oă
-                if (next_v == 'a' || next_v == 'e' || next_v == U'ă') {
-                    should_be_glide = true;
-                }
-            } else if (lower_c == 'u') {
-                // 'u' is glide only in: uâ, uê, uơ, uy
-                // Note: 'ua', 'uô', 'ui', 'ưu' are nucleus diphthongs (except for 'q' which is
-                // handled)
-                if (next_v == U'â' || next_v == U'ê' || next_v == U'ơ' || next_v == 'y') {
-                    should_be_glide = true;
-                }
-            }
-
-            if (should_be_glide) {
-                s.glide = (char)lower_c;
-                i++;
+    bool has_glide = false;
+    char32_t first_char = unicode::to_lower(input[pos]);
+    
+    if (pos + 1 < n) {
+        char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
+        if (first_char == 'o') {
+            if (next_char == 'a' || next_char == 'e' || next_char == U'ă') has_glide = true;
+        } else if (first_char == 'u') {
+            bool is_qu = (s.initial == U"q" || s.initial == U"Q");
+            if (is_qu) {
+                if (next_char == 'a' || next_char == 'e' || next_char == 'i' || 
+                    next_char == U'â' || next_char == U'ê' || next_char == 'o' ||
+                    next_char == U'ô' || next_char == U'ơ' || next_char == 'u' ||
+                    next_char == U'ư' || next_char == 'y') has_glide = true;
+            } else {
+                if (next_char == U'ê' || next_char == 'y' || 
+                    next_char == U'â' || next_char == U'ơ' || next_char == U'ô') has_glide = true;
             }
         }
+    }
+
+    if (has_glide) {
+        s.glide = first_char;
+        pos++;
     }
 
     // 3. Vowel Nucleus
-    size_t vowel_start = i;
-    while (i < n && is_vowel(input[i])) {
-        // Hoist tone from precomposed characters
+    while (pos < n && is_vowel(input[pos])) {
+        // Collect pre-composed tone if any
         if (s.tone == Tone::NONE) {
-            Tone t = unicode::get_tone(input[i]);
-            if (t != Tone::NONE) {
-                s.tone = t;
-                input[i] = unicode::strip_tone(input[i]);
-            }
+            Tone t = unicode::get_tone(input[pos]);
+            if (t != Tone::NONE) s.tone = t;
         }
-        i++;
-    }
-    if (i > vowel_start) {
-        s.vowel = from_u32(input.substr(vowel_start, i - vowel_start));
+        s.vowel += unicode::strip_tone(input[pos]);
+        pos++;
     }
 
-    // 4. Final
-    if (i < n) {
-        s.final_c = from_u32(input.substr(i));
+    // 4. Final Coda
+    if (pos < n) {
+        s.final_c = input.substr(pos);
     }
 
     return s;
 }
 
-}  // namespace lotus_engine
+} // namespace lotus_engine

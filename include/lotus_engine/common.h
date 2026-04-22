@@ -5,37 +5,37 @@
 namespace lotus_engine {
 
 /**
- * @brief Engine trung tâm điều phối việc gõ tiếng Việt.
+ * @brief Vietnamese input method types.
  */
 enum class InputMethod : uint8_t { TELEX, VNI };
 
 /**
- * @brief Dấu thanh trong tiếng Việt.
+ * @brief Vietnamese tone marks.
  */
 enum class Tone : uint8_t {
-    NONE = 0,  // Ngang
-    ACUTE,     // Sắc
-    GRAVE,     // Huyền
-    HOOK,      // Hỏi
-    TILDE,     // Ngã
-    DOT        // Nặng
+    NONE = 0,  // Ngang (No mark)
+    ACUTE,     // Sắc (Rising)
+    GRAVE,     // Huyền (Falling)
+    HOOK,      // Hỏi (Dipping-rising)
+    TILDE,     // Ngã (Glottalized rising)
+    DOT        // Nặng (Low-dropping)
 };
 
 /**
- * @brief Kiểu bỏ dấu tiếng Việt (mới/cũ).
+ * @brief Vietnamese tone placement style (Old vs. New).
  */
 enum class ToneStyle : uint8_t {
-    OLD,  // hòa, họa (kiểu cũ)
-    NEW   // hoà, hoạ (kiểu mới, mặc định)
+    OLD,  // e.g., hòa, họa
+    NEW   // e.g., hoà, hoạ (Modern standard, default)
 };
 
 /**
- * @brief Tùy chọn xử lý phím 'w' tự do (Telex).
+ * @brief Options for handling standalone 'w' in TELEX.
  */
 enum class FreeWOption : uint8_t {
     OFF,        // w -> w
-    NON_START,  // w -> ư (nếu không phải ký tự đầu tiên)
-    ALWAYS      // w -> ư (ở mọi nơi)
+    NON_START,  // w -> ư (unless it's the first character)
+    ALWAYS      // w -> ư (everywhere)
 };
 
 }  // namespace lotus_engine
