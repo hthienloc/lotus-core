@@ -35,6 +35,8 @@ void test_engine_flexible_telex();
 void test_capi_run_all();
 void test_capi_integration();
 
+void test_engine_smart_typing();
+
 int main() {
     std::cout << "Running Vietnamese Engine Tests..." << std::endl;
 
@@ -68,6 +70,7 @@ int main() {
     test_engine_telex_free_w();
     test_engine_manual_hook_keys();
     test_engine_flexible_telex();
+    test_engine_smart_typing();
 
     // Run C-API Tests
     test_capi_run_all();

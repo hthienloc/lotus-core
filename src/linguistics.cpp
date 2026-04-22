@@ -14,7 +14,7 @@ const std::vector<std::string_view> ENGLISH_CLUSTERS = {
 };
 
 const std::vector<std::string_view> INVALID_FINALS = {
-    "b", "d", "g", "k", "l", "r", "s", "v", "x", "z"
+    "b", "d", "f", "g", "j", "k", "l", "r", "s", "v", "x", "z"
 };
 
 // Common English words that are short and conflict with TELEX markers

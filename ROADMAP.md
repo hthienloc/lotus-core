@@ -30,6 +30,11 @@ Mục tiêu: Đưa Lotus Engine lên tầm cao mới về độ thông minh và 
 - [x] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
 - [ ] **Fcitx5 Surrounding Text**: Tích hợp sâu với API surrounding-text của Fcitx5 để đồng bộ hóa trạng thái gõ và xóa.
 
+### 2. Smart Typing Features (Experimental)
+
+- [ ] **Double Space to Period**: Gõ dấu cách 2 lần sẽ tự động chuyển thành dấu chấm và dấu cách.
+- [ ] **Auto Capitalize**: Tự động viết hoa sau dấu câu kết thúc câu (`.`, `!`, `?`) hoặc xuống dòng.
+
 ### 2. Rigorous Validation & Maintenance
 
 - [ ] **Enhanced Validation**: Cải thiện `Validator` để ngăn chặn gõ các tổ hợp phím vô lý (ví dụ: `qqu`, `ww`) mà không cần làm quá phức tạp kiến trúc.

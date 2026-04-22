@@ -29,6 +29,15 @@ class Engine {
     void set_auto_restore(bool enabled) { this->auto_restore = enabled; }
     bool get_auto_restore() const { return auto_restore; }
 
+    void set_double_space_to_period(bool enabled) { this->double_space_to_period = enabled; }
+    bool get_double_space_to_period() const { return double_space_to_period; }
+
+    void set_auto_capitalize(bool enabled) { this->auto_capitalize = enabled; }
+    bool get_auto_capitalize() const { return auto_capitalize; }
+
+    void set_at_sentence_start(bool enabled) { this->at_sentence_start = enabled; }
+    bool get_at_sentence_start() const { return at_sentence_start; }
+
     /**
      * @brief Xử lý một phím gõ mới.
      * @param key Mã Unicode (UTF-32) của phím gõ.
@@ -69,11 +78,14 @@ class Engine {
     std::map<std::string, std::string> shortcuts;
     WordHistory word_history;
     char32_t last_boundary_key = 0;
+    bool at_sentence_start = true;
     InputMethod method;
     ToneStyle tone_style = ToneStyle::NEW;
     FreeWOption free_w = FreeWOption::NON_START;
     bool std_uo = false;
     bool auto_restore = true;
+    bool double_space_to_period = false;
+    bool auto_capitalize = false;
 
     // Internal English detection using rule-based linguistics
     bool is_english_word(const std::string& word) const;

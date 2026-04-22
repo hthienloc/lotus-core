@@ -7,8 +7,13 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cctype>
 
 namespace lotus_engine {
+
+static bool is_sentence_ending(char32_t c) {
+    return c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r';
+}
 
 std::string EngineResult::to_string() const {
     std::u32string u32;
@@ -17,7 +22,13 @@ std::string EngineResult::to_string() const {
     return unicode::to_utf8(u32);
 }
 
-Engine::Engine() : last_modifier_key(0), last_boundary_key(0), method(InputMethod::TELEX) {}
+Engine::Engine()
+    : last_modifier_key(0),
+      last_boundary_key(0),
+      at_sentence_start(true),
+      method(InputMethod::TELEX),
+      double_space_to_period(false),
+      auto_capitalize(false) {}
 
 void Engine::add_shortcut(const std::string& trigger, const std::string& replacement) {
     shortcuts[trigger] = replacement;
@@ -32,9 +43,25 @@ void Engine::reset() {
 
 void Engine::rebuild_from_text(const std::string& text) {
     reset();
+    at_sentence_start = true;
     word_history.clear();
     if (text.empty())
         return;
+    
+    std::u32string full_text = unicode::to_utf32(text);
+    if (!full_text.empty()) {
+        char32_t last_c = full_text.back();
+        if (is_sentence_ending(last_c)) at_sentence_start = true;
+        else if (last_c != ' ' && last_c != '\t') at_sentence_start = false;
+        // If last is space, it keeps the previous state? 
+        // Actually for simplicity, if last is space, check before that.
+        else {
+             for (int i = (int)full_text.size() - 1; i >= 0; --i) {
+                 if (is_sentence_ending(full_text[i])) { at_sentence_start = true; break; }
+                 if (full_text[i] != ' ' && full_text[i] != '\t') { at_sentence_start = false; break; }
+             }
+        }
+    }
 
     std::vector<std::string> words;
     std::string current_word;
@@ -58,13 +85,11 @@ void Engine::rebuild_from_text(const std::string& text) {
     if (words.empty())
         return;
 
-    // Last word becomes the active buffer
     std::string last_word = words.back();
     words.pop_back();
 
     for (const auto& w : words) {
         word_history.push(unicode::to_utf32(w));
-        // If the word we just pushed ends in a boundary, we should set last_boundary_key
         std::u32string w32 = unicode::to_utf32(w);
         if (!w32.empty()) {
             char32_t last_c = w32.back();
@@ -73,19 +98,18 @@ void Engine::rebuild_from_text(const std::string& text) {
             if (is_boundary) {
                 last_boundary_key = last_c;
             } else {
-                last_boundary_key = 0; // Word doesn't end in boundary
+                last_boundary_key = 0;
             }
         }
     }
 
-    // Process last word
     Syllable s = SyllableParser::parse(last_word);
     std::vector<char32_t> keys = s.to_keys(method);
     buffer.clear();
     for (char32_t k : keys)
         buffer.push_back(k);
     last_committed_text = unicode::to_utf32(last_word);
-    // If last_word is a boundary, set it
+    
     std::u32string last32 = unicode::to_utf32(last_word);
     if (!last32.empty()) {
         char32_t last_c = last32.back();
@@ -93,7 +117,6 @@ void Engine::rebuild_from_text(const std::string& text) {
                             (last_c < 128 && (ispunct((int)last_c) || last_c == '\t')));
         if (is_boundary) {
             last_boundary_key = last_c;
-            // If it's a boundary, the buffer should be empty and the word pushed to history
             word_history.push(last32);
             buffer.clear();
             last_committed_text.clear();
@@ -103,49 +126,39 @@ void Engine::rebuild_from_text(const std::string& text) {
     }
 }
 
+
 EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     char32_t key = original_key;
     if (std_uo) {
-        if (key == '[')
-            key = U'ư';
-        else if (key == ']')
-            key = U'ơ';
-        else if (key == '{')
-            key = U'Ư';
-        else if (key == '}')
-            key = U'Ơ';
+        if (key == '[') key = U'ư';
+        else if (key == ']') key = U'ơ';
+        else if (key == '{') key = U'Ư';
+        else if (key == '}') key = U'Ơ';
     }
 
     if (key == 8 || key == 127) {
         if (!buffer.empty()) {
             std::string word = unicode::to_utf8(last_committed_text);
             Syllable s = SyllableParser::parse(word);
-
             if (Validator::is_valid(s)) {
                 s.remove_last_char();
                 std::vector<char32_t> keys = s.to_keys(method);
                 buffer.clear();
-                for (char32_t k : keys)
-                    buffer.push_back(k);
+                for (char32_t k : keys) buffer.push_back(k);
             } else {
                 buffer.pop_back();
             }
-
-            if (buffer.empty()) {
-                return make_transformation_result(U"");
-            }
+            if (buffer.empty()) return make_transformation_result(U"");
             return process_key(0, mods);
         } else {
-            // Buffer is empty, try to recover from history (cross-boundary backspace)
             auto recovered = word_history.pop();
-            last_boundary_key = 0; // Clear boundary since we are deleting it
+            last_boundary_key = 0;
             if (!recovered.empty()) {
                 buffer = recovered;
                 (void)process_key(0, mods);
-                
                 EngineResult res{};
                 res.action = 1;
-                res.backspace = 1; // Delete the boundary character
+                res.backspace = 1;
                 res.count = 0;
                 return res;
             }
@@ -153,43 +166,52 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         return EngineResult{};
     }
 
-    // 2. Word Boundary
-    bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
-                        (key < 128 && (ispunct((int)key) || key == '\t')));
-    if (is_boundary) {
-        if (!buffer.empty())
-            word_history.push(buffer);
+    if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
+        EngineResult res{};
+        res.action = 1;
+        res.backspace = 1;
+        res.count = 2;
+        res.chars[0] = '.';
+        res.chars[1] = ' ';
+        last_committed_text = U". ";
+        last_boundary_key = ' ';
+        at_sentence_start = true;
+        return res;
+    }
 
+    if (key != 0 && buffer.empty()) {
+        last_committed_text.clear();
+    }
+
+    bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
+                         (key < 128 && (ispunct((int)key) || key == '\t')));
+    if (is_boundary) {
+        if (!buffer.empty()) word_history.push(buffer);
         std::string raw_word = unicode::to_utf8(buffer);
         if (is_english_word(raw_word)) {
             std::u32string output = buffer;
             output.push_back(key);
             EngineResult res = make_transformation_result(output);
-            res.action = 2;  // Restore
+            res.action = 2;
             reset();
             last_boundary_key = key;
             return res;
         }
-
-        // Shortcuts
         std::string trigger_raw = unicode::to_utf8(buffer);
         std::string trigger_lower = unicode::to_lower(trigger_raw);
         if (shortcuts.count(trigger_lower)) {
             std::string replacement = shortcuts[trigger_lower];
-            bool is_all_upper =
-                std::all_of(trigger_raw.begin(), trigger_raw.end(),
-                            [](unsigned char c) { return !isalpha(c) || isupper(c); });
+            bool is_all_upper = std::all_of(trigger_raw.begin(), trigger_raw.end(),
+                                            [](unsigned char c) { return !isalpha(c) || isupper(c); });
             bool is_first_upper = isupper((unsigned char)trigger_raw[0]);
             if (is_all_upper) {
-                std::u32string u32 = unicode::to_utf32(replacement);
-                for (auto& c : u32)
-                    c = unicode::to_upper(c);
-                replacement = unicode::to_utf8(u32);
+                std::u32string temp_u32 = unicode::to_utf32(replacement);
+                for (auto& c : temp_u32) c = unicode::to_upper(c);
+                replacement = unicode::to_utf8(temp_u32);
             } else if (is_first_upper) {
-                std::u32string u32 = unicode::to_utf32(replacement);
-                if (!u32.empty())
-                    u32[0] = unicode::to_upper(u32[0]);
-                replacement = unicode::to_utf8(u32);
+                std::u32string temp_u32 = unicode::to_utf32(replacement);
+                if (!temp_u32.empty()) temp_u32[0] = unicode::to_upper(temp_u32[0]);
+                replacement = unicode::to_utf8(temp_u32);
             }
             std::u32string repl_u32 = unicode::to_utf32(replacement);
             repl_u32.push_back(key);
@@ -200,24 +222,51 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         }
 
         EngineResult res{};
-        res.action = 0;
-        res.count = 1;
-        res.chars[0] = key;
-        res.backspace = 0;
+        res.action = 0; res.count = 1; res.chars[0] = key; res.backspace = 0;
         reset();
         last_boundary_key = key;
+        if (is_sentence_ending(key)) at_sentence_start = true;
+        else if (key != ' ' && key != '\t') at_sentence_start = false;
         return res;
     }
 
-    // 3. Normal Typing
-    if (key != 0)
+    if (auto_capitalize && at_sentence_start && key != 0 && buffer.empty()) {
+        char32_t upper = unicode::to_upper(key);
+        if (upper != key) key = upper;
+    }
+
+    // Triple-tap escape logic at the very beginning of process_key
+    if (key != 0 && key == last_modifier_key && !buffer.empty()) {
+        char32_t lk = unicode::to_lower(key);
+        bool revertible = false;
+        if (lk == 'a' || lk == 'e' || lk == 'o' || lk == 'd' || 
+            lk == 's' || lk == 'f' || lk == 'r' || lk == 'x' || lk == 'j') {
+            revertible = true; // Any modifier key double-tapped/triple-tapped should revert
+        }
+
+        if (revertible) {
+            buffer.push_back(key);
+            last_modifier_key = 0;
+            at_sentence_start = false;
+            last_boundary_key = 0;
+            // Return literal keys
+            std::u32string out = buffer;
+            if (!out.empty()) out.pop_back(); // The escape key removes ONE character from result (triple hit -> 2 chars)
+            // Wait, standard behavior: aa -> â. aaa -> aa.
+            // If buffer is 'aaa', and we return 'aa', it matches.
+            return make_transformation_result(out);
+        }
+    }
+
+    if (key != 0) {
         buffer.push_back(key);
+        at_sentence_start = false;
+    }
     std::string current_str = unicode::to_utf8(buffer);
     Tone tone_state = Tone::NONE;
     bool key_consumed = (key == 0);
 
-    if (key != 0)
-        last_boundary_key = 0;
+    if (key != 0) last_boundary_key = 0;
 
     if (method == InputMethod::TELEX) {
         apply_telex_modifiers(current_str, key, key_consumed, tone_state);
@@ -225,31 +274,23 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         apply_vni_modifiers(current_str, key, key_consumed, tone_state);
     }
 
-    if (!key_consumed)
-        last_modifier_key = 0;
+    if (!key_consumed) last_modifier_key = 0;
 
     current_str = unicode::normalize_nfc(current_str);
     Syllable s = SyllableParser::parse(current_str);
-    if (tone_state != Tone::NONE)
-        s.tone = tone_state;
+    if (tone_state != Tone::NONE) s.tone = tone_state;
 
     std::string final_v_word = s.to_string(tone_style);
     std::string raw_word = unicode::to_utf8(buffer);
 
-    // Stage 7: Real-time English Auto-Restore
-    // Priority 1: If raw input matches English whitelist, ALWAYS restore.
     bool whitelist_match = Linguistics::is_on_whitelist(raw_word);
-    
     bool is_valid_vn = Validator::is_valid(s);
     bool is_english_pattern = Linguistics::is_likely_english(raw_word);
     bool invalid_initial = !s.initial.empty() && !Validator::is_valid_initial(s.initial);
-    bool malformed_syllable =
-        s.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
+    bool malformed_syllable = s.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
 
     if (auto_restore) {
-        if (whitelist_match) {
-            return make_transformation_result(buffer);
-        }
+        if (whitelist_match) return make_transformation_result(buffer);
         if (!is_valid_vn && (is_english_pattern || invalid_initial || malformed_syllable)) {
             return make_transformation_result(buffer);
         }
@@ -260,242 +301,186 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
-    const std::string raw_str = unicode::to_utf8(buffer);
+    const std::u32string raw_u32 = buffer;
+    const std::string raw_str = unicode::to_utf8(raw_u32);
 
-    // English Compatibility: If word matches English patterns or whitelist, 
-    // bypass transformations.
     if (Linguistics::is_definite_english(raw_str)) {
+        current_str = raw_str;
         return;
     }
 
-    // Leading-W Guard (Specific to Free-W logic)
-    bool is_start_w = (raw_str.size() > 0 && (raw_str[0] == 'w' || raw_str[0] == 'W'));
+    bool is_start_w = (raw_u32.size() > 0 && unicode::to_lower(raw_u32[0]) == 'w');
     if (is_start_w && free_w != FreeWOption::ALWAYS) {
+        current_str = raw_str;
         return;
     }
 
-    current_str = raw_str;
+    std::u32string u32 = raw_u32;
+    char32_t lk = unicode::to_lower(key);
+    std::vector<bool> to_strip(u32.size(), false);
 
-    // Stage 0: Revert/Escape Logic (aaa -> aa, ddd -> dd, etc.)
-    if (!key_consumed && key != 0 && (char32_t)key == (char32_t)last_modifier_key) {
-        std::string pat;
-        if (key == 'a') pat = "aa";
-        else if (key == 'e') pat = "ee";
-        else if (key == 'o') pat = "oo";
-        else if (key == 'd') pat = "dd";
-
-        if (!pat.empty() && current_str.find(pat + (char)key) != std::string::npos) {
-            unicode::replace_all(current_str, pat + (char)key, pat);
-            last_modifier_key = 0;
-            key_consumed = true;
+    auto find_ci = [&](char32_t target) {
+        char32_t lower = unicode::to_lower(target);
+        std::vector<size_t> indices;
+        for (size_t i = 0; i < u32.size(); ++i) {
+            if (unicode::to_lower(u32[i]) == lower) indices.push_back(i);
         }
-    }
+        return indices;
+    };
 
-    // Stage 1: Standard Consonants (dd -> đ)
-    // Supports both adjacent 'dd' and floating 'd...d' (e.g. 'dosd' -> 'đó')
+    // Stage 1: dd -> đ
     if (!key_consumed || key == 0) {
-        size_t first_d = current_str.find('d');
-        size_t last_d = current_str.rfind('d');
-        bool has_two_d = (first_d != std::string::npos && last_d != std::string::npos && first_d != last_d);
-
-        if (has_two_d || current_str.find("dd") != std::string::npos) {
-            if (has_two_d) {
-                current_str.erase(last_d, 1);
-                current_str.replace(first_d, 1, "đ");
-                if (key == 'd') {
-                    last_modifier_key = 'd';
-                    key_consumed = true;
-                }
-            } else {
-                unicode::replace_all(current_str, "dd", "đ");
-                if (key == 'd') {
-                    last_modifier_key = 'd';
-                    key_consumed = true;
-                }
+        auto idxs = find_ci('d');
+        if (idxs.size() >= 2) {
+            size_t first = idxs[0], last = idxs.back();
+            bool is_upper = (u32[first] == 'D');
+            to_strip[last] = true;
+            u32[first] = is_upper ? U'Đ' : U'đ';
+            if (lk == 'd' && key != 0) {
+                last_modifier_key = key;
+                key_consumed = true;
             }
         }
     }
 
     // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
-    // Supports non-adjacent typing e.g. 'viecj' + 'e' -> 'việc'
     if (!key_consumed || key == 0) {
-        auto try_flexible = [&](char base) {
-            size_t first_pos = current_str.find(base);
-            size_t last_pos = current_str.rfind(base);
-            if (first_pos != std::string::npos && last_pos != std::string::npos && first_pos != last_pos) {
-                std::string target;
-                if (base == 'a') target = "â";
-                else if (base == 'e') target = "ê";
-                else if (base == 'o') target = "ô";
-                
-                current_str.erase(last_pos, 1);
-                current_str.replace(first_pos, 1, target);
-                if (key == (char32_t)base) {
-                    last_modifier_key = base;
+        auto try_flex = [&](char32_t base, char32_t target_l, char32_t target_u) {
+            auto idxs = find_ci(base);
+            if (idxs.size() >= 2) {
+                size_t first = idxs[0], last = idxs.back();
+                bool is_upper = (u32[first] == unicode::to_upper(base));
+                to_strip[last] = true;
+                u32[first] = is_upper ? target_u : target_l;
+                if (lk == base && key != 0) {
+                    last_modifier_key = key;
                     key_consumed = true;
                 }
                 return true;
             }
             return false;
         };
+        try_flex('a', U'â', U'Â');
+        try_flex('e', U'ê', U'Ê');
+        try_flex('o', U'ô', U'Ô');
+    }
 
-        for (char b : {'a', 'e', 'o'}) {
-            try_flexible(b);
+    // Stage 3: Combined Hooks (uo, uaw, aw, ow, uw)
+    size_t u_pos = std::u32string::npos, o_pos = std::u32string::npos, a_pos = std::u32string::npos;
+    std::vector<size_t> w_indices;
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t l = unicode::to_lower(u32[i]);
+        if (l == 'u' && u_pos == std::u32string::npos) u_pos = i;
+        if (l == 'o' && o_pos == std::u32string::npos) o_pos = i;
+        if (l == 'a' && a_pos == std::u32string::npos) a_pos = i;
+        if (l == 'w') w_indices.push_back(i);
+    }
+
+    if (!w_indices.empty()) {
+        bool hooked = false;
+        if (u_pos != std::u32string::npos && o_pos != std::u32string::npos) {
+            u32[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
+            u32[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
+            hooked = true;
+        } else if (u_pos != std::u32string::npos && a_pos != std::u32string::npos) {
+            u32[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
+            hooked = true;
+        } else {
+            if (u_pos != std::u32string::npos) { u32[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư'; hooked = true; }
+            if (o_pos != std::u32string::npos) { u32[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ'; hooked = true; }
+            if (a_pos != std::u32string::npos) { u32[a_pos] = (u32[a_pos] == 'A') ? U'Ă' : U'ă'; hooked = true; }
         }
-    }
-
-    // Stage 3: Standard Vowel Modifiers (adjacent)
-    if (!key_consumed || key == 0) {
-        auto handle_v_mod = [&](const std::string& pat, const std::string& rep, char m) {
-            if (current_str.find(pat) != std::string::npos) {
-                unicode::replace_all(current_str, pat, rep);
-                if (key == (char32_t)m) {
-                    last_modifier_key = (char)m;
-                    key_consumed = true;
-                }
-            }
-        };
-        handle_v_mod("aa", "â", 'a');
-        handle_v_mod("ee", "ê", 'e');
-        handle_v_mod("oo", "ô", 'o');
-    }
-
-    // Stage 3: Explicit Combined Hooks (uw, ow, aw, etc)
-    // These are standard TELEX and should always work if method is TELEX.
-    if (raw_str.find('w') != std::string::npos) {
-        if (current_str.find("uo") != std::string::npos)
-            unicode::replace_all(current_str, "uo", "ươ");
-        if (current_str.find("uaw") != std::string::npos)
-            unicode::replace_all(current_str, "uaw", "ưa");
-        if (current_str.find("aw") != std::string::npos)
-            unicode::replace_all(current_str, "aw", "ă");
-        if (current_str.find("ow") != std::string::npos)
-            unicode::replace_all(current_str, "ow", "ơ");
-        if (current_str.find("uw") != std::string::npos)
-            unicode::replace_all(current_str, "uw", "ư");
         
-        // Note: we don't set key_consumed yet, Stage 4/5/stripping will handle it.
-    }
-
-    // Stage 4: Intelligent/Free Hook (u/o/a + w -> ư/ơ/ă or standalone w -> ư)
-    if (raw_str.find('w') != std::string::npos) {
-        bool tx = false;
-        bool has_pre = (current_str.find("ư") != std::string::npos ||
-                        current_str.find("ơ") != std::string::npos ||
-                        current_str.find("ă") != std::string::npos);
-
-        bool is_start = (raw_str.size() > 0 && raw_str[0] == 'w');
-        // Only allowed to hook vowels if NOT at start OR if explicitly ALWAYS.
-        bool allowed_to_hook = (free_w == FreeWOption::ALWAYS) || !is_start;
-
-        // 4.1. Intelligent Vowel Hooking
-        if (allowed_to_hook && !has_pre) {
-            if (current_str.find('u') != std::string::npos) {
-                unicode::replace_all(current_str, "u", "ư");
-                tx = true;
-            }
-            if (current_str.find('o') != std::string::npos) {
-                unicode::replace_all(current_str, "o", "ơ");
-                tx = true;
-            }
-            if (!tx && current_str.find('a') != std::string::npos) {
-                unicode::replace_all(current_str, "a", "ă");
-                tx = true;
-            }
-        }
-
-        // 4.2. Standalone/Fallback W -> ư (Gated by FreeW settings)
-        bool allowed_standalone = (free_w == FreeWOption::ALWAYS) || 
-                                  (free_w == FreeWOption::NON_START && !is_start);
-        
-        if (!tx && !has_pre && allowed_standalone) {
-            if (current_str == "w" || current_str.find('w') != std::string::npos) {
-                unicode::replace_all(current_str, "w", "ư");
-                tx = true;
-            }
-        }
-
-        if (!key_consumed && key == 'w' && (tx || has_pre))
-            key_consumed = true;
-    }
-
-    // Tones
-    size_t init_len = Validator::find_longest_initial(unicode::to_utf32(raw_str), 0);
-
-    const std::string TONE_KEYS = "sfrxj", REMOVE_KEYS = "z0";
-    for (int i = (int)raw_str.length() - 1; i >= (int)init_len; --i) {
-        char k = raw_str[i];
-        if (TONE_KEYS.find(k) != std::string::npos || REMOVE_KEYS.find(k) != std::string::npos) {
-            static const std::map<char, Tone> tone_map = {{'s', Tone::ACUTE},
-                                                          {'f', Tone::GRAVE},
-                                                          {'r', Tone::HOOK},
-                                                          {'x', Tone::TILDE},
-                                                          {'j', Tone::DOT}};
-            tone_state = tone_map.count(k) ? tone_map.at(k) : Tone::NONE;
-            if (!key_consumed && (char32_t)k == key && last_modifier_key == key) {
-                tone_state = Tone::NONE;
-                last_modifier_key = 0;
-                key_consumed = true;
-                unicode::replace_all(current_str, std::string(2, (char)key),
-                                     std::string(1, (char)key));
-            } else if (!key_consumed && (char32_t)k == key) {
+        if (hooked) {
+            for (size_t idx : w_indices) if (idx > 0) to_strip[idx] = true;
+            if (lk == 'w' && key != 0) {
                 last_modifier_key = key;
                 key_consumed = true;
             }
-            break;
         }
     }
 
-    // Stripping
-    bool should_strip =
-        (tone_state != Tone::NONE || raw_str.find_last_of("z0") != std::string::npos ||
-         (raw_str.size() > 1 && raw_str.find('w') != std::string::npos));
-    if (should_strip) {
-        auto is_mod_key = [&](unsigned char c) {
-            if (TONE_KEYS.find(c) != std::string::npos || REMOVE_KEYS.find(c) != std::string::npos)
-                return true;
-            if (c == 'w') {
-                // Strip 'w' only if it actually caused a transformation in Stage 3 or 4.
-                // We check if current_str has hooks or if 'key' was consumed.
-                bool has_hooks = (current_str.find("ư") != std::string::npos ||
-                                  current_str.find("ơ") != std::string::npos ||
-                                  current_str.find("ă") != std::string::npos);
-                return has_hooks;
+    // Stage 4: Standalone W -> ư
+    if (!key_consumed && lk == 'w' && free_w != FreeWOption::OFF) {
+        bool can_transform = (free_w == FreeWOption::ALWAYS) || (u32.size() > 1);
+        if (can_transform) {
+            bool has_v = false;
+            for (auto c : u32) if (SyllableParser::is_vowel(c) && unicode::to_lower(c) != 'w') has_v = true;
+            if (!has_v) {
+                for (size_t i = 0; i < u32.size(); ++i) {
+                    if (unicode::to_lower(u32[i]) == 'w') {
+                        u32[i] = (u32[i] == 'W') ? U'Ư' : U'ư';
+                        key_consumed = true;
+                        last_modifier_key = key;
+                        break;
+                    }
+                }
             }
-            return false;
-        };
-        std::string stripped = "";
-        std::u32string c32 = unicode::to_utf32(current_str);
-        for (size_t i = 0; i < c32.size(); ++i) {
-            // Protection: Never strip at index 0 if it's a tone marker (e.g. 'for' -> 'f' is kept)
-            if (i == 0 && is_mod_key((unsigned char)c32[i])) {
-                stripped += unicode::to_utf8(c32[i]);
-                continue;
-            }
-            if (i >= init_len && c32[i] < 128 && is_mod_key((unsigned char)c32[i]))
-                continue;
-            stripped += unicode::to_utf8(c32[i]);
         }
-        current_str = stripped;
     }
+
+    // Stage 5: Tone Marks
+    const std::string TONE_KEYS = "sfrxj", REMOVE_KEYS = "z0";
+    size_t ir_len = Validator::find_longest_initial(raw_u32, 0);
+    std::vector<size_t> tone_mod_indices;
+    for (size_t i = 1; i < u32.size(); ++i) {
+        if (i < ir_len) continue;
+        char32_t c = unicode::to_lower(u32[i]);
+        if (TONE_KEYS.find((char)c) != std::string::npos || REMOVE_KEYS.find((char)c) != std::string::npos) {
+            tone_mod_indices.push_back(i);
+        }
+    }
+
+    if (!tone_mod_indices.empty()) {
+        size_t last_idx = tone_mod_indices.back();
+        char32_t last_c = unicode::to_lower(u32[last_idx]);
+        
+        bool is_escape = false;
+        if (key != 0 && !key_consumed && tone_mod_indices.size() >= 2) {
+            size_t prev_idx = tone_mod_indices[tone_mod_indices.size() - 2];
+            char32_t prev_c = unicode::to_lower(u32[prev_idx]);
+            if (lk == prev_c) is_escape = true;
+        }
+
+        if (is_escape) {
+            tone_state = Tone::NONE;
+            last_modifier_key = key;
+            key_consumed = true;
+            // Strip everything EXCEPT the escaping key
+            for (size_t i = 0; i < tone_mod_indices.size() - 1; ++i) {
+                to_strip[tone_mod_indices[i]] = true;
+            }
+        } else {
+            if (last_c == 's') tone_state = Tone::ACUTE;
+            else if (last_c == 'f') tone_state = Tone::GRAVE;
+            else if (last_c == 'r') tone_state = Tone::HOOK;
+            else if (last_c == 'x') tone_state = Tone::TILDE;
+            else if (last_c == 'j') tone_state = Tone::DOT;
+            else tone_state = Tone::NONE;
+            
+            for (size_t idx : tone_mod_indices) to_strip[idx] = true;
+        }
+    }
+
+    // Stage 6: Final Stripping execution
+    std::u32string final_u32;
+    for (size_t i = 0; i < u32.size(); ++i) {
+        if (!to_strip[i]) final_u32 += u32[i];
+    }
+    current_str = unicode::to_utf8(final_u32);
 }
 
 void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
-    
-    // English Compatibility
-    if (Linguistics::is_definite_english(raw_str)) {
-        return;
-    }
+    if (Linguistics::is_definite_english(raw_str)) return;
 
     bool has_mod = false;
     for (int i = 0; i < (int)raw_str.length(); ++i) {
         char k = raw_str[i];
         if (k >= '1' && k <= '9') {
             has_mod = true;
-            if (k >= '1' && k <= '5')
-                tone_state = static_cast<Tone>(k - '0');
+            if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
             if (k == '6') {
                 unicode::replace_all(current_str, "a", "â");
                 unicode::replace_all(current_str, "e", "ê");
@@ -503,10 +488,8 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
             } else if (k == '7') {
                 unicode::replace_all(current_str, "u", "ư");
                 unicode::replace_all(current_str, "o", "ơ");
-            } else if (k == '8')
-                unicode::replace_all(current_str, "a", "ă");
-            else if (k == '9')
-                unicode::replace_all(current_str, "d", "đ");
+            } else if (k == '8') unicode::replace_all(current_str, "a", "ă");
+            else if (k == '9') unicode::replace_all(current_str, "d", "đ");
             if ((size_t)i == raw_str.length() - 1 && key == (char32_t)k) {
                 last_modifier_key = key;
                 key_consumed = true;
@@ -527,33 +510,24 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
     result.action = 1;
     result.backspace = (uint8_t)last_committed_text.size();
     result.count = (uint8_t)std::min((size_t)32, final_u32.size());
-    for (int i = 0; i < result.count; i++)
-        result.chars[i] = final_u32[i];
+    for (int i = 0; i < result.count; i++) result.chars[i] = final_u32[i];
     last_committed_text = final_u32;
     return result;
 }
 
 bool Engine::is_english_word(const std::string& word) const {
-    if (Linguistics::is_on_whitelist(word))
-        return true;
-
-    // If it's valid Vietnamese after transformation, don't force English
+    if (Linguistics::is_on_whitelist(word)) return true;
     std::string transformed = word;
     Tone tone = Tone::NONE;
     bool consumed = false;
-    // Temporary engine-like apply (simplified)
     if (method == InputMethod::TELEX) {
         const_cast<Engine*>(this)->apply_telex_modifiers(transformed, 0, consumed, tone);
     } else {
         const_cast<Engine*>(this)->apply_vni_modifiers(transformed, 0, consumed, tone);
     }
     Syllable s = SyllableParser::parse(transformed);
-    if (tone != Tone::NONE)
-        s.tone = tone;
-    
-    if (Validator::is_valid(s))
-        return false;
-
+    if (tone != Tone::NONE) s.tone = tone;
+    if (Validator::is_valid(s)) return false;
     return Linguistics::is_likely_english(word);
 }
 
