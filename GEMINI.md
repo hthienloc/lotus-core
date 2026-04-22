@@ -13,6 +13,7 @@ This file defines the foundational constraints and operational standards for the
 - **Modularity is Non-Negotiable**: Keep the engine decomposed. The `Engine::process_key` function must remain a high-level orchestrator. New features (e.g., new smart typing rules) must be added as private helper methods, not directly into the main loop.
 - **Table-Driven Logic**: Vietnamese character transformations (casing, tones, NFC) MUST use the data-driven lookup tables in `include/lotus_engine/unicode.h`. Avoid re-introducing long `switch` statements or manual if-else chains for character mapping.
 - **Rule-Based Validation**: Linguistic rules in `Validator::is_valid` must be encapsulated in semantic helper methods (e.g., `check_front_vowel_affinity`).
+- **Determinism through Canonicalization**: The engine MUST maintain a deterministic state. Any valid Vietnamese syllable in the active buffer or history should be stored/reclaimed in its canonical form (via `Syllable::to_keys`). This ensures that backspacing and late-transformation behaviors are consistent regardless of the original raw input sequence (e.g., `ddoanj` vs `ddoajn`).
 
 ### 2. Engineering Standards
 
