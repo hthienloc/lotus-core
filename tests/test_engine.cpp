@@ -395,6 +395,8 @@ void test_engine_english_gating() {
     assert_typing(engine, "for", "for");
     assert_typing(engine, "what", "what");
     assert_typing(engine, "status", "status");
+    assert_typing(engine, "cs", "cs");
+    assert_typing(engine, "ngs", "ngs");
     
     std::cout << "  [PASS] Invalid Initial Gate (English protection)" << std::endl;
 }

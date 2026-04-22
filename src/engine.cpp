@@ -581,9 +581,21 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
             bool is_literal = false;
             if (!base_u32.empty() && current_key != 'z' && current_key != '0') {
                 char32_t last_base = unicode::to_lower(base_u32.back());
+                // If word ends in impossible final, marker is literal
                 if (last_base == 's' || last_base == 'r' || last_base == 'x' || last_base == 'f' || last_base == 'j' || last_base == 'w') {
                     is_literal = true;
                 }
+
+                // LINGUISTIC GATING: Tone markers MUST follow a vowel in Vietnamese.
+                // If the base word has no vowels, this marker must be literal.
+                bool has_vowel = false;
+                for (char32_t cp : base_u32) {
+                    if (SyllableParser::is_vowel(cp)) {
+                        has_vowel = true;
+                        break;
+                    }
+                }
+                if (!has_vowel) is_literal = true;
             }
 
             if (!is_literal) {
