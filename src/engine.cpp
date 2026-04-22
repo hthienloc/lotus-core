@@ -157,6 +157,9 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
                         (key < 128 && (ispunct((int)key) || key == '\t')));
     if (is_boundary) {
+        if (!buffer.empty())
+            word_history.push(buffer);
+
         std::string raw_word = unicode::to_utf8(buffer);
         if (is_english_word(raw_word)) {
             std::u32string output = buffer;
@@ -167,9 +170,6 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             last_boundary_key = key;
             return res;
         }
-
-        if (!buffer.empty())
-            word_history.push(buffer);
 
         // Shortcuts
         std::string trigger_raw = unicode::to_utf8(buffer);
