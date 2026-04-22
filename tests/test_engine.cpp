@@ -381,3 +381,20 @@ void test_engine_telex_escapes() {
     
     std::cout << "  [PASS] Telex tone escapes (mixxi, hasss)" << std::endl;
 }
+
+/**
+ * @brief Tests the 'Invalid Initial Gate' which prevents Vietnamese transformations 
+ * on words starting with non-Vietnamese consonant clusters (like 'qq', 'f', 'w').
+ */
+void test_engine_english_gating() {
+    Engine engine;
+    engine.set_auto_restore(true);
+    
+    // Invalid Vietnamese initials should remain raw
+    assert_typing(engine, "qquas", "qquas");
+    assert_typing(engine, "for", "for");
+    assert_typing(engine, "what", "what");
+    assert_typing(engine, "status", "status");
+    
+    std::cout << "  [PASS] Invalid Initial Gate (English protection)" << std::endl;
+}

@@ -225,7 +225,9 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         buffer.push_back(key);
         at_sentence_start = false;
     }
-    std::string current_str = unicode::to_utf8(buffer);
+
+    std::string raw_word = unicode::to_utf8(buffer);
+    std::string current_str = raw_word;
     Tone tone_state = Tone::NONE;
     bool key_consumed = (key == 0);
 
@@ -243,15 +245,33 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
     if (tone_state != Tone::NONE) s.tone = tone_state;
 
-    std::string final_v_word = s.to_string(tone_style);
-    std::string raw_word = unicode::to_utf8(buffer);
+    // THE GATE (Post-IM): Check if the transformation resulted in a valid Vietnamese initial.
+    // Strict Check: The entire prefix before the first vowel must be a valid Vietnamese initial.
+    bool has_valid_initial = true;
+    if (!current_str.empty()) {
+        std::u32string u32_curr = unicode::to_utf32(current_str);
+        size_t first_vowel = std::u32string::npos;
+        for (size_t i = 0; i < u32_curr.size(); ++i) {
+            if (SyllableParser::is_vowel(u32_curr[i])) {
+                first_vowel = i;
+                break;
+            }
+        }
+        std::u32string prefix = (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
+        if (!prefix.empty() && !Validator::is_valid_initial(prefix)) {
+            has_valid_initial = false;
+        }
+    }
+    
+    if (auto_restore && !has_valid_initial && !key_consumed) {
+        return make_transformation_result(buffer);
+    }
 
+    std::string final_v_word = s.to_string(tone_style);
     bool whitelist_match = Linguistics::is_on_whitelist(raw_word);
     bool is_valid_vn = Validator::is_valid(s);
-    Syllable s_check = SyllableParser::parse(buffer);
-    bool invalid_initial = !s_check.initial.empty() && !Validator::is_valid_initial(s_check.initial);
-    bool malformed_syllable = s_check.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
-    bool likely_english = (auto_restore && (invalid_initial || malformed_syllable || Linguistics::is_likely_english(raw_word)));
+    bool malformed_syllable = s.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
+    bool likely_english = (auto_restore && (malformed_syllable || Linguistics::is_likely_english(raw_word)));
 
     if (auto_restore && likely_english) {
         if (whitelist_match) return make_transformation_result(buffer);
