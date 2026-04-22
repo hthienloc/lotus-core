@@ -1,3 +1,10 @@
+/**
+ * @file validator.cpp
+ * @brief Vietnamese linguistic validation logic.
+ * 
+ * Implements orthographic rules and syllable structure validation for the Vietnamese language.
+ */
+
 #include "lotus_engine/validator.h"
 #include "lotus_engine/unicode.h"
 #include "lotus_engine/constants.h"
@@ -8,10 +15,25 @@ namespace lotus_engine {
 
 using namespace lotus_engine::constants;
 
+// ============================================================================
+// [ Validator Implementation ]
+// ============================================================================
+
+/**
+ * @brief Checks if a given initial consonant sequence is valid in Vietnamese.
+ * @param initial The UTF-32 character sequence to validate.
+ * @return True if the sequence is a valid initial consonant.
+ */
 bool Validator::is_valid_initial(std::u32string_view initial) {
     return std::find(VALID_INITIALS_U32.begin(), VALID_INITIALS_U32.end(), initial) != VALID_INITIALS_U32.end();
 }
 
+/**
+ * @brief Finds the longest valid initial consonant at the specified position in a string.
+ * @param input The full input string to search.
+ * @param start_pos The starting index for the search.
+ * @return The length (in code points) of the longest valid initial found.
+ */
 size_t Validator::find_longest_initial(const std::u32string& input, size_t start_pos) {
     size_t n = input.size();
     for (size_t len = 3; len >= 1; --len) {
@@ -24,6 +46,11 @@ size_t Validator::find_longest_initial(const std::u32string& input, size_t start
     return 0;
 }
 
+/**
+ * @brief Comprehensive validation of a Syllable structure against Vietnamese linguistic rules.
+ * @param syllable The syllable instance to validate.
+ * @return True if the syllable is phonotactically and orthographically valid.
+ */
 bool Validator::is_valid(const Syllable& syllable) {
     if (syllable.vowel.empty() && !syllable.glide.has_value()) {
         if (syllable.initial.empty()) return false;

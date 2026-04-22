@@ -1,3 +1,9 @@
+/**
+ * @file test_capi_integration.cpp
+ * @brief Integration tests for the Lotus C-API.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/capi.h"
 #include "lotus_engine/unicode.h"
 
@@ -6,6 +12,16 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Helpers ]
+// ============================================================================
+
+/**
+ * @brief Utility to assert that a sequence of keys results in expected Vietnamese output.
+ * @param engine The C-API engine handle.
+ * @param input Raw key input sequence.
+ * @param expected Expected UTF-8 output.
+ */
 void assert_capi_typing(lotus_engine_t* engine, const std::string& input,
                         const std::string& expected) {
     lotus_engine_reset(engine);
@@ -19,12 +35,19 @@ void assert_capi_typing(lotus_engine_t* engine, const std::string& input,
         res_u32.push_back(res.chars[i]);
     std::string got = unicode::to_utf8(res_u32);
     if (got != expected) {
-        printf("C-API FAIL: typing '%s' expected '%s' got '%s'\n", input.c_str(), expected.c_str(),
+        printf("  [FAIL] C-API: typing '%s' expected '%s' got '%s'\n", input.c_str(), expected.c_str(),
                got.c_str());
         assert(false);
     }
 }
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Verifies engine behavior through the C-API including Telex/VNI and tone styles.
+ */
 void test_capi_integration() {
     lotus_engine_t* engine = lotus_engine_create();
     assert(engine != nullptr);
@@ -42,5 +65,5 @@ void test_capi_integration() {
     assert_capi_typing(engine, "vie65t", "việt");
 
     lotus_engine_destroy(engine);
-    std::cout << "test_capi_integration PASSED" << std::endl;
+    std::cout << "  [PASS] C-API integration suite" << std::endl;
 }

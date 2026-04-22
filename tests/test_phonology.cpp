@@ -1,3 +1,8 @@
+/**
+ * @file test_phonology.cpp
+ * @brief Complex phonology and linguistic rule tests.
+ */
+
 #include "lotus_engine/parser.h"
 #include "lotus_engine/validator.h"
 #include "lotus_engine/unicode.h"
@@ -7,6 +12,13 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Phonology Tests ]
+// ============================================================================
+
+/**
+ * @brief Exhaustive validation of complex Vietnamese rhymes and syllable structures.
+ */
 void test_rhymes_exhaustive() {
     SyllableParser p;
     // Standard Vietnamese
@@ -22,10 +34,6 @@ void test_rhymes_exhaustive() {
     assert(Validator::is_valid(p.parse(U"hươu")));
 
     Syllable s_check = p.parse(U"ngoèo");
-    std::cout << "DEBUG ngoèo: initial='" << unicode::to_utf8(s_check.initial) 
-              << "', glide=" << (s_check.glide.has_value() ? (char)s_check.glide.value() : ' ') 
-              << ", vowel='" << unicode::to_utf8(s_check.vowel) << "', final='" 
-              << unicode::to_utf8(s_check.final_c) << "'" << std::endl;
     assert(Validator::is_valid(s_check));
 
     // Diphthong vs Coda rules
@@ -34,9 +42,12 @@ void test_rhymes_exhaustive() {
     assert(!Validator::is_valid(p.parse(U"kiê")));
     assert(!Validator::is_valid(p.parse(U"kian")));
 
-    std::cout << "test_rhymes_exhaustive PASSED" << std::endl;
+    std::cout << "  [PASS] Exhaustive rhyme validation" << std::endl;
 }
 
+/**
+ * @brief Verifies correct parsing of syllables into their constituent parts.
+ */
 void test_syllable_parts() {
     SyllableParser p;
     auto s = p.parse(U"nghiêng");
@@ -54,9 +65,12 @@ void test_syllable_parts() {
     assert(s3.glide.has_value() && s3.glide.value() == 'u');
     assert(s3.vowel == U"yên");
     
-    std::cout << "test_syllable_parts PASSED" << std::endl;
+    std::cout << "  [PASS] Syllable component parsing" << std::endl;
 }
 
+/**
+ * @brief Validates strict Vietnamese orthography and spelling rules.
+ */
 void test_orthography_rules() {
     SyllableParser p;
     // Standard Vietnamese
@@ -76,5 +90,5 @@ void test_orthography_rules() {
     assert(Validator::is_valid(p.parse(U"go")));
     assert(!Validator::is_valid(p.parse(U"gho")));
 
-    std::cout << "test_orthography_rules PASSED" << std::endl;
+    std::cout << "  [PASS] Orthographic rule validation" << std::endl;
 }

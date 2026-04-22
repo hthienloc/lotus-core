@@ -1,6 +1,16 @@
+/**
+ * @file test_main.cpp
+ * @brief Main test runner for the Lotus engine test suite.
+ * @author Gemini CLI
+ */
+
 #include <iostream>
 
-// Test utility declarations
+// ============================================================================
+// [ External Test Declarations ]
+// ============================================================================
+
+// Core Logic Tests
 void test_syllable_to_string_basic();
 void test_syllable_is_empty();
 void test_validator_basic();
@@ -30,17 +40,24 @@ void test_engine_rebuild_state();
 void test_engine_telex_free_w();
 void test_engine_manual_hook_keys();
 void test_engine_flexible_telex();
+void test_engine_smart_typing();
 
 // C-API Tests
 void test_capi_run_all();
 void test_capi_integration();
 
-void test_engine_smart_typing();
+// ============================================================================
+// [ Main Runner ]
+// ============================================================================
 
+/**
+ * @brief Main entry point for the test suite.
+ * Executes all registered test suites and reports overall status.
+ */
 int main() {
     std::cout << "Running Vietnamese Engine Tests..." << std::endl;
 
-    // Run Syllable & Validator Tests
+    // 1. Syllable & Validator Tests
     test_syllable_to_string_basic();
     test_syllable_is_empty();
     test_validator_basic();
@@ -51,7 +68,7 @@ int main() {
     test_tone_style_placement();
     test_complex_diphthongs();
 
-    // Run Engine Tests (Telex)
+    // 2. Engine Tests (Telex & VNI)
     test_engine_telex_basic();
     test_engine_telex_vowels();
     test_engine_telex_hooks();
@@ -72,7 +89,7 @@ int main() {
     test_engine_flexible_telex();
     test_engine_smart_typing();
 
-    // Run C-API Tests
+    // 3. C-API Tests
     test_capi_run_all();
     test_capi_integration();
 

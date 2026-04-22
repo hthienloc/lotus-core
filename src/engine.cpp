@@ -1,3 +1,11 @@
+/**
+ * @file engine.cpp
+ * @brief Core input method engine implementation.
+ * 
+ * Orchestrates the processing of keyboard input, applying linguistic rules,
+ * managing word history, and handling advanced features like shortcuts and auto-restore.
+ */
+
 #include "lotus_engine/engine.h"
 
 #include "lotus_engine/parser.h"
@@ -12,10 +20,27 @@
 
 namespace lotus_engine {
 
+// ============================================================================
+// [ Internal Helpers ]
+// ============================================================================
+
+/**
+ * @brief Checks if a character marks the end of a sentence.
+ * @param c UTF-32 character.
+ * @return True if it's a sentence-ending punctuation or newline.
+ */
 static bool is_sentence_ending(char32_t c) {
     return c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r';
 }
 
+// ============================================================================
+// [ EngineResult Implementation ]
+// ============================================================================
+
+/**
+ * @brief Converts the engine result structure to a UTF-8 string.
+ * @return UTF-8 string representation of the transformed characters.
+ */
 std::string EngineResult::to_string() const {
     std::u32string u32;
     for (uint8_t i = 0; i < count; ++i)
@@ -23,6 +48,15 @@ std::string EngineResult::to_string() const {
     return unicode::to_utf8(u32);
 }
 
+// ============================================================================
+// [ Engine Implementation ]
+// ============================================================================
+
+/**
+ * @brief Default constructor for Engine.
+ * 
+ * Initializes the engine with default Telex method and all smart features disabled.
+ */
 Engine::Engine()
     : last_modifier_key(0),
       last_boundary_key(0),
@@ -31,10 +65,18 @@ Engine::Engine()
       double_space_to_period(false),
       auto_capitalize(false) {}
 
+/**
+ * @brief Registers a new text shortcut.
+ * @param trigger The short key sequence.
+ * @param replacement The full string to expand into.
+ */
 void Engine::add_shortcut(const std::string& trigger, const std::string& replacement) {
     shortcuts[trigger] = replacement;
 }
 
+/**
+ * @brief Resets the internal engine state (buffer, history, committed text).
+ */
 void Engine::reset() {
     buffer.clear();
     last_modifier_key = 0;
@@ -42,6 +84,12 @@ void Engine::reset() {
     last_committed_text.clear();
 }
 
+/**
+ * @brief Reconstructs the engine state from a block of surrounding text.
+ * 
+ * Used for synchronization when the cursor moves or text is modified externally.
+ * @param text The surrounding context string.
+ */
 void Engine::rebuild_from_text(const std::string& text) {
     reset();
     at_sentence_start = true;
@@ -127,7 +175,17 @@ void Engine::rebuild_from_text(const std::string& text) {
     }
 }
 
-
+/**
+ * @brief Processes a single key press and returns the transformation result.
+ * 
+ * This is the main entry point for keyboard input. It handles backspacing, 
+ * boundary detection, smart typing features, and initiates IM-specific 
+ * modifier application.
+ * 
+ * @param original_key The UTF-32 key code.
+ * @param mods Keyboard modifiers (Shift, CapsLock).
+ * @return EngineResult containing the action to perform on the host application.
+ */
 EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     char32_t key = original_key;
     if (std_uo) {
@@ -301,6 +359,13 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
+/**
+ * @brief Applies Telex-specific rules and transformations to the current buffer.
+ * @param current_str IN/OUT: The string to modify based on Telex rules.
+ * @param key The current key pressed.
+ * @param key_consumed OUT: Set to true if the key triggered a transformation and should be swallowed.
+ * @param tone_state OUT: The identified tone for the current word.
+ */
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::u32string& u32 = buffer;
@@ -439,6 +504,13 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     current_str = unicode::to_utf8(final_u32);
 }
 
+/**
+ * @brief Applies VNI-specific rules and transformations to the current buffer.
+ * @param current_str IN/OUT: The string to modify based on VNI rules.
+ * @param key The current key pressed.
+ * @param key_consumed OUT: Set to true if the key triggered a transformation.
+ * @param tone_state OUT: The identified tone for the current word.
+ */
 void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
@@ -474,6 +546,11 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
                           current_str.end());
 }
 
+/**
+ * @brief Helper to wrap a transformed string into an EngineResult.
+ * @param final_u32 The final transformed character sequence.
+ * @return EngineResult indicating a replacement action.
+ */
 EngineResult Engine::make_transformation_result(const std::u32string& final_u32) {
     EngineResult result{};
     result.action = 1;
@@ -484,6 +561,11 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
     return result;
 }
 
+/**
+ * @brief Determines if the current buffer likely represents an English word.
+ * @param word The raw key sequence.
+ * @return True if the word should be preserved as English.
+ */
 bool Engine::is_english_word(const std::string& word) const {
     if (Linguistics::is_on_whitelist(word)) return true;
     std::string transformed = word;

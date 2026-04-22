@@ -1,3 +1,8 @@
+/**
+ * @file test_syllable.cpp
+ * @brief Unit tests for the Syllable structure.
+ */
+
 #include "lotus_engine/types.h"
 
 #include <cassert>
@@ -5,22 +10,28 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Syllable Tests ]
+// ============================================================================
+
+/**
+ * @brief Tests basic syllable-to-string conversion without complex tones.
+ */
 void test_syllable_to_string_basic() {
     Syllable s;
     s.initial = U"h";
     s.vowel = U"a";
     assert(s.to_string() == "ha");
-    std::cout << "test_syllable_to_string_basic PASSED" << std::endl;
+    std::cout << "  [PASS] Syllable basic to_string" << std::endl;
 }
 
+/**
+ * @brief Verifies the 'is_empty' logic for various syllable states.
+ */
 void test_syllable_is_empty() {
     Syllable s;
     assert(s.is_empty());
     s.initial = U"b";
     assert(!s.is_empty());
-    std::cout << "test_syllable_is_empty PASSED" << std::endl;
+    std::cout << "  [PASS] Syllable is_empty check" << std::endl;
 }
-
-// In a real project we'd use a framework, but for this task I'll call them in a simple registry if
-// needed. For now, I'll just add them to test_main later or call them in a constructor. Actually,
-// let's keep it simple.

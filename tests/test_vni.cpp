@@ -1,3 +1,9 @@
+/**
+ * @file test_vni.cpp
+ * @brief Unit tests for the VNI input method.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/engine.h"
 #include "lotus_engine/unicode.h"
 
@@ -7,6 +13,16 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Helpers ]
+// ============================================================================
+
+/**
+ * @brief Simulates typing into the engine using the VNI input method.
+ * @param engine The engine instance.
+ * @param input The raw key sequence.
+ * @return The resulting UTF-8 string.
+ */
 static std::string type_vni(Engine& engine, const std::string& input) {
     engine.reset();
     engine.set_method(InputMethod::VNI);
@@ -22,6 +38,13 @@ static std::string type_vni(Engine& engine, const std::string& input) {
     return unicode::to_utf8(screen);
 }
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Tests basic VNI tone markers (1-5).
+ */
 void test_engine_vni_basic() {
     Engine engine;
     assert(type_vni(engine, "a1") == "á");
@@ -29,9 +52,12 @@ void test_engine_vni_basic() {
     assert(type_vni(engine, "a3") == "ả");
     assert(type_vni(engine, "a4") == "ã");
     assert(type_vni(engine, "a5") == "ạ");
-    std::cout << "test_engine_vni_basic PASSED" << std::endl;
+    std::cout << "  [PASS] Basic VNI tones" << std::endl;
 }
 
+/**
+ * @brief Tests VNI vowel markers (6-8) and stroke (9).
+ */
 void test_engine_vni_vowels() {
     Engine engine;
     assert(type_vni(engine, "a6") == "\xC3\xA2");  // â
@@ -41,13 +67,16 @@ void test_engine_vni_vowels() {
     assert(type_vni(engine, "o7") == "\xC6\xA1");  // ơ
     assert(type_vni(engine, "a8") == "\xC4\x83");  // ă
     assert(type_vni(engine, "d9") == "\xC4\x91");  // đ
-    std::cout << "test_engine_vni_vowels PASSED" << std::endl;
+    std::cout << "  [PASS] VNI vowel markers and stroke" << std::endl;
 }
 
+/**
+ * @brief Tests combined VNI vowel and tone markers.
+ */
 void test_engine_vni_combined() {
     Engine engine;
     assert(type_vni(engine, "a61") == "ấ");           // â + sắc
     assert(type_vni(engine, "o72") == "ờ");           // ơ + huyền
     assert(type_vni(engine, "duong795") == "đượng");  // đ + ư + ơ + nặng + ng
-    std::cout << "test_engine_vni_combined PASSED" << std::endl;
+    std::cout << "  [PASS] Combined VNI transformations" << std::endl;
 }

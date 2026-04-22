@@ -1,3 +1,11 @@
+/**
+ * @file parser.cpp
+ * @brief Vietnamese syllable parsing logic.
+ * 
+ * Implements the decomposition of raw character sequences into linguistic components
+ * (initial, glide, vowel nucleus, and final coda).
+ */
+
 #include "lotus_engine/parser.h"
 #include "lotus_engine/unicode.h"
 #include "lotus_engine/validator.h"
@@ -7,6 +15,15 @@
 
 namespace lotus_engine {
 
+// ============================================================================
+// [ Parser Implementation ]
+// ============================================================================
+
+/**
+ * @brief Utility to check if a character is a Vietnamese vowel or combining mark.
+ * @param c The UTF-32 character to check.
+ * @return True if the character is a vowel component.
+ */
 bool SyllableParser::is_vowel(char32_t c) {
     char32_t low = unicode::to_lower(c);
     char32_t stripped = unicode::strip_tone(low);
@@ -18,6 +35,15 @@ bool SyllableParser::is_vowel(char32_t c) {
            (c >= 0x0300 && c <= 0x036F); // Combining Marks
 }
 
+/**
+ * @brief Parses a raw string into a structured Syllable object.
+ * 
+ * Performs linguistic analysis to identify the initial consonant, 
+ * the glide (if present), the vowel nucleus, and the final coda.
+ * 
+ * @param input The raw character sequence to parse.
+ * @return A Syllable object containing the identified components.
+ */
 Syllable SyllableParser::parse(const std::u32string& input) {
     Syllable s;
     if (input.empty()) return s;

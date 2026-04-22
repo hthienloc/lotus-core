@@ -1,3 +1,9 @@
+/**
+ * @file test_tone_style.cpp
+ * @brief Unit tests for Vietnamese tone placement styles (Old vs. New).
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/engine.h"
 #include "lotus_engine/unicode.h"
 
@@ -6,6 +12,13 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Tests tone placement difference between OLD (hòa) and NEW (hoà) styles.
+ */
 void test_tone_style_placement() {
     Engine engine;
 
@@ -21,7 +34,6 @@ void test_tone_style_placement() {
     // Expected: hoà
     std::u32string out_u32_new(res4.chars, res4.chars + res4.count);
     std::string out_new = unicode::to_utf8(out_u32_new);
-    std::cout << "NEW (f): " << out_new << std::endl;
     // h + o + à = hoà. à is U+00E0.
     assert(out_new == "hoà");
 
@@ -37,10 +49,14 @@ void test_tone_style_placement() {
     // Expected: hòa
     std::u32string out_u32_old(res_old.chars, res_old.chars + res_old.count);
     std::string out_old = unicode::to_utf8(out_u32_old);
-    std::cout << "OLD (f): " << out_old << std::endl;
     assert(out_old == "hòa");
+
+    std::cout << "  [PASS] Tone placement styles (Old vs. New)" << std::endl;
 }
 
+/**
+ * @brief Tests tone placement on complex diphthongs and triphthongs.
+ */
 void test_complex_diphthongs() {
     Engine engine;
     engine.set_method(InputMethod::TELEX);
@@ -56,18 +72,11 @@ void test_complex_diphthongs() {
     };
 
     // triphthongs (iêu, uôi, ươi, ươu)
-    std::cout << "DEBUG kieeur: " << type("kieeur") << std::endl;
     assert(type("kieeur") == "kiểu");
-
-    std::cout << "DEBUG chuoois: " << type("chuoois") << std::endl;
     assert(type("chuoois") == "chuối");
-
-    std::cout << "DEBUG ruowuj: " << type("ruowuj") << std::endl;
     assert(type("ruowuj") == "rượu");
-
-    std::cout << "DEBUG huowu: " << type("huowu") << std::endl;
     assert(type("huowu") == "hươu");
-
-    std::cout << "DEBUG nguowif: " << type("nguowif") << std::endl;
     assert(type("nguowif") == "người");
+
+    std::cout << "  [PASS] Complex diphthongs and triphthongs" << std::endl;
 }

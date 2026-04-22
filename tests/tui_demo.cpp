@@ -1,3 +1,9 @@
+/**
+ * @file tui_demo.cpp
+ * @brief Interactive TUI demo for the Lotus engine.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/engine.h"
 #include "lotus_engine/log.h"
 #include "lotus_engine/unicode.h"
@@ -17,6 +23,13 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Terminal Utilities ]
+// ============================================================================
+
+/**
+ * @brief RAII wrapper for setting and restoring terminal raw mode.
+ */
 struct RawTerminal {
     struct termios orig_termios;
     RawTerminal() {
@@ -31,6 +44,10 @@ struct RawTerminal {
     }
 };
 
+/**
+ * @brief Copies the provided text to the system clipboard (Wayland/X11).
+ * @param text The text to copy.
+ */
 void copy_to_clipboard(const std::string& text) {
     FILE* pipe = popen("wl-copy 2>/dev/null || xclip -selection clipboard 2>/dev/null", "w");
     if (pipe) {
@@ -39,6 +56,11 @@ void copy_to_clipboard(const std::string& text) {
     }
 }
 
+/**
+ * @brief Converts a character code to a human-readable name for logging.
+ * @param key The character code.
+ * @return A descriptive name of the key.
+ */
 std::string key_to_name(char32_t key) {
     if (key == ' ') return "' '";
     if (key == 8) return "CTRL_BACKSPACE";
@@ -51,6 +73,10 @@ std::string key_to_name(char32_t key) {
     return "U+" + (std::stringstream() << std::hex << std::uppercase << (uint32_t)key).str();
 }
 
+/**
+ * @brief Reads a single key or escape sequence from the terminal.
+ * @return The decoded char32_t key code.
+ */
 char32_t read_key() {
     unsigned char buf[8];
     int n = read(STDIN_FILENO, &buf[0], 1);
@@ -126,6 +152,14 @@ char32_t read_key() {
     return buf[0];
 }
 
+// ============================================================================
+// [ UI Rendering ]
+// ============================================================================
+
+/**
+ * @brief Prints the current engine configuration and hotkey status.
+ * @param engine The engine instance.
+ */
 void print_status(const Engine& engine) {
     std::cout << "\33[K" // Clear line
               << "\33[1;36m[F1] \33[0mMethod: " << (engine.get_method() == InputMethod::VNI ? "VNI" : "Telex") << " | "
@@ -144,6 +178,13 @@ void print_status(const Engine& engine) {
               << "\33[1;36m[F6] \33[0mAuto-Caps: " << (engine.get_auto_capitalize() ? "ON" : "OFF") << std::endl;
 }
 
+// ============================================================================
+// [ Main Loop ]
+// ============================================================================
+
+/**
+ * @brief Main entry point for the TUI demo.
+ */
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     Engine engine;
     Modifiers mods;

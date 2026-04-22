@@ -1,3 +1,9 @@
+/**
+ * @file test_parser.cpp
+ * @brief Unit tests for the Vietnamese syllable parser.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/parser.h"
 #include "lotus_engine/unicode.h"
 
@@ -6,6 +12,13 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Tests basic syllable parsing including initial, vowel, and final components.
+ */
 void test_parser_basic() {
     auto s = SyllableParser::parse(U"nghieng");
     assert(s.initial == U"ngh");
@@ -17,9 +30,12 @@ void test_parser_basic() {
     assert(s2.glide.has_value() && s2.glide.value() == 'o');
     assert(s2.vowel == U"a");
 
-    std::cout << "test_parser_basic PASSED" << std::endl;
+    std::cout << "  [PASS] Basic syllable parsing" << std::endl;
 }
 
+/**
+ * @brief Tests parsing of special cases like 'qu-' and 'gi-'.
+ */
 void test_parser_special() {
     auto s = SyllableParser::parse(U"qua");
     // New logic: q is initial, u is glide
@@ -31,5 +47,5 @@ void test_parser_special() {
     assert(s2.initial == U"gi");
     assert(s2.vowel == U"ai");
 
-    std::cout << "test_parser_special PASSED" << std::endl;
+    std::cout << "  [PASS] Special syllable cases (qu, gi)" << std::endl;
 }

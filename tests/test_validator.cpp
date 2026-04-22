@@ -1,3 +1,9 @@
+/**
+ * @file test_validator.cpp
+ * @brief Unit tests for the Vietnamese syllable validator.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/parser.h"
 #include "lotus_engine/validator.h"
 
@@ -6,6 +12,13 @@
 
 using namespace lotus_engine;
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Tests basic syllable validation including consonant and vowel checks.
+ */
 void test_validator_basic() {
     Syllable s;
     s.initial = U"h";
@@ -21,9 +34,12 @@ void test_validator_basic() {
     s.vowel = U"io";  // In Vietnamese "io" is not a standard vowel pattern alone
     assert(!Validator::is_valid(s));
 
-    std::cout << "test_validator_basic PASSED" << std::endl;
+    std::cout << "  [PASS] Basic validator checks" << std::endl;
 }
 
+/**
+ * @brief Tests complex Vietnamese spelling rules and constraints.
+ */
 void test_validator_complex() {
     SyllableParser p;
 
@@ -53,5 +69,5 @@ void test_validator_complex() {
     assert(!Validator::is_valid(p.parse(U"och")));  // och not valid in VN
     assert(!Validator::is_valid(p.parse(U"eng")));  // Should use -nh: anh/ênh
 
-    printf("test_validator_complex PASSED\n");
+    std::cout << "  [PASS] Complex spelling rules" << std::endl;
 }

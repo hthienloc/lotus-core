@@ -1,3 +1,8 @@
+/**
+ * @file syllable.cpp
+ * @brief Implementation of Vietnamese syllable structure and transformations.
+ */
+
 #include "lotus_engine/types.h"
 #include "lotus_engine/unicode.h"
 
@@ -5,8 +10,12 @@
 
 namespace lotus_engine {
 
+// ============================================================================
+// [ Constants ]
+// ============================================================================
+
 static const std::u32string TONE_MARKS_U32[] = {
-    U"",     // NONE
+    U"",       // NONE
     U"\u0301", // ACUTE
     U"\u0300", // GRAVE
     U"\u0309", // HOOK
@@ -14,6 +23,15 @@ static const std::u32string TONE_MARKS_U32[] = {
     U"\u0323"  // DOT
 };
 
+// ============================================================================
+// [ Syllable Implementation ]
+// ============================================================================
+
+/**
+ * @brief Converts the syllable structure to a UTF-8 string with Vietnamese tone placement.
+ * @param style The tone placement style (Modern vs. Old).
+ * @return Standardized UTF-8 Vietnamese syllable string.
+ */
 std::string Syllable::to_string(ToneStyle style) const {
     if (is_empty()) return "";
 
@@ -75,6 +93,12 @@ std::string Syllable::to_string(ToneStyle style) const {
     return unicode::normalize_nfc(unicode::to_utf8(res));
 }
 
+/**
+ * @brief Removes the last logical component of the syllable.
+ * 
+ * Handles backspacing logic by stripping components in reverse linguistic order:
+ * Final -> Vowel -> Glide -> Initial.
+ */
 void Syllable::remove_last_char() {
     if (!final_c.empty()) {
         final_c.pop_back();
@@ -97,6 +121,11 @@ void Syllable::remove_last_char() {
     }
 }
 
+/**
+ * @brief Deconstructs the syllable back into a sequence of input keys.
+ * @param method The input method (Telex/VNI) to assume for key mapping.
+ * @return A vector of character keys that would produce this syllable.
+ */
 std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
     std::vector<char32_t> keys;
 

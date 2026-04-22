@@ -1,9 +1,22 @@
+/**
+ * @file test_capi.cpp
+ * @brief Unit tests for the Lotus C-API.
+ * @author Gemini CLI
+ */
+
 #include "lotus_engine/capi.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
+// ============================================================================
+// [ Test Cases ]
+// ============================================================================
+
+/**
+ * @brief Tests basic C-API engine creation and key processing.
+ */
 void test_capi_basic() {
     lotus_engine_t* engine = lotus_engine_create();
     assert(engine != NULL);
@@ -37,8 +50,12 @@ void test_capi_basic() {
     assert(res.chars[1] == 0x00E1);
 
     lotus_engine_destroy(engine);
+    printf("  [PASS] C-API basic operations\n");
 }
 
+/**
+ * @brief Tests tone style configuration through the C-API.
+ */
 void test_capi_tone_style() {
     lotus_engine_t* engine = lotus_engine_create();
     lotus_modifiers_t mods = {false, false};
@@ -63,8 +80,12 @@ void test_capi_tone_style() {
     assert(res.chars[2] == 'a');
 
     lotus_engine_destroy(engine);
+    printf("  [PASS] C-API tone style configuration\n");
 }
 
+/**
+ * @brief Entry point for the C-API unit test suite.
+ */
 void test_capi_run_all() {
     test_capi_basic();
     test_capi_tone_style();
