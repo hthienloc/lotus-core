@@ -409,6 +409,7 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
  * @return True if a smart feature was triggered and handled.
  */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
+    (void)mods; // Suppress unused parameter warning
     if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
         result.action = 1;
         result.backspace = 1;
