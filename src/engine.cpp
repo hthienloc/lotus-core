@@ -102,8 +102,6 @@ void Engine::rebuild_from_text(const std::string& text) {
         char32_t last_c = full_text.back();
         if (is_sentence_ending(last_c)) at_sentence_start = true;
         else if (last_c != ' ' && last_c != '\t') at_sentence_start = false;
-        // If last is space, it keeps the previous state? 
-        // Actually for simplicity, if last is space, check before that.
         else {
              for (int i = (int)full_text.size() - 1; i >= 0; --i) {
                  if (is_sentence_ending(full_text[i])) { at_sentence_start = true; break; }
@@ -195,7 +193,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         else if (key == '}') key = U'Ơ';
     }
 
-    EngineResult res;
+    EngineResult res{};
     if (handle_backspace(key, mods, res)) return res;
     if (handle_smart_typing(key, mods, res) && res.action != 0) return res;
 
@@ -205,7 +203,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     if (handle_boundary(key, res)) return res;
 
-    // Triple-tap escape logic
+    // Triple-tap escape logic (e.g., typing 'aaa' results in 'aa')
     if (key != 0 && key == last_modifier_key && !buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
         bool revertible = (lk == 'a' || lk == 'e' || lk == 'o' || lk == 'd' || 
@@ -264,6 +262,17 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
+/**
+ * @brief Handles backspace key logic.
+ * 
+ * If the buffer is not empty, it attempts to reconstruct the previous syllable state.
+ * If the buffer is empty, it attempts to recover the last committed word from history.
+ * 
+ * @param key The key pressed (8 or 127).
+ * @param mods Keyboard modifiers.
+ * @param result OUT: The engine result to populate.
+ * @return True if the key was a backspace and was handled.
+ */
 bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result) {
     if (key != 8 && key != 127) return false;
     if (!buffer.empty()) {
@@ -299,6 +308,15 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
     return true;
 }
 
+/**
+ * @brief Handles word boundaries (space, enter, punctuation).
+ * 
+ * Triggers shortcut expansion and English word restoration.
+ * 
+ * @param key The current key.
+ * @param result OUT: The engine result to populate.
+ * @return True if the key was a boundary and was handled.
+ */
 bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
                          (key < 128 && (ispunct((int)key) || key == '\t')));
@@ -327,6 +345,13 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     return true;
 }
 
+/**
+ * @brief Checks and expands text shortcuts.
+ * 
+ * @param key The boundary key that triggered expansion.
+ * @param result OUT: The result containing the expanded text.
+ * @return True if a shortcut was matched and expanded.
+ */
 bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
     if (buffer.empty()) return false;
     std::string trigger_raw = unicode::to_utf8(buffer);
@@ -355,6 +380,14 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
     return false;
 }
 
+/**
+ * @brief Handles smart features like double-space to period and auto-capitalize.
+ * 
+ * @param key IN/OUT: The current key.
+ * @param mods Keyboard modifiers.
+ * @param result OUT: The engine result to populate.
+ * @return True if a smart feature was triggered and handled.
+ */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
     if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
         result.action = 1;
@@ -377,9 +410,13 @@ bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineRes
 
 /**
  * @brief Applies Telex-specific rules and transformations to the current buffer.
+ * 
+ * Implements a single-pass transformation pipeline including flexible consonants,
+ * flexible vowels, hooks, and tone marks.
+ * 
  * @param current_str IN/OUT: The string to modify based on Telex rules.
  * @param key The current key pressed.
- * @param key_consumed OUT: Set to true if the key triggered a transformation and should be swallowed.
+ * @param key_consumed OUT: Set to true if the key triggered a transformation.
  * @param tone_state OUT: The identified tone for the current word.
  */
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
@@ -511,8 +548,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
     }
 
-    // Stage 6: Final Execution - Construct the transformed UTF-32 string by 
-    // applying modifications and skipping stripped modifier keys.
+    // Stage 6: Final Execution
     std::u32string final_u32;
     for (size_t i = 0; i < u32.size(); ++i) if (!to_strip[i]) final_u32 += u32_copy[i];
     current_str = unicode::to_utf8(final_u32);
@@ -520,6 +556,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 
 /**
  * @brief Applies VNI-specific rules and transformations to the current buffer.
+ * 
  * @param current_str IN/OUT: The string to modify based on VNI rules.
  * @param key The current key pressed.
  * @param key_consumed OUT: Set to true if the key triggered a transformation.
@@ -562,6 +599,7 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
 
 /**
  * @brief Helper to wrap a transformed string into an EngineResult.
+ * 
  * @param final_u32 The final transformed character sequence.
  * @return EngineResult indicating a replacement action.
  */
@@ -577,6 +615,7 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
 
 /**
  * @brief Determines if the current buffer likely represents an English word.
+ * 
  * @param word The raw key sequence.
  * @return True if the word should be preserved as English.
  */
