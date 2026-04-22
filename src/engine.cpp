@@ -216,6 +216,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             last_boundary_key = 0;
             std::u32string out = buffer;
             if (!out.empty()) out.pop_back(); 
+            
             return make_transformation_result(out);
         }
     }
@@ -526,25 +527,50 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 
     // Stage 5: Tone Marks
     if (!tone_indices.empty()) {
-        char32_t last_c = unicode::to_lower(u32[tone_indices.back()]);
-        bool is_escape = false;
-        if (key != 0 && !key_consumed && tone_indices.size() >= 2) {
-            size_t prev_idx = tone_indices[tone_indices.size() - 2];
-            if (lk == unicode::to_lower(u32[prev_idx])) is_escape = true;
+        std::vector<size_t> active_tone_indices;
+        for (size_t i = 0; i < tone_indices.size(); ++i) {
+            size_t idx = tone_indices[i];
+            char32_t current_key = unicode::to_lower(u32[idx]);
+            
+            if (i + 1 < tone_indices.size() && 
+                current_key == unicode::to_lower(u32[tone_indices[i + 1]])) {
+                // Escape pair! (e.g. xx -> x, ff -> f)
+                to_strip[tone_indices[i + 1]] = true;
+                key_consumed = true; 
+                i++; // Skip the pair
+            } else {
+                // LINGUISTIC GATING: Only treat as tone if the base syllable so far is potentially Vietnamese.
+                // We use a simpler check here: if it ends in an impossible final consonant (s, r, x, f, j) 
+                // and the current key is not a tone-canceling 'z', treat as literal.
+                std::u32string base_u32;
+                for (size_t j = 0; j < idx; ++j) if (!to_strip[j]) base_u32 += u32_copy[j];
+                
+                bool is_literal = false;
+                if (!base_u32.empty() && current_key != 'z' && current_key != '0') {
+                    char32_t last_base = unicode::to_lower(base_u32.back());
+                    if (last_base == 's' || last_base == 'r' || last_base == 'x' || last_base == 'f' || last_base == 'j' || last_base == 'w') {
+                        is_literal = true;
+                    }
+                }
+
+                if (!is_literal) {
+                    active_tone_indices.push_back(idx);
+                }
+            }
         }
 
-        if (is_escape) {
-            tone_state = Tone::NONE;
-            last_modifier_key = key; key_consumed = true;
-            for (size_t i = 0; i < tone_indices.size() - 1; ++i) to_strip[tone_indices[i]] = true;
-        } else {
-            if (last_c == 's') tone_state = Tone::ACUTE;
-            else if (last_c == 'f') tone_state = Tone::GRAVE;
-            else if (last_c == 'r') tone_state = Tone::HOOK;
-            else if (last_c == 'x') tone_state = Tone::TILDE;
-            else if (last_c == 'j') tone_state = Tone::DOT;
-            else tone_state = Tone::NONE;
-            for (size_t idx : tone_indices) to_strip[idx] = true;
+        // Reset tone before applying the active (non-escaped) markers
+        tone_state = Tone::NONE;
+        for (size_t idx : active_tone_indices) {
+            char32_t marker = unicode::to_lower(u32[idx]);
+            if (marker == 's') tone_state = Tone::ACUTE;
+            else if (marker == 'f') tone_state = Tone::GRAVE;
+            else if (marker == 'r') tone_state = Tone::HOOK;
+            else if (marker == 'x') tone_state = Tone::TILDE;
+            else if (marker == 'j') tone_state = Tone::DOT;
+            else if (marker == 'z' || marker == '0') tone_state = Tone::NONE;
+            
+            to_strip[idx] = true;
         }
     }
 

@@ -362,3 +362,21 @@ void test_engine_khuyru_regression() {
 
     std::cout << "  [PASS] 'khuỷu' regression (khuyru)" << std::endl;
 }
+
+/**
+ * @brief Tests Telex tone marker escape logic (typing marker twice for literal).
+ */
+void test_engine_telex_escapes() {
+    Engine engine;
+    engine.set_auto_restore(true);
+    
+    assert_typing(engine, "as", "á");
+    assert_typing(engine, "ass", "as");
+    assert_typing(engine, "mix", "mĩ");
+    assert_typing(engine, "mixx", "mix");
+    assert_typing(engine, "mixxi", "mixi");
+    assert_typing(engine, "hasss", "hass");
+    assert_typing(engine, "huowngff", "hươngf");
+    
+    std::cout << "  [PASS] Telex tone escapes (mixxi, hasss)" << std::endl;
+}

@@ -104,8 +104,8 @@ bool Linguistics::is_likely_english(const std::string& word) {
                 if (::tolower(c) == ::tolower(word[i + 1]))
                     continue;
                 
-                // Allow tone markers if they follow a vowel (could be mid-word typing)
-                if (is_vowel(word[i - 1]))
+                // Allow tone markers if they follow a vowel OR the same marker (escape)
+                if (is_vowel(word[i - 1]) || ::tolower(word[i - 1]) == ::tolower(c))
                     continue;
 
                 // Exemption for 'j' following 'c' at the end of a word (standard Vietnamese 'việc')
