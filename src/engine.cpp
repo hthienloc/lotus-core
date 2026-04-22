@@ -76,13 +76,23 @@ void Engine::add_shortcut(const std::string& trigger, const std::string& replace
 }
 
 /**
- * @brief Resets the internal engine state (buffer, history, committed text).
+ * @brief Resets the internal engine state (buffer, markers, committed text).
+ * Does NOT clear the word history.
  */
 void Engine::reset() {
     buffer.clear();
     last_modifier_key = 0;
     last_boundary_key = 0;
     last_committed_text.clear();
+}
+
+/**
+ * @brief Completely clears the engine state, including word history.
+ * Used when the cursor moves to a completely new, unrelated position.
+ */
+void Engine::clear_all() {
+    reset();
+    word_history.clear();
 }
 
 /**
@@ -195,6 +205,16 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     }
 
     EngineResult res{};
+
+    // Handle navigation keys and special commands that should reset the engine state
+    // because the relative cursor position has changed.
+    if (key == constants::KEY_UP || key == constants::KEY_DOWN || 
+        key == constants::KEY_LEFT || key == constants::KEY_RIGHT || 
+        key == constants::KEY_ESC) {
+        clear_all();
+        return res;
+    }
+
     if (handle_backspace(key, mods, res)) return res;
     if (handle_smart_typing(key, mods, res) && res.action != 0) return res;
 

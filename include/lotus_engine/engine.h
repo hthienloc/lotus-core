@@ -76,6 +76,11 @@ class Engine {
     void reset();
 
     /**
+     * @brief Completely clears the engine state, including word history.
+     */
+    void clear_all();
+
+    /**
      * @brief Registers a text expansion shortcut.
      * @param trigger The typed string that activates the shortcut (e.g., "vn").
      * @param replacement The expanded output string (e.g., "Việt Nam").

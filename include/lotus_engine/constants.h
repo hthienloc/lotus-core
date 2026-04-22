@@ -62,6 +62,15 @@ const std::vector<std::u32string_view> VALID_NUCLEI_U32 = {
 const std::vector<std::u32string_view> VALID_FINALS_U32 = {U"c", U"ch", U"m", U"n", U"ng", U"nh",
                                                             U"p", U"t",  U"i", U"y", U"o",  U"u"};
 
+// Navigation and special keys
+const char32_t KEY_UP = 0x11;
+const char32_t KEY_DOWN = 0x12;
+const char32_t KEY_LEFT = 0x13;
+const char32_t KEY_RIGHT = 0x14;
+const char32_t KEY_ENTER = 0x0D;
+const char32_t KEY_TAB = 0x09;
+const char32_t KEY_ESC = 0x1B;
+
 } // namespace constants
 
 } // namespace lotus_engine
