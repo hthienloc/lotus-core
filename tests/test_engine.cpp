@@ -376,6 +376,7 @@ void test_engine_telex_escapes() {
     assert_typing(engine, "mixx", "mix");
     assert_typing(engine, "mixxi", "mixi");
     assert_typing(engine, "hasss", "hass");
+    assert_typing(engine, "curx", "cũ");
     assert_typing(engine, "huowngff", "hươngf");
     
     std::cout << "  [PASS] Telex tone escapes (mixxi, hasss)" << std::endl;
