@@ -248,6 +248,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     // This is the first line of defense against English words. 
     // In Vietnamese, everything before the first vowel MUST be a valid initial consonant sequence.
     // For example, 'status' has 'st' before 'a', but 'st' is not a valid Vietnamese initial.
+    // 'what' has 'wh' which is also invalid.
     bool has_valid_initial = true;
     if (!current_str.empty()) {
         std::u32string u32_curr = unicode::to_utf32(current_str);

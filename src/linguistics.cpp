@@ -115,7 +115,7 @@ bool Linguistics::has_impossible_final(const std::string& word) {
         }
         
         // TELEX tone markers at the end are allowed if they follow a vowel (likely Vietnamese).
-        // If they follow a consonant, they are likely English (e.g., 'box', 'bus').
+        // If they follow a consonant, they are likely English (e.g., 'was').
         if (is_tone_marker(last) && word.length() >= 2) {
             char prev = static_cast<char>(::tolower(word[word.length() - 2]));
             if (last == prev) return false; // Telex double-tap escape
