@@ -41,6 +41,7 @@ void test_engine_telex_free_w();
 void test_engine_manual_hook_keys();
 void test_engine_flexible_telex();
 void test_engine_smart_typing();
+void test_engine_khuyru_regression();
 
 // C-API Tests
 void test_capi_run_all();
@@ -88,6 +89,7 @@ int main() {
     test_engine_manual_hook_keys();
     test_engine_flexible_telex();
     test_engine_smart_typing();
+    test_engine_khuyru_regression();
 
     // 3. C-API Tests
     test_capi_run_all();

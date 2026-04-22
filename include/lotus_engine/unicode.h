@@ -380,6 +380,13 @@ inline std::string to_upper(const std::string& input) {
 }
 
 /**
+ * @brief Returns the visual width of a UTF-8 string (number of codepoints).
+ */
+inline size_t display_width(const std::string& utf8) {
+    return to_utf32(utf8).size();
+}
+
+/**
  * @brief Strips Vietnamese specific tone marks while keeping centering diacritics (ê, ô, etc).
  */
 inline char32_t strip_tone(char32_t cp) {

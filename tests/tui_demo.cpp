@@ -151,10 +151,18 @@ char32_t read_key() {
     }
     return buf[0];
 }
-
 // ============================================================================
 // [ UI Rendering ]
 // ============================================================================
+
+/**
+ * @brief Returns a padded string based on visual display width.
+ */
+std::string pad_right(const std::string& str, size_t width) {
+    size_t cur_w = unicode::display_width(str);
+    if (cur_w >= width) return str;
+    return str + std::string(width - cur_w, ' ');
+}
 
 /**
  * @brief Prints the current engine configuration and hotkey status.
@@ -196,6 +204,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
         set_log_callback([&debug_log](LogLevel level, const std::string& msg) {
             debug_log << "[" << (level == LogLevel::ERROR ? "ERR" : "DBG") << "] " << msg << "\n";
         });
+        // Print table header
+        debug_log << "| " << pad_right("Key", 8)
+                  << "| " << pad_right("Result", 13)
+                  << "| " << pad_right("BS", 4)
+                  << "| " << pad_right("Current Buffer", 28)
+                  << "| " << pad_right("Opts", 10) << " |" << std::endl;
+        debug_log << std::string(8+13+4+28+10+12, '-') << std::endl;
     }
 
     std::cout << "\33[2J\33[H"; // Clear screen and home
@@ -214,33 +229,40 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
 
             if (key == 0xF001) { // F1
                 engine.set_method(engine.get_method() == InputMethod::TELEX ? InputMethod::VNI : InputMethod::TELEX);
+                debug_log << "[CONFIG] Method changed to: " << (engine.get_method() == InputMethod::VNI ? "VNI" : "Telex") << std::endl;
                 continue;
             }
             if (key == 0xF002) { // F2
                 engine.set_tone_style(engine.get_tone_style() == ToneStyle::NEW ? ToneStyle::OLD : ToneStyle::NEW);
+                debug_log << "[CONFIG] ToneStyle changed to: " << (engine.get_tone_style() == ToneStyle::NEW ? "New" : "Old") << std::endl;
                 continue;
             }
             if (key == 0xF003) { // F3
                 int next = ((int)engine.get_free_w() + 1) % 3;
                 engine.set_free_w((FreeWOption)next);
+                debug_log << "[CONFIG] FreeW changed to: " << (int)engine.get_free_w() << std::endl;
                 continue;
             }
             if (key == 0xF004) { // F4
                 engine.set_std_uo(!engine.get_std_uo());
+                debug_log << "[CONFIG] StdUO changed to: " << (engine.get_std_uo() ? "ON" : "OFF") << std::endl;
                 continue;
             }
             if (key == 0xF005) { // F5
                 engine.set_double_space_to_period(!engine.get_double_space_to_period());
+                debug_log << "[CONFIG] DoubleSpace changed to: " << (engine.get_double_space_to_period() ? "ON" : "OFF") << std::endl;
                 continue;
             }
             if (key == 0xF006) { // F6
                 engine.set_auto_capitalize(!engine.get_auto_capitalize());
+                debug_log << "[CONFIG] AutoCapitalize changed to: " << (engine.get_auto_capitalize() ? "ON" : "OFF") << std::endl;
                 continue;
             }
 
             // Handle Ctrl + Backspace or Ctrl + W (Delete whole word)
             if (key == 8 || key == 23) {
                 engine.reset();
+                debug_log << "[ACTION] Word deleted (Ctrl+W/BS)" << std::endl;
                 // Delete until we hit a word boundary
                 while (!screen.empty() && screen.back() == ' ') screen.pop_back();
                 while (!screen.empty() && screen.back() != ' ') screen.pop_back();
@@ -253,9 +275,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                 if (!screen.empty()) screen.pop_back();
             }
 
-            debug_log << "Key: " << std::left << std::setw(15) << key_to_name(key)
-                      << " -> BS: " << (int)res.backspace << ", Res: '" << res.to_string() << "'"
-                      << " | Current: '" << unicode::to_utf8(screen) << "'" << std::endl;
+            std::string opts = "[";
+            opts += (engine.get_method() == InputMethod::VNI ? "V" : "T");
+            opts += (engine.get_tone_style() == ToneStyle::NEW ? "n" : "o");
+            opts += " W" + std::to_string((int)engine.get_free_w());
+            opts += (engine.get_std_uo() ? "U" : "-");
+            opts += (engine.get_at_sentence_start() ? "S" : "-");
+            opts += "]";
+
+            debug_log << "| " << pad_right(key_to_name(key), 8)
+                      << "| " << pad_right(res.to_string(), 13)
+                      << "| " << pad_right(std::to_string((int)res.backspace), 4)
+                      << "| " << pad_right(unicode::to_utf8(screen), 28)
+                      << "| " << pad_right(opts, 10) << " |" << std::endl;
 
             for (int i = 0; i < res.backspace; i++) {
                 if (!screen.empty()) screen.pop_back();
@@ -265,6 +297,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
             }
         }
     }
+
+    debug_log << "\n--- Final Engine Configuration ---\n"
+              << "Method: " << (engine.get_method() == InputMethod::VNI ? "VNI" : "Telex") << "\n"
+              << "Tone Style: " << (engine.get_tone_style() == ToneStyle::NEW ? "New" : "Old") << "\n"
+              << "Free W: " << (int)engine.get_free_w() << "\n"
+              << "Std UO: " << (engine.get_std_uo() ? "ON" : "OFF") << "\n"
+              << "Double Space to Period: " << (engine.get_double_space_to_period() ? "ON" : "OFF") << "\n"
+              << "Auto Capitalize: " << (engine.get_auto_capitalize() ? "ON" : "OFF") << "\n"
+              << "Sentence Start: " << (engine.get_at_sentence_start() ? "ON" : "OFF") << "\n";
 
     copy_to_clipboard(debug_log.str());
     std::cout << "\n\33[1;32mDemo finished. Debug log copied to clipboard.\33[0m" << std::endl;

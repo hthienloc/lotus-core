@@ -340,3 +340,25 @@ void test_engine_manual_hook_keys() {
     assert_typing(engine, "}", "Ơ");
     std::cout << "  [PASS] Manual hook keys (brackets)" << std::endl;
 }
+
+/**
+ * @brief Regression for 'khuỷu' syllable and variants of typing it.
+ */
+void test_engine_khuyru_regression() {
+    Engine engine;
+    engine.set_auto_restore(true);
+    
+    // Test direct typing
+    assert_typing(engine, "khuyu", "khuyu");
+    assert_typing(engine, "khuyur", "khuỷu");
+    
+    // Test mid-word tone typing (The 'khuyru' sequence)
+    assert_typing(engine, "khuyru", "khuỷu");
+    
+    // Test different orders
+    assert_typing(engine, "khur", "khủ");
+    assert_typing(engine, "khuru", "khủu");
+    assert_typing(engine, "khuryu", "khuỷu");
+
+    std::cout << "  [PASS] 'khuỷu' regression (khuyru)" << std::endl;
+}

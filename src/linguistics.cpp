@@ -91,9 +91,14 @@ bool Linguistics::is_likely_english(const std::string& word) {
                 // If it's a double-typed escape (e.g. 'ass'), don't treat as misplaced
                 if (c == ::tolower(word[i + 1]))
                     continue;
+                
+                // Allow tone markers if they follow a vowel (could be mid-word typing)
+                char prev = ::tolower(word[i - 1]);
+                if (prev == 'a' || prev == 'e' || prev == 'o' || prev == 'u' || prev == 'i' || prev == 'y' || prev == 'w')
+                    continue;
+
                 // Exemption for 'j' following 'c' at the end of a word (standard Vietnamese 'việc')
-                // If anything follows the 'j' (like 'viecje'), it's likely English.
-                if (c == 'j' && i > 0 && ::tolower(word[i - 1]) == 'c' && i == word.length() - 1)
+                if (c == 'j' && i > 0 && prev == 'c' && i == word.length() - 1)
                     continue;
                 return true;
             }
