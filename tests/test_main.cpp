@@ -29,6 +29,7 @@ void test_engine_linguistic_regression();
 void test_engine_rebuild_state();
 void test_engine_telex_free_w();
 void test_engine_manual_hook_keys();
+void test_engine_flexible_telex();
 
 // C-API Tests
 void test_capi_run_all();
@@ -66,6 +67,7 @@ int main() {
     test_engine_rebuild_state();
     test_engine_telex_free_w();
     test_engine_manual_hook_keys();
+    test_engine_flexible_telex();
 
     // Run C-API Tests
     test_capi_run_all();

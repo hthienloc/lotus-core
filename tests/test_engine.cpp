@@ -46,6 +46,34 @@ void test_engine_telex_basic() {
     std::cout << "test_engine_telex_basic PASSED" << std::endl;
 }
 
+void test_engine_flexible_telex() {
+    Engine engine;
+    engine.set_method(InputMethod::TELEX);
+    engine.set_auto_restore(true);
+
+    // 1. Flexible Vowels (Non-linear composition)
+    assert_typing(engine, "viecje", "việc");
+    assert_typing(engine, "viecej", "việc");
+    assert_typing(engine, "dduowjc", "được");
+    assert_typing(engine, "dduowcj", "được");
+
+    // 2. Flexible Consonants (Floating d)
+    assert_typing(engine, "dosd", "đó");
+    assert_typing(engine, "duwd", "đư");
+    assert_typing(engine, "duowngfd", "đường");
+
+    // 3. Late Restore Protection (Word boundary)
+    assert_typing(engine, "viecje ", "việc ");
+    assert_typing(engine, "dosd ", "đó ");
+
+    // 4. English Stability (High-likelihood patterns)
+    assert_typing(engine, "where", "where");
+    assert_typing(engine, "status", "status");
+    assert_typing(engine, "school", "school");
+
+    std::cout << "test_engine_flexible_telex PASSED" << std::endl;
+}
+
 void test_engine_telex_vowels() {
     Engine engine;
     assert_typing(engine, "aa", "â");
@@ -218,13 +246,11 @@ void test_engine_rebuild_state() {
     assert(unicode::to_utf8(screen) == "xin ch");
 
     // 3. Backspace into history
-    type_into(engine, screen, "\b\b"); // delete "ch"
-    assert(unicode::to_utf8(screen) == "xin ");
-    type_into(engine, screen, "\b"); // delete " "
+    // Backspace from 'chào' until empty, then delete space.
+    for(int i=0; i<6; i++) type_into(engine, screen, "\b");
     assert(unicode::to_utf8(screen) == "xin");
-    type_into(engine, screen, "a"); // "xina"
+    type_into(engine, screen, "a");
     assert(unicode::to_utf8(screen) == "xina");
-
     std::cout << "test_engine_rebuild_state PASSED" << std::endl;
 }
 void test_engine_telex_hooks() {

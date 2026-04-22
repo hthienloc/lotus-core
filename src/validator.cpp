@@ -134,16 +134,14 @@ bool Validator::is_valid(const Syllable& syllable) {
     bool has_coda = !syllable.final_c.empty();
     if (syllable.vowel == "ia" && has_coda)
         return false;
-    if (syllable.vowel == "iê" && !has_coda)
+    if (syllable.vowel == "iê" && !has_coda) {
+        // std::cout << "Invalid iê: no coda" << std::endl;
         return false;
-    if (syllable.vowel == "ua" && has_coda)
-        return false;
-    if (syllable.vowel == "uô" && !has_coda)
-        return false;
-    if (syllable.vowel == "ưa" && has_coda)
-        return false;
-    if (syllable.vowel == "ươ" && !has_coda)
-        return false;
+    }
+    if (syllable.vowel == "ua" && has_coda) return false;
+    if (syllable.vowel == "uô" && !has_coda) return false;
+    if (syllable.vowel == "ưa" && has_coda) return false;
+    if (syllable.vowel == "ươ" && !has_coda) return false;
 
     // Final Coda Restrictions (ch, nh) - Follow the NUCLEUS
     if (syllable.final_c == "ch" || syllable.final_c == "nh") {
@@ -157,7 +155,6 @@ bool Validator::is_valid(const Syllable& syllable) {
         if (nucleus_start == 'e' || nucleus_start == U'ê')
             return false;
     }
-
     return true;
 }
 

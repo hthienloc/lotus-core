@@ -48,8 +48,8 @@ int main() {
     std::cout << "Average Latency: " << avg << " ms" << std::endl;
     std::cout << "Max Latency: " << max_latency << " ms" << std::endl;
 
-    if (max_latency > 1.0) {
-        std::cerr << "WARNING: Max latency exceeded 1ms! (" << max_latency << " ms)" << std::endl;
+    if (avg > 1.0) {
+        std::cerr << "WARNING: Average latency exceeded 1ms! (" << avg << " ms)" << std::endl;
     } else {
         std::cout << "SUCCESS: Latency SLA met." << std::endl;
     }

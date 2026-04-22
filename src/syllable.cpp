@@ -99,12 +99,22 @@ void Syllable::remove_last_char() {
         std::u32string v32 = unicode::to_utf32(vowel);
         v32.pop_back();
         vowel = unicode::to_utf8(v32);
+        if (vowel.empty()) {
+            if (glide.has_value()) {
+                vowel = std::string(1, glide.value());
+                glide = std::nullopt;
+            } else {
+                tone = Tone::NONE;
+            }
+        }
     } else if (glide.has_value()) {
         glide = std::nullopt;
+        tone = Tone::NONE;
     } else if (!initial.empty()) {
         std::u32string i32 = unicode::to_utf32(initial);
         i32.pop_back();
         initial = unicode::to_utf8(i32);
+        tone = Tone::NONE;
     }
 }
 

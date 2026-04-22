@@ -121,9 +121,6 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             std::string word = unicode::to_utf8(last_committed_text);
             Syllable s = SyllableParser::parse(word);
 
-            // Contextual Backspace: Reconstruct syllable ONLY if it's already valid Vietnamese.
-            // This prevents the buffer from being "reconstructed" into something unintended 
-            // for English or invalid sequences (preserving user's original typing).
             if (Validator::is_valid(s)) {
                 s.remove_last_char();
                 std::vector<char32_t> keys = s.to_keys(method);
@@ -135,19 +132,20 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             }
 
             if (buffer.empty()) {
-                last_committed_text.clear();
                 return make_transformation_result(U"");
             }
             return process_key(0, mods);
-        } else if (last_boundary_key != 0) {
+        } else {
+            // Buffer is empty, try to recover from history (cross-boundary backspace)
             auto recovered = word_history.pop();
+            last_boundary_key = 0; // Clear boundary since we are deleting it
             if (!recovered.empty()) {
                 buffer = recovered;
-                last_boundary_key = 0;
                 (void)process_key(0, mods);
+                
                 EngineResult res{};
                 res.action = 1;
-                res.backspace = 1;
+                res.backspace = 1; // Delete the boundary character
                 res.count = 0;
                 return res;
             }
@@ -232,7 +230,8 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     current_str = unicode::normalize_nfc(current_str);
     Syllable s = SyllableParser::parse(current_str);
-    s.tone = tone_state;
+    if (tone_state != Tone::NONE)
+        s.tone = tone_state;
 
     std::string final_v_word = s.to_string(tone_style);
     std::string raw_word = unicode::to_utf8(buffer);
@@ -255,6 +254,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             return make_transformation_result(buffer);
         }
     }
+
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
@@ -276,60 +276,89 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 
     current_str = raw_str;
 
-    // Stage 1: Standard Consonants (dd -> đ)
-    // Supports both adjacent 'dd' and floating 'd...d' (e.g. 'dosd' -> 'đó')
-    size_t first_d = current_str.find('d');
-    size_t last_d = current_str.rfind('d');
-    bool has_two_d = (first_d != std::string::npos && last_d != std::string::npos && first_d != last_d);
+    // Stage 0: Revert/Escape Logic (aaa -> aa, ddd -> dd, etc.)
+    if (!key_consumed && key != 0 && (char32_t)key == (char32_t)last_modifier_key) {
+        std::string pat;
+        if (key == 'a') pat = "aa";
+        else if (key == 'e') pat = "ee";
+        else if (key == 'o') pat = "oo";
+        else if (key == 'd') pat = "dd";
 
-    if (has_two_d || current_str.find("dd") != std::string::npos) {
-        if (!key_consumed && key == 'd' && last_modifier_key == 'd') {
-            // Revert double-typing (ddd -> dd)
-            unicode::replace_all(current_str, "ddd", "dd");
+        if (!pat.empty() && current_str.find(pat + (char)key) != std::string::npos) {
+            unicode::replace_all(current_str, pat + (char)key, pat);
             last_modifier_key = 0;
             key_consumed = true;
-        } else {
-            // Replace first 'd' with 'đ' and remove the second 'd'
-            if (has_two_d) {
-                // Find potential initial 'd'
-                size_t d_pos = current_str.find('d');
-                current_str.replace(d_pos, 1, "đ");
-                // Remove the other 'd' (which is the last one now)
-                size_t d_rem = current_str.rfind('d');
-                if (d_rem != std::string::npos) {
-                    current_str.erase(d_rem, 1);
-                }
-            } else {
-                unicode::replace_all(current_str, "dd", "đ");
-            }
-            
-            if (!key_consumed && key == 'd') {
-                last_modifier_key = 'd';
-                key_consumed = true;
-            }
         }
     }
 
-    // Stage 2: Standard Vowel Modifiers (aa->â, ee->ê, oo->ô)
-    auto handle_v_mod = [&](const std::string& pat, const std::string& rep, char m) {
-        if (current_str.find(pat) != std::string::npos) {
-            if (!key_consumed && key == (char32_t)m && last_modifier_key == (char32_t)m) {
-                // Revert logic (aaa -> aa)
-                unicode::replace_all(current_str, pat + std::string(1, m), pat);
-                last_modifier_key = 0;
-                key_consumed = true;
+    // Stage 1: Standard Consonants (dd -> đ)
+    // Supports both adjacent 'dd' and floating 'd...d' (e.g. 'dosd' -> 'đó')
+    if (!key_consumed || key == 0) {
+        size_t first_d = current_str.find('d');
+        size_t last_d = current_str.rfind('d');
+        bool has_two_d = (first_d != std::string::npos && last_d != std::string::npos && first_d != last_d);
+
+        if (has_two_d || current_str.find("dd") != std::string::npos) {
+            if (has_two_d) {
+                current_str.erase(last_d, 1);
+                current_str.replace(first_d, 1, "đ");
+                if (key == 'd') {
+                    last_modifier_key = 'd';
+                    key_consumed = true;
+                }
             } else {
-                unicode::replace_all(current_str, pat, rep);
-                if (!key_consumed && key == (char32_t)m) {
-                    last_modifier_key = (char)m;
+                unicode::replace_all(current_str, "dd", "đ");
+                if (key == 'd') {
+                    last_modifier_key = 'd';
                     key_consumed = true;
                 }
             }
         }
-    };
-    handle_v_mod("aa", "â", 'a');
-    handle_v_mod("ee", "ê", 'e');
-    handle_v_mod("oo", "ô", 'o');
+    }
+
+    // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
+    // Supports non-adjacent typing e.g. 'viecj' + 'e' -> 'việc'
+    if (!key_consumed || key == 0) {
+        auto try_flexible = [&](char base) {
+            size_t first_pos = current_str.find(base);
+            size_t last_pos = current_str.rfind(base);
+            if (first_pos != std::string::npos && last_pos != std::string::npos && first_pos != last_pos) {
+                std::string target;
+                if (base == 'a') target = "â";
+                else if (base == 'e') target = "ê";
+                else if (base == 'o') target = "ô";
+                
+                current_str.erase(last_pos, 1);
+                current_str.replace(first_pos, 1, target);
+                if (key == (char32_t)base) {
+                    last_modifier_key = base;
+                    key_consumed = true;
+                }
+                return true;
+            }
+            return false;
+        };
+
+        for (char b : {'a', 'e', 'o'}) {
+            try_flexible(b);
+        }
+    }
+
+    // Stage 3: Standard Vowel Modifiers (adjacent)
+    if (!key_consumed || key == 0) {
+        auto handle_v_mod = [&](const std::string& pat, const std::string& rep, char m) {
+            if (current_str.find(pat) != std::string::npos) {
+                unicode::replace_all(current_str, pat, rep);
+                if (key == (char32_t)m) {
+                    last_modifier_key = (char)m;
+                    key_consumed = true;
+                }
+            }
+        };
+        handle_v_mod("aa", "â", 'a');
+        handle_v_mod("ee", "ê", 'e');
+        handle_v_mod("oo", "ô", 'o');
+    }
 
     // Stage 3: Explicit Combined Hooks (uw, ow, aw, etc)
     // These are standard TELEX and should always work if method is TELEX.
@@ -519,7 +548,9 @@ bool Engine::is_english_word(const std::string& word) const {
         const_cast<Engine*>(this)->apply_vni_modifiers(transformed, 0, consumed, tone);
     }
     Syllable s = SyllableParser::parse(transformed);
-    s.tone = tone;
+    if (tone != Tone::NONE)
+        s.tone = tone;
+    
     if (Validator::is_valid(s))
         return false;
 
