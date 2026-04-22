@@ -31,9 +31,6 @@ const std::vector<std::string_view> ENGLISH_WHITELIST = {
     // To be populated later.
 };
 
-constexpr std::string_view VOWELS = "aeiouyw";
-constexpr std::string_view TONE_MARKERS = "srfxj";
-
 /**
  * @brief Checks if a character is a vowel (including 'y' and 'w' for TELEX purposes).
  */
@@ -45,7 +42,7 @@ inline bool is_vowel(char c) {
  * @brief Checks if a character is a TELEX tone marker.
  */
 inline bool is_tone_marker(char c) {
-    return TONE_MARKERS.find(static_cast<char>(::tolower(c))) != std::string_view::npos;
+    return TELEX_TONE_MARKERS.find(static_cast<char>(::tolower(c))) != std::string_view::npos;
 }
 
 } // namespace
@@ -70,67 +67,30 @@ bool Linguistics::is_on_whitelist(const std::string& word) {
  * @return True if it contains definite English clusters.
  */
 bool Linguistics::is_definite_english(const std::string& word) {
-    return !word.empty() && contains_english_cluster(word);
+    if (word.length() < 2) return false;
+    std::string lower = unicode::to_lower(word);
+    return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
+                       [&lower](std::string_view cluster) { return lower.find(cluster) == 0; });
 }
 
 /**
  * @brief Heuristic check to see if a word is likely English.
- * 
- * Checks for misplaced markers, impossible Vietnamese character combinations,
- * and English-specific consonant patterns.
- * 
- * @param word The word to analyze.
- * @return True if heuristics suggest it is English.
  */
 bool Linguistics::is_likely_english(const std::string& word) {
     if (word.empty()) return false;
     if (is_definite_english(word)) return true;
     if (has_impossible_final(word)) return true;
 
-    // Check for English 'y' consonant (y followed by o, u, a, e, i)
-    // In Vietnamese, initial 'y' is only followed by 'ê' or nothing.
-    if (word.length() >= 2 && ::tolower(word[0]) == 'y') {
-        if (is_vowel(word[1]) && ::tolower(word[1]) != 'w') {
+    // Check for English 'y' consonant patterns (e.g., 'yes', 'yard')
+    // In Vietnamese, initial 'y' is strictly followed by 'ê' or nothing.
+    std::string lower = unicode::to_lower(word);
+    if (lower.length() >= 2 && lower[0] == 'y') {
+        if (is_vowel(lower[1]) && lower[1] != 'w' && lower.find("ê") == std::string::npos) {
             return true;
         }
     }
 
-    // Check for misplaced tone markers (s, r, f, x, j in the middle of a word)
-    if (word.length() >= 3) {
-        for (size_t i = 1; i < word.length() - 1; ++i) {
-            char c = word[i];
-            if (is_tone_marker(c)) {
-                // If it's a double-typed escape (e.g. 'ass'), don't treat as misplaced
-                if (::tolower(c) == ::tolower(word[i + 1]))
-                    continue;
-                
-                // Allow tone markers if they follow a vowel OR the same marker (escape)
-                if (is_vowel(word[i - 1]) || ::tolower(word[i - 1]) == ::tolower(c))
-                    continue;
-
-                // Exemption for 'j' following 'c' at the end of a word (standard Vietnamese 'việc')
-                if (::tolower(c) == 'j' && i > 0 && ::tolower(word[i - 1]) == 'c' && i == word.length() - 1)
-                    continue;
-                return true;
-            }
-        }
-    }
-    
     return false;
-}
-
-/**
- * @brief Checks if the word starts with clusters impossible in Vietnamese but common in English.
- * @param word The word to check.
- * @return True if an English cluster is found.
- */
-bool Linguistics::contains_english_cluster(const std::string& word) {
-    if (word.length() < 2) return false;
-    std::string lower = word;
-    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-    
-    return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
-                       [&lower](std::string_view cluster) { return lower.find(cluster) == 0; });
 }
 
 /**
@@ -140,34 +100,23 @@ bool Linguistics::contains_english_cluster(const std::string& word) {
  */
 bool Linguistics::has_impossible_final(const std::string& word) {
     if (word.empty()) return false;
-    char last = ::tolower(word.back());
+    char last = static_cast<char>(::tolower(word.back()));
     
-    bool is_invalid_final = std::any_of(INVALID_FINALS.begin(), INVALID_FINALS.end(),
-                                        [last](std::string_view f) { return last == f[0]; });
+    bool is_invalid_base = std::any_of(INVALID_FINALS.begin(), INVALID_FINALS.end(),
+                                       [last](std::string_view f) { return last == f[0]; });
 
-    if (is_invalid_final) {
+    if (is_invalid_base) {
         // Special Case: 'ng' is valid, but 'g' alone at end is not.
         if (last == 'g') {
-            if (word.length() >= 2 && ::tolower(word[word.length() - 2]) == 'n') {
-                return false; // Valid Vietnamese 'ng'
-            }
+            if (word.length() >= 2 && ::tolower(word[word.length() - 2]) == 'n') return false;
         }
         
-        // Special Case TELEX: s, r, x, f, j are markers.
-        // If they are at the end, they MIGHT be tones.
-        // However, if they follow another consonant, they are definitely English (e.g. 'is', 'bus')
-        if (is_tone_marker(last)) {
-            if (word.length() >= 2) {
-                char prev = word[word.length() - 2];
-                // Special Case: Double tone key is a TELEX escape (e.g. 'ass' -> 'as')
-                if (::tolower(last) == ::tolower(prev)) return false;
-                
-                // If follows a consonant, it's English
-                if (!is_vowel(prev)) {
-                    return true;
-                }
-                return false; // Could be a tone mark for a vowel
-            }
+        // TELEX tone markers at the end are allowed if they follow a vowel (likely Vietnamese).
+        // If they follow a consonant, they are likely English (e.g., 'box', 'bus').
+        if (is_tone_marker(last) && word.length() >= 2) {
+            char prev = static_cast<char>(::tolower(word[word.length() - 2]));
+            if (last == prev) return false; // Telex double-tap escape
+            return !is_vowel(prev);         // English if consonant + marker
         }
         return true;
     }

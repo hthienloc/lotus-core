@@ -63,6 +63,12 @@ Syllable SyllableParser::parse(const std::u32string& input) {
                 initial_len = 1;
             }
         }
+        // Vietnamese rule for 'qu':
+        // 'qu' is always parsed as 'q' (initial) + 'u' (glide) in our model.
+        else if (s.initial == U"qu" || s.initial == U"Qu") {
+            s.initial = s.initial.substr(0, 1);
+            initial_len = 1;
+        }
     }
 
     size_t pos = initial_len;

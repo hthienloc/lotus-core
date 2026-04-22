@@ -43,7 +43,12 @@ const std::vector<char32_t> INVALID_FINALS_U32 = {
 
 const std::vector<std::u32string_view> VALID_INITIALS_U32 = {
     U"b", U"c", U"d", U"đ",  U"g",  U"h",  U"k",  U"l",  U"m",  U"n",  U"p",  U"q",  U"r",  U"s",
-    U"t", U"v", U"x", U"ch", U"gh", U"gi", U"kh", U"ng", U"nh", U"ph", U"th", U"tr", U"ngh"};
+    U"t", U"v", U"x", U"ch", U"gh", U"gi", U"kh", U"ng", U"nh", U"ph", U"qu", U"th", U"tr", U"ngh"};
+
+const std::string_view TELEX_TONE_MARKERS = "srfxj";
+const std::string_view VNI_TONE_MARKERS = "12345";
+const std::string_view TELEX_MARKERS = "srfxjzw0adeow";
+const std::string_view VOWELS = "aeiouyw";
 
 const std::vector<std::u32string_view> VALID_GLIDES_U32 = {U"o", U"u"};
 

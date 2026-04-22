@@ -206,8 +206,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     // Triple-tap escape logic (e.g., typing 'aaa' results in 'aa')
     if (key != 0 && key == last_modifier_key && !buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
-        bool revertible = (lk == 'a' || lk == 'e' || lk == 'o' || lk == 'd' || 
-                           lk == 's' || lk == 'f' || lk == 'r' || lk == 'x' || lk == 'j');
+        bool revertible = (constants::TELEX_MARKERS.find(static_cast<char>(lk)) != std::string_view::npos);
 
         if (revertible) {
             buffer.push_back(key);
@@ -245,8 +244,10 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
     if (tone_state != Tone::NONE) s.tone = tone_state;
 
-    // THE GATE (Post-IM): Check if the transformation resulted in a valid Vietnamese initial.
-    // Strict Check: The entire prefix before the first vowel must be a valid Vietnamese initial.
+    // THE GATE (Post-IM): Initial Consonant Validation
+    // This is the first line of defense against English words. 
+    // In Vietnamese, everything before the first vowel MUST be a valid initial consonant sequence.
+    // For example, 'status' has 'st' before 'a', but 'st' is not a valid Vietnamese initial.
     bool has_valid_initial = true;
     if (!current_str.empty()) {
         std::u32string u32_curr = unicode::to_utf32(current_str);
@@ -257,29 +258,27 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
                 break;
             }
         }
+        // Extract the prefix before the first vowel
         std::u32string prefix = (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
         if (!prefix.empty() && !Validator::is_valid_initial(prefix)) {
             has_valid_initial = false;
         }
     }
     
+    // If the transformation resulted in an invalid prefix, favor the raw English input.
     if (auto_restore && !has_valid_initial && !key_consumed) {
         return make_transformation_result(buffer);
     }
 
-    std::string final_v_word = s.to_string(tone_style);
-    bool whitelist_match = Linguistics::is_on_whitelist(raw_word);
+    // Second Gate: Structural Vietnamese Validity
+    // If the resulting syllable violates Vietnamese spelling rules AND looks like English,
+    // we restore the raw buffer contents.
     bool is_valid_vn = Validator::is_valid(s);
-    bool malformed_syllable = s.initial.empty() && !buffer.empty() && !SyllableParser::is_vowel(buffer[0]);
-    bool likely_english = (auto_restore && (malformed_syllable || Linguistics::is_likely_english(raw_word)));
-
-    if (auto_restore && likely_english) {
-        if (whitelist_match) return make_transformation_result(buffer);
-        if (!is_valid_vn) {
-            return make_transformation_result(buffer);
-        }
+    if (auto_restore && !is_valid_vn && !key_consumed && Linguistics::is_likely_english(raw_word)) {
+        return make_transformation_result(buffer);
     }
 
+    std::string final_v_word = s.to_string(tone_style);
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
@@ -596,6 +595,8 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         tone_state = Tone::NONE;
         for (size_t idx : active_tone_indices) {
             char32_t marker = unicode::to_lower(u32[idx]);
+            
+            // Map Telex keys to Tone enum
             if (marker == 's') tone_state = Tone::ACUTE;
             else if (marker == 'f') tone_state = Tone::GRAVE;
             else if (marker == 'r') tone_state = Tone::HOOK;
@@ -616,6 +617,8 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 /**
  * @brief Applies VNI-specific rules and transformations to the current buffer.
  * 
+ * Implements a high-performance single-pass scanner to identify tones and markers.
+ * 
  * @param current_str IN/OUT: The string to modify based on VNI rules.
  * @param key The current key pressed.
  * @param key_consumed OUT: Set to true if the key triggered a transformation.
@@ -627,33 +630,29 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
     if (Linguistics::is_definite_english(raw_str)) return;
 
     bool has_mod = false;
-    for (int i = 0; i < (int)raw_str.length(); ++i) {
+    char32_t lk = unicode::to_lower(key);
+
+    for (size_t i = 0; i < raw_str.length(); ++i) {
         char k = raw_str[i];
-        if (k >= '1' && k <= '9') {
-            has_mod = true;
-            if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
-            if (k == '6') {
-                unicode::replace_all(current_str, "a", "â");
-                unicode::replace_all(current_str, "e", "ê");
-                unicode::replace_all(current_str, "o", "ô");
-            } else if (k == '7') {
-                unicode::replace_all(current_str, "u", "ư");
-                unicode::replace_all(current_str, "o", "ơ");
-            } else if (k == '8') unicode::replace_all(current_str, "a", "ă");
-            else if (k == '9') unicode::replace_all(current_str, "d", "đ");
-            if ((size_t)i == raw_str.length() - 1 && key == (char32_t)k) {
-                last_modifier_key = key;
-                key_consumed = true;
-            }
-        } else if (k == '0') {
-            tone_state = Tone::NONE;
-            has_mod = true;
+        if (k < '0' || k > '9') continue;
+
+        has_mod = true;
+        if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
+        else if (k == '0') tone_state = Tone::NONE;
+        else if (k == '6') { unicode::replace_all(current_str, "a", "â"); unicode::replace_all(current_str, "e", "ê"); unicode::replace_all(current_str, "o", "ô"); }
+        else if (k == '7') { unicode::replace_all(current_str, "u", "ư"); unicode::replace_all(current_str, "o", "ơ"); }
+        else if (k == '8') { unicode::replace_all(current_str, "a", "ă"); }
+        else if (k == '9') { unicode::replace_all(current_str, "d", "đ"); }
+
+        if (i == raw_str.length() - 1 && (char32_t)k == lk) {
+            last_modifier_key = key;
+            key_consumed = true;
         }
     }
-    if (has_mod)
-        current_str.erase(std::remove_if(current_str.begin(), current_str.end(),
-                                         [](unsigned char c) { return isdigit(c); }),
-                          current_str.end());
+
+    if (has_mod) {
+        current_str.erase(std::remove_if(current_str.begin(), current_str.end(), ::isdigit), current_str.end());
+    }
 }
 
 /**
