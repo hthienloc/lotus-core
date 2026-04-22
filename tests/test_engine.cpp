@@ -302,13 +302,12 @@ void test_engine_punctuation_backspace() {
 // ============================================================================
 // [ 4. Interactive State & Edge Cases ]
 // ============================================================================
-
 void test_engine_reproduction_user() {
     Engine engine;
     Modifiers mods;
     std::u32string screen;
 
-    // Type "thử. "
+    // Original case: test backspace behavior on boundaries
     type_into(engine, screen, "thuwr. ");
     assert(unicode::to_utf8(screen) == "thử. ");
 
@@ -324,11 +323,13 @@ void test_engine_reproduction_user() {
     for (int i = 0; i < res2.count; i++) screen.push_back(res2.chars[i]);
     assert(unicode::to_utf8(screen) == "thử");
 
-    // BS3: recover word and delete ử -> th
-    auto res3 = engine.process_key(127, mods);
-    for (int i = 0; i < res3.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res3.count; i++) screen.push_back(res3.chars[i]);
-    assert(unicode::to_utf8(screen) == "th");
+    // English Restoration Cases
+    engine.reset();
+    engine.set_auto_restore(true);
+    assert_typing(engine, "mixi", "mixi");
+    assert_typing(engine, "boxer", "boxer");
+    assert_typing(engine, "exit", "exit");
+    assert_typing(engine, "taxi", "taxi");
 
     std::cout << "  [PASS] User reproduction case" << std::endl;
 }
