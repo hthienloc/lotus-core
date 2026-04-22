@@ -103,6 +103,7 @@ class Engine {
     bool handle_boundary(char32_t key, EngineResult& result);
     bool handle_shortcuts(char32_t key, EngineResult& result);
     bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
+    bool reclaim_from_history(InputMethod method);
 
     EngineResult make_transformation_result(const std::u32string& final_u32);
 

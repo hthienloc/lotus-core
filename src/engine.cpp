@@ -329,53 +329,55 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
         }
         if (buffer.empty()) {
             result = make_transformation_result(U"");
+            reclaim_from_history(method);
             return true;
         }
         result = process_key(0, mods);
         return true;
     } else {
-        auto recovered = word_history.pop();
-        if (!recovered.empty()) {
-            char32_t rc = recovered[0];
-            bool is_boundary = (recovered.size() == 1 && 
-                                (rc == ' ' || rc == '\t' || rc == '\r' || rc == '\n' || 
-                                (rc < 128 && ispunct((int)rc))));
-            
-            if (is_boundary) {
-                // Recovered a boundary (space/punct), delete it from screen
-                result.action = 1;
-                result.backspace = 1;
-                result.count = 0;
-                reset();
-
-                // PEEK/POP the preceding word if available to allow late-editing
-                auto prev_word = word_history.pop();
-                if (!prev_word.empty()) {
-                    // Re-parse the word string into keys
-                    Syllable s = SyllableParser::parse(prev_word);
-                    std::vector<char32_t> keys = s.to_keys(method);
-                    buffer.assign(keys.begin(), keys.end());
-                    last_committed_text = prev_word;
-                    LOTUS_LOG_DEBUG("[Backspace] Reclaimed word: '" + unicode::to_utf8(prev_word) + "'");
-                }
-                last_boundary_key = 0;
-            } else {
-                // Recovered a full word, reclaim it into the active buffer
-                Syllable s = SyllableParser::parse(recovered);
-                s.remove_last_char();
-                
-                // Set the buffer to the shortened canonical state
-                std::vector<char32_t> keys = s.to_keys(method);
-                buffer.assign(keys.begin(), keys.end());
-                
-                result = process_key(0, mods);
-                // The backspace count is exactly the visual width of the recovered word
-                result.backspace = (uint8_t)unicode::display_width(unicode::to_utf8(recovered));
-            }
-            return true;
+        if (reclaim_from_history(method)) {
+            return handle_backspace(key, mods, result);
         }
     }
     result = EngineResult{};
+    return true;
+}
+
+/**
+ * @brief Attempts to pop the last item from history and load it into the active buffer.
+ * 
+ * If the item is a boundary, it reclaim the word before it as well.
+ * 
+ * @param method The current input method for canonicalization.
+ * @return True if something was reclaimed.
+ */
+bool Engine::reclaim_from_history(InputMethod method) {
+    auto recovered = word_history.pop();
+    if (recovered.empty()) return false;
+
+    char32_t rc = recovered[0];
+    bool is_boundary = (recovered.size() == 1 && 
+                        (rc == ' ' || rc == '\t' || rc == '\r' || rc == '\n' || 
+                        (rc < 128 && ispunct((int)rc))));
+
+    if (is_boundary) {
+        // If we reclaimed a boundary, we just set it as the active state
+        buffer = recovered;
+        last_committed_text = recovered;
+        last_boundary_key = rc;
+        
+        // Peek further: if there's a word before this boundary, we want to reclaim it too
+        // but we don't pop it yet. Actually, we SHOULD pop it so it's in the buffer.
+        // Wait, if it's a boundary, the user might want to delete IT.
+        // So we keep it in buffer.
+    } else {
+        // Re-parse the word string into canonical keys
+        Syllable s = SyllableParser::parse(recovered);
+        std::vector<char32_t> keys = s.to_keys(method);
+        buffer.assign(keys.begin(), keys.end());
+        last_committed_text = recovered;
+        LOTUS_LOG_DEBUG("[Backspace] Reclaimed word: '" + unicode::to_utf8(recovered) + "'");
+    }
     return true;
 }
 
