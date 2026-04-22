@@ -11,6 +11,11 @@ set -e
 BUILD_DIR="build"
 TARGET="${1:-test}"
 
+if [ ! -d "$BUILD_DIR" ] || [ ! -f "$BUILD_DIR/CMakeCache.txt" ]; then
+    echo "Initializing build directory..."
+    cmake -B "$BUILD_DIR" -DCMAKE_CXX_FLAGS="-Wall -Wextra -Werror"
+fi
+
 case "$TARGET" in
     clean)
         echo "Cleaning build directory..."
