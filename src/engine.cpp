@@ -7,6 +7,7 @@
  */
 
 #include "lotus_engine/engine.h"
+#include "lotus_engine/log.h"
 
 #include "lotus_engine/parser.h"
 #include "lotus_engine/unicode.h"
@@ -238,11 +239,15 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         apply_vni_modifiers(current_str, key, key_consumed, tone_state);
     }
 
+    LOTUS_LOG_DEBUG("[Pipeline] After IM: " + current_str + " (Tone: " + std::to_string(static_cast<int>(tone_state)) + ", Consumed: " + (key_consumed ? "Y" : "N") + ")");
+
     if (!key_consumed) last_modifier_key = 0;
 
     current_str = unicode::normalize_nfc(current_str);
     Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
     if (tone_state != Tone::NONE) s.tone = tone_state;
+
+    LOTUS_LOG_DEBUG("[Pipeline] Parsed: " + s.to_string(tone_style));
 
     // THE GATE (Post-IM): Initial Consonant Validation
     // This is the first line of defense against English words. 
@@ -261,13 +266,14 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         }
         // Extract the prefix before the first vowel
         std::u32string prefix = (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
-        if (!prefix.empty() && !Validator::is_valid_initial(prefix)) {
+        if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower(prefix))) {
             has_valid_initial = false;
         }
     }
     
     // If the transformation resulted in an invalid prefix, favor the raw English input.
     if (auto_restore && !has_valid_initial && !key_consumed) {
+        LOTUS_LOG_DEBUG("[Pipeline] Restore: Invalid initial prefix");
         return make_transformation_result(buffer);
     }
 
@@ -275,11 +281,18 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     // If the resulting syllable violates Vietnamese spelling rules AND looks like English,
     // we restore the raw buffer contents.
     bool is_valid_vn = Validator::is_valid(s);
-    if (auto_restore && !is_valid_vn && !key_consumed && Linguistics::is_likely_english(raw_word)) {
+    bool is_eng = Linguistics::is_likely_english(raw_word);
+    
+    LOTUS_LOG_DEBUG("[Pipeline] Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") + 
+                    ", LikelyEng=" + std::string(is_eng ? "Y" : "N"));
+
+    if (auto_restore && !is_valid_vn && !key_consumed && is_eng) {
+        LOTUS_LOG_DEBUG("[Pipeline] Restore: Invalid structure & likely English");
         return make_transformation_result(buffer);
     }
 
     std::string final_v_word = s.to_string(tone_style);
+    LOTUS_LOG_DEBUG("[Pipeline] Final: " + final_v_word);
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 

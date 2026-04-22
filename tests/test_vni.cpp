@@ -78,5 +78,6 @@ void test_engine_vni_combined() {
     assert(type_vni(engine, "a61") == "ấ");           // â + sắc
     assert(type_vni(engine, "o72") == "ờ");           // ơ + huyền
     assert(type_vni(engine, "duong795") == "đượng");  // đ + ư + ơ + nặng + ng
+    assert(type_vni(engine, "Vie65c") == "Việc");
     std::cout << "  [PASS] Combined VNI transformations" << std::endl;
 }

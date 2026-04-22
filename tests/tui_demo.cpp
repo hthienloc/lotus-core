@@ -199,7 +199,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     std::u32string screen;
     std::stringstream debug_log;
 
-    const char* vndebug = std::getenv("VNDEBUG");
+    const char* vndebug = std::getenv("LOTUSDEBUG");
     if (vndebug && std::string(vndebug) == "1") {
         set_log_callback([&debug_log](LogLevel level, const std::string& msg) {
             debug_log << "[" << (level == LogLevel::ERROR ? "ERR" : "DBG") << "] " << msg << "\n";

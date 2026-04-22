@@ -1,11 +1,13 @@
 #include "lotus_engine/engine.h"
 #include "lotus_engine/unicode.h"
+#include "lotus_engine/log.h"
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstdlib>
 
 using namespace lotus_engine;
 
@@ -48,13 +50,30 @@ void type_into(Engine& engine, std::u32string& screen, const std::string& keys,
  * @param expected The expected UTF-8 output string.
  */
 void assert_typing(Engine& engine, const std::string& keys, const std::string& expected) {
+    std::string local_logs;
+    const char* vndebug = std::getenv("LOTUSDEBUG");
+    bool debug_enabled = (vndebug && std::string(vndebug) == "1");
+
+    if (debug_enabled) {
+        set_log_callback([&local_logs](LogLevel level, const std::string& msg) {
+            local_logs += "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
+        });
+    }
+
     engine.reset();
     engine.set_at_sentence_start(true);
     std::u32string screen;
     type_into(engine, screen, keys);
     std::string actual = unicode::to_utf8(screen);
 
+    if (debug_enabled) {
+        set_log_callback(nullptr);
+    }
+
     if (actual != expected) {
+        if (debug_enabled && !local_logs.empty()) {
+            std::cerr << "\n--- Debug Logs for Failed Test ---\n" << local_logs << "----------------------------------\n";
+        }
         std::cerr << "[FAIL] Input: '" << keys << "'\n"
                   << "       Expected: '" << expected << "'\n"
                   << "       Actual:   '" << actual << "'\n";
@@ -85,6 +104,8 @@ void test_engine_telex_vowels() {
     assert_typing(engine, "aa", "â");
     assert_typing(engine, "ee", "ê");
     assert_typing(engine, "oo", "ô");
+    assert_typing(engine, "Vieejc", "Việc");
+    assert_typing(engine, "Vieej", "Việ");
     std::cout << "  [PASS] Telex vowel markers (â, ê, ô)" << std::endl;
 }
 
