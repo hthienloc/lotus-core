@@ -75,6 +75,9 @@ bool Linguistics::is_definite_english(const std::string& word) {
 
 /**
  * @brief Heuristic check to see if a word is likely English.
+ * 
+ * @param word The word to analyze.
+ * @return True if heuristics suggest it is English.
  */
 bool Linguistics::is_likely_english(const std::string& word) {
     if (word.empty()) return false;

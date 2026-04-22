@@ -114,6 +114,12 @@ bool Validator::is_valid(const Syllable& syllable) {
  * - 'c' only before back vowels.
  * - 'gh', 'ngh' only before front vowels (excluding 'y').
  * - '-ng' coda cannot follow 'e' or 'ê' (should use '-nh').
+ * 
+ * @param lower_init The initial consonant sequence in lowercase.
+ * @param affinity_char The character used for affinity checking (glide if present, else nucleus start).
+ * @param nucleus_start The first character of the vowel nucleus.
+ * @param final_c The final consonant (coda).
+ * @return True if the combination is valid.
  */
 bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
                                            char32_t nucleus_start, std::u32string_view final_c) {
@@ -137,6 +143,10 @@ bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char3
  * @brief Checks restrictions on specific final consonants.
  * 
  * - 'ch' and 'nh' can only follow specific nuclei (a, ê, i, y).
+ * 
+ * @param nucleus_start The first character of the vowel nucleus.
+ * @param final_c The final consonant (coda).
+ * @return True if the coda restriction is satisfied.
  */
 bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c) {
     if (final_c == U"ch" || final_c == U"nh") {
@@ -151,6 +161,10 @@ bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_v
  * 
  * - 'iê', 'uô', 'ươ', 'yê' MUST have a coda (terminal consonant).
  * - 'ia', 'ua', 'ưa' MUST NOT have a coda.
+ * 
+ * @param stripped_nucleus The vowel nucleus without tone marks.
+ * @param final_c The final consonant (coda).
+ * @return True if diphthong rules are respected.
  */
 bool Validator::check_diphthong_rules(std::u32string_view stripped_nucleus, std::u32string_view final_c) {
     if (stripped_nucleus == U"iê" || stripped_nucleus == U"uô" || stripped_nucleus == U"ươ" ||
