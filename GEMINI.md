@@ -18,9 +18,10 @@ This file defines the foundational constraints and operational standards for the
 
 - **Unicode awareness**: All internal logic and composition buffers MUST use `char32_t`. Conversion to UTF-8 should only happen at the boundary (Engine output or file I/O).
 - **Zero-Regression Policy**: Every bug fix or feature MUST have a reproduction test case in `tests/`. Before finishing a task, run the full suite: `./dev.sh`.
-- **Test Integrity (STRICT)**: NEVER modify existing test case expectations or delete existing tests without explicit user permission. If a code change breaks a test, the code must be fixed to respect the original test intent unless the user approves a change in behavior.
+- **Test Integrity (STRICT)**: NEVER modify existing test case expectations or delete existing tests without explicit user permission.
+- **New Tests (STRICT)**: NEVER add new test cases or new test files without explicitly asking the user for permission first.
 - **Surgical Changes (STRICT)**: Always prefer targeted, surgical edits using the `replace` tool over overwriting entire files.
-- **Comment Preservation**: NEVER arbitrarily delete or strip comments (Doxygen or internal notes) unless they are directly invalidated by the code change. Maintaining context and documentation is a priority.
+- **Comment Preservation (TOP PRIORITY)**: NEVER arbitrarily delete, strip, or simplify comments (Doxygen or internal notes). Maintaining the codebase's documentation context is a non-negotiable priority. Any edit that results in lost comments must be reverted and fixed.
 - **Doxygen Documentation**: Maintain strict Doxygen standards for all class methods and members. Comments should explain the *why* and the *linguistic rationale* for Vietnamese-specific logic.
 - **Performance**: Always run `./dev.sh bench` after making changes to the core transformation logic (`engine.cpp` or `parser.cpp`).
 
