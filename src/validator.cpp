@@ -67,41 +67,47 @@ bool Validator::is_valid(const Syllable& syllable) {
 
     if (syllable.glide.has_value()) {
         char32_t lower_g = unicode::to_lower(syllable.glide.value());
-        if (std::find(VALID_GLIDES_U32.begin(), VALID_GLIDES_U32.end(), std::u32string_view(&lower_g, 1)) == VALID_GLIDES_U32.end())
+        if (std::find(VALID_GLIDES_U32.begin(), VALID_GLIDES_U32.end(), std::u32string_view(&lower_g, 1)) ==
+            VALID_GLIDES_U32.end())
             return false;
     }
 
+    std::u32string stripped_nucleus;
     if (!syllable.vowel.empty()) {
-        std::u32string stripped_v;
         for (char32_t cp : syllable.vowel) {
             char32_t toned_cp = unicode::strip_tone(unicode::to_lower(cp));
             if (toned_cp >= 0x0300 && toned_cp <= 0x036F) continue;
-            stripped_v += toned_cp;
+            stripped_nucleus += toned_cp;
         }
-        if (std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), stripped_v) == VALID_NUCLEI_U32.end())
+        if (std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), stripped_nucleus) == VALID_NUCLEI_U32.end())
             return false;
     }
 
     if (!syllable.final_c.empty()) {
         std::u32string lower_f;
         for (char32_t cp : syllable.final_c) lower_f += unicode::to_lower(cp);
-        if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f) == VALID_FINALS_U32.end())
-            return false;
+        if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f) == VALID_FINALS_U32.end()) return false;
     }
 
     // 2. Orthographic Rules
 
     // Q Rule: q always followed by glide u
     if (lower_init == U"q") {
-        if (!syllable.glide.has_value() || unicode::to_lower(syllable.glide.value()) != 'u')
-            return false;
+        if (!syllable.glide.has_value() || unicode::to_lower(syllable.glide.value()) != 'u') return false;
     }
 
-    // Front Vowel Affinity (k, gh, ngh)
     char32_t nucleus_start = syllable.vowel.empty() ? 0 : unicode::to_lower(syllable.vowel[0]);
-    // Affinity char is the char IMMEDIATELY following the initial consonant
     char32_t affinity_char = syllable.glide.has_value() ? unicode::to_lower(syllable.glide.value()) : nucleus_start;
 
+    if (!check_front_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c)) return false;
+    if (!check_coda_restrictions(nucleus_start, syllable.final_c)) return false;
+    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c)) return false;
+
+    return true;
+}
+
+bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
+                                           char32_t nucleus_start, std::u32string_view final_c) {
     bool is_front = (affinity_char == 'e' || affinity_char == U'ê' || affinity_char == 'i' || affinity_char == 'y');
     bool is_front_no_y = (affinity_char == 'e' || affinity_char == U'ê' || affinity_char == 'i');
 
@@ -112,35 +118,28 @@ bool Validator::is_valid(const Syllable& syllable) {
     if (lower_init == U"ngh" && !is_front_no_y) return false;
     if (lower_init == U"ng" && is_front_no_y) return false;
 
-    if (syllable.final_c == U"ng") {
-        // as per test expectations: should use -nh/ch for front vowels e/ê
+    if (final_c == U"ng") {
         if (nucleus_start == 'e' || nucleus_start == U'ê') return false;
     }
+    return true;
+}
 
-    // Final Coda Restrictions (ch, nh) - Follow the NUCLEUS
-    if (syllable.final_c == U"ch" || syllable.final_c == U"nh") {
+bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c) {
+    if (final_c == U"ch" || final_c == U"nh") {
         if (nucleus_start != 'a' && nucleus_start != U'ê' && nucleus_start != 'i' && nucleus_start != 'y')
             return false;
     }
+    return true;
+}
 
-    // Centering Diphthongs terminal requirement
-    std::u32string stripped_nucleus;
-    for (char32_t cp : syllable.vowel) {
-        char32_t toned_cp = unicode::strip_tone(unicode::to_lower(cp));
-        if (toned_cp >= 0x0300 && toned_cp <= 0x036F) continue;
-        stripped_nucleus += toned_cp;
-    }
-    
-    // Diphthong vs Open/Closed Syllable (ia/iê, ua/uô, ưa/ươ)
-    if (stripped_nucleus == U"iê" || stripped_nucleus == U"uô" || stripped_nucleus == U"ươ" || stripped_nucleus == U"yê") {
-        // Centering diphthongs MUST have a coda (e.g., tiên, đuôi)
-        if (syllable.final_c.empty()) return false;
+bool Validator::check_diphthong_rules(std::u32string_view stripped_nucleus, std::u32string_view final_c) {
+    if (stripped_nucleus == U"iê" || stripped_nucleus == U"uô" || stripped_nucleus == U"ươ" ||
+        stripped_nucleus == U"yê") {
+        if (final_c.empty()) return false;
     }
     if (stripped_nucleus == U"ia" || stripped_nucleus == U"ua" || stripped_nucleus == U"ưa") {
-        // Open diphthongs MUST NOT have a coda (e.g., mía, mùa, mưa)
-        if (!syllable.final_c.empty()) return false;
+        if (!final_c.empty()) return false;
     }
-
     return true;
 }
 

@@ -2,14 +2,105 @@
 
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "lotus_engine/common.h"
 
 namespace lotus_engine {
 namespace unicode {
+
+namespace detail {
+
+inline const std::unordered_map<char32_t, char32_t> LOWER_MAP = {
+    {U'À', U'à'}, {U'Á', U'á'}, {U'Â', U'â'}, {U'Ã', U'ã'}, {U'È', U'è'}, {U'É', U'é'}, {U'Ê', U'ê'}, {U'Ì', U'ì'},
+    {U'Í', U'í'}, {U'Ò', U'ò'}, {U'Ó', U'ó'}, {U'Ô', U'ô'}, {U'Õ', U'õ'}, {U'Ù', U'ù'}, {U'Ú', U'ú'}, {U'Ý', U'ý'},
+    {U'Ă', U'ă'}, {U'Đ', U'đ'}, {U'Ĩ', U'ĩ'}, {U'Ũ', U'ũ'}, {U'Ơ', U'ơ'}, {U'Ư', U'ư'}, {U'Ạ', U'ạ'}, {U'Ả', U'ả'},
+    {U'Ấ', U'ấ'}, {U'Ầ', U'ầ'}, {U'Ẩ', U'ẩ'}, {U'Ẫ', U'ẫ'}, {U'Ậ', U'ậ'}, {U'Ắ', U'ắ'}, {U'Ằ', U'ằ'}, {U'Ẳ', U'ẳ'},
+    {U'Ẵ', U'ẵ'}, {U'Ặ', U'ặ'}, {U'Ẹ', U'ẹ'}, {U'Ẻ', U'ẻ'}, {U'Ẽ', U'ẽ'}, {U'Ế', U'ế'}, {U'Ề', U'ề'}, {U'Ể', U'ể'},
+    {U'Ễ', U'ễ'}, {U'Ệ', U'ệ'}, {U'Ỉ', U'ỉ'}, {U'Ị', U'ị'}, {U'Ọ', U'ọ'}, {U'Ỏ', U'ỏ'}, {U'Ố', U'ố'}, {U'Ồ', U'ồ'},
+    {U'Ổ', U'ổ'}, {U'Ỗ', U'ỗ'}, {U'Ộ', U'ộ'}, {U'Ớ', U'ớ'}, {U'Ờ', U'ờ'}, {U'Ở', U'ở'}, {U'Ỡ', U'ỡ'}, {U'Ợ', U'ợ'},
+    {U'Ụ', U'ụ'}, {U'Ủ', U'ủ'}, {U'Ứ', U'ứ'}, {U'Ừ', U'ừ'}, {U'Ử', U'ử'}, {U'Ữ', U'ữ'}, {U'Ự', U'ự'}, {U'Ỳ', U'ỳ'},
+    {U'Ỵ', U'ỵ'}, {U'Ỷ', U'ỷ'}, {U'Ỹ', U'ỹ'}
+};
+
+inline const std::unordered_map<char32_t, char32_t> UPPER_MAP = []() {
+    std::unordered_map<char32_t, char32_t> m;
+    for (auto const& [upper, lower] : LOWER_MAP)
+        m[lower] = upper;
+    return m;
+}();
+
+inline const std::unordered_map<char32_t, char32_t> STRIP_TONE_MAP = {
+    {U'à', U'a'}, {U'á', U'a'}, {U'ã', U'a'}, {U'ạ', U'a'}, {U'ả', U'a'},
+    {U'ằ', U'ă'}, {U'ắ', U'ă'}, {U'ẵ', U'ă'}, {U'ặ', U'ă'}, {U'ẳ', U'ă'},
+    {U'ầ', U'â'}, {U'ấ', U'â'}, {U'ẫ', U'â'}, {U'ậ', U'â'}, {U'ẩ', U'â'},
+    {U'è', U'e'}, {U'é', U'e'}, {U'ẽ', U'e'}, {U'ẹ', U'e'}, {U'ẻ', U'e'},
+    {U'ề', U'ê'}, {U'ế', U'ê'}, {U'ễ', U'ê'}, {U'ệ', U'ê'}, {U'ể', U'ê'},
+    {U'ì', U'i'}, {U'í', U'i'}, {U'ĩ', U'i'}, {U'ị', U'i'}, {U'ỉ', U'i'},
+    {U'ò', U'o'}, {U'ó', U'o'}, {U'õ', U'o'}, {U'ọ', U'o'}, {U'ỏ', U'o'},
+    {U'ồ', U'ô'}, {U'ố', U'ô'}, {U'ỗ', U'ô'}, {U'ộ', U'ô'}, {U'ổ', U'ô'},
+    {U'ờ', U'ơ'}, {U'ớ', U'ơ'}, {U'ỡ', U'ơ'}, {U'ợ', U'ơ'}, {U'ở', U'ơ'},
+    {U'ù', U'u'}, {U'ú', U'u'}, {U'ũ', U'u'}, {U'ụ', U'u'}, {U'ủ', U'u'},
+    {U'ừ', U'ư'}, {U'ứ', U'ư'}, {U'ữ', U'ư'}, {U'ự', U'ư'}, {U'ử', U'ư'},
+    {U'ỳ', U'y'}, {U'ý', U'y'}, {U'ỹ', U'y'}, {U'ỵ', U'y'}, {U'ỷ', U'y'}
+};
+
+inline const std::unordered_map<char32_t, Tone> TONE_MAP = {
+    {U'á', Tone::ACUTE}, {U'ắ', Tone::ACUTE}, {U'ấ', Tone::ACUTE}, {U'é', Tone::ACUTE}, {U'ế', Tone::ACUTE}, {U'í', Tone::ACUTE},
+    {U'ó', Tone::ACUTE}, {U'ố', Tone::ACUTE}, {U'ớ', Tone::ACUTE}, {U'ú', Tone::ACUTE}, {U'ứ', Tone::ACUTE}, {U'ý', Tone::ACUTE},
+    {U'à', Tone::GRAVE}, {U'ằ', Tone::GRAVE}, {U'ầ', Tone::GRAVE}, {U'è', Tone::GRAVE}, {U'ề', Tone::GRAVE}, {U'ì', Tone::GRAVE},
+    {U'ò', Tone::GRAVE}, {U'ồ', Tone::GRAVE}, {U'ờ', Tone::GRAVE}, {U'ù', Tone::GRAVE}, {U'ừ', Tone::GRAVE}, {U'ỳ', Tone::GRAVE},
+    {U'ả', Tone::HOOK}, {U'ẳ', Tone::HOOK}, {U'ẩ', Tone::HOOK}, {U'ẻ', Tone::HOOK}, {U'ể', Tone::HOOK}, {U'ỉ', Tone::HOOK},
+    {U'ỏ', Tone::HOOK}, {U'ổ', Tone::HOOK}, {U'ở', Tone::HOOK}, {U'ủ', Tone::HOOK}, {U'ử', Tone::HOOK}, {U'ỷ', Tone::HOOK},
+    {U'ã', Tone::TILDE}, {U'ẵ', Tone::TILDE}, {U'ẫ', Tone::TILDE}, {U'ẽ', Tone::TILDE}, {U'ễ', Tone::TILDE}, {U'ĩ', Tone::TILDE},
+    {U'õ', Tone::TILDE}, {U'ỗ', Tone::TILDE}, {U'ỡ', Tone::TILDE}, {U'ũ', Tone::TILDE}, {U'ữ', Tone::TILDE}, {U'ỹ', Tone::TILDE},
+    {U'ạ', Tone::DOT}, {U'ặ', Tone::DOT}, {U'ậ', Tone::DOT}, {U'ẹ', Tone::DOT}, {U'ệ', Tone::DOT}, {U'ị', Tone::DOT},
+    {U'ọ', Tone::DOT}, {U'ộ', Tone::DOT}, {U'ợ', Tone::DOT}, {U'ụ', Tone::DOT}, {U'ự', Tone::DOT}, {U'ỵ', Tone::DOT}
+};
+
+inline const std::map<std::pair<char32_t, char32_t>, char32_t> COMPOSITION_MAP = {
+    {{U'a', 0x0301}, U'á'}, {{U'ă', 0x0301}, U'ắ'}, {{U'â', 0x0301}, U'ấ'},
+    {{U'e', 0x0301}, U'é'}, {{U'ê', 0x0301}, U'ế'},
+    {{U'i', 0x0301}, U'í'},
+    {{U'o', 0x0301}, U'ó'}, {{U'ô', 0x0301}, U'ố'}, {{U'ơ', 0x0301}, U'ớ'},
+    {{U'u', 0x0301}, U'ú'}, {{U'ư', 0x0301}, U'ứ'},
+    {{U'y', 0x0301}, U'ý'},
+    {{U'a', 0x0300}, U'à'}, {{U'ă', 0x0300}, U'ằ'}, {{U'â', 0x0300}, U'ầ'},
+    {{U'e', 0x0300}, U'è'}, {{U'ê', 0x0300}, U'ề'},
+    {{U'i', 0x0300}, U'ì'},
+    {{U'o', 0x0300}, U'ò'}, {{U'ô', 0x0300}, U'ồ'}, {{U'ơ', 0x0300}, U'ờ'},
+    {{U'u', 0x0300}, U'ù'}, {{U'ư', 0x0300}, U'ừ'},
+    {{U'y', 0x0300}, U'ỳ'},
+    {{U'a', 0x0309}, U'ả'}, {{U'ă', 0x0309}, U'ẳ'}, {{U'â', 0x0309}, U'ẩ'},
+    {{U'e', 0x0309}, U'ẻ'}, {{U'ê', 0x0309}, U'ể'},
+    {{U'i', 0x0309}, U'ỉ'},
+    {{U'o', 0x0309}, U'ỏ'}, {{U'ô', 0x0309}, U'ổ'}, {{U'ơ', 0x0309}, U'ở'},
+    {{U'u', 0x0309}, U'ủ'}, {{U'ư', 0x0309}, U'ử'},
+    {{U'y', 0x0309}, U'ỷ'},
+    {{U'a', 0x0303}, U'ã'}, {{U'ă', 0x0303}, U'ẵ'}, {{U'â', 0x0303}, U'ẫ'},
+    {{U'e', 0x0303}, U'ẽ'}, {{U'ê', 0x0303}, U'ễ'},
+    {{U'i', 0x0303}, U'ĩ'},
+    {{U'o', 0x0303}, U'õ'}, {{U'ô', 0x0303}, U'ỗ'}, {{U'ơ', 0x0303}, U'ỡ'},
+    {{U'u', 0x0303}, U'ũ'}, {{U'ư', 0x0303}, U'ữ'},
+    {{U'y', 0x0303}, U'ỹ'},
+    {{U'a', 0x0323}, U'ạ'}, {{U'ă', 0x0323}, U'ặ'}, {{U'â', 0x0323}, U'ậ'},
+    {{U'e', 0x0323}, U'ẹ'}, {{U'ê', 0x0323}, U'ệ'},
+    {{U'i', 0x0323}, U'ị'},
+    {{U'o', 0x0323}, U'ọ'}, {{U'ô', 0x0323}, U'ộ'}, {{U'ơ', 0x0323}, U'ợ'},
+    {{U'u', 0x0323}, U'ụ'}, {{U'ư', 0x0323}, U'ự'},
+    {{U'y', 0x0323}, U'ỵ'},
+    {{U'a', 0x0302}, U'â'}, {{U'e', 0x0302}, U'ê'}, {{U'o', 0x0302}, U'ô'},
+    {{U'A', 0x0302}, U'Â'}, {{U'E', 0x0302}, U'Ê'}, {{U'O', 0x0302}, U'Ô'},
+    {{U'a', 0x0306}, U'ă'}, {{U'A', 0x0306}, U'Ă'},
+    {{U'o', 0x031B}, U'ơ'}, {{U'u', 0x031B}, U'ư'},
+    {{U'O', 0x031B}, U'Ơ'}, {{U'U', 0x031B}, U'Ư'}
+};
+
+} // namespace detail
 
 /**
  * @brief Convert a UTF-8 string to a UTF-32 vector.
@@ -75,287 +166,15 @@ inline std::string to_utf8(const std::u32string& u32) {
 inline char32_t to_lower(char32_t cp) {
     if (cp >= 'A' && cp <= 'Z')
         return cp + ('a' - 'A');
-    switch (cp) {
-        case U'À':
-            return U'à';
-        case U'Á':
-            return U'á';
-        case U'Â':
-            return U'â';
-        case U'Ã':
-            return U'ã';
-        case U'È':
-            return U'è';
-        case U'É':
-            return U'é';
-        case U'Ê':
-            return U'ê';
-        case U'Ì':
-            return U'ì';
-        case U'Í':
-            return U'í';
-        case U'Ò':
-            return U'ò';
-        case U'Ó':
-            return U'ó';
-        case U'Ô':
-            return U'ô';
-        case U'Õ':
-            return U'õ';
-        case U'Ù':
-            return U'ù';
-        case U'Ú':
-            return U'ú';
-        case U'Ý':
-            return U'ý';
-        case U'Ă':
-            return U'ă';
-        case U'Đ':
-            return U'đ';
-        case U'Ĩ':
-            return U'ĩ';
-        case U'Ũ':
-            return U'ũ';
-        case U'Ơ':
-            return U'ơ';
-        case U'Ư':
-            return U'ư';
-        case U'Ạ':
-            return U'ạ';
-        case U'Ả':
-            return U'ả';
-        case U'Ấ':
-            return U'ấ';
-        case U'Ầ':
-            return U'ầ';
-        case U'Ẩ':
-            return U'ẩ';
-        case U'Ẫ':
-            return U'ẫ';
-        case U'Ậ':
-            return U'ậ';
-        case U'Ắ':
-            return U'ắ';
-        case U'Ằ':
-            return U'ằ';
-        case U'Ẳ':
-            return U'ẳ';
-        case U'Ẵ':
-            return U'ẵ';
-        case U'Ặ':
-            return U'ặ';
-        case U'Ẹ':
-            return U'ẹ';
-        case U'Ẻ':
-            return U'ẻ';
-        case U'Ẽ':
-            return U'ẽ';
-        case U'Ế':
-            return U'ế';
-        case U'Ề':
-            return U'ề';
-        case U'Ể':
-            return U'ể';
-        case U'Ễ':
-            return U'ễ';
-        case U'Ệ':
-            return U'ệ';
-        case U'Ỉ':
-            return U'ỉ';
-        case U'Ị':
-            return U'ị';
-        case U'Ọ':
-            return U'ọ';
-        case U'Ỏ':
-            return U'ỏ';
-        case U'Ố':
-            return U'ố';
-        case U'Ồ':
-            return U'ồ';
-        case U'Ổ':
-            return U'ổ';
-        case U'Ỗ':
-            return U'ỗ';
-        case U'Ộ':
-            return U'ộ';
-        case U'Ớ':
-            return U'ớ';
-        case U'Ờ':
-            return U'ờ';
-        case U'Ở':
-            return U'ở';
-        case U'Ỡ':
-            return U'ỡ';
-        case U'Ợ':
-            return U'ợ';
-        case U'Ụ':
-            return U'ụ';
-        case U'Ủ':
-            return U'ủ';
-        case U'Ứ':
-            return U'ứ';
-        case U'Ừ':
-            return U'ừ';
-        case U'Ử':
-            return U'ử';
-        case U'Ữ':
-            return U'ữ';
-        case U'Ự':
-            return U'ự';
-        case U'Ỳ':
-            return U'ỳ';
-        case U'Ỵ':
-            return U'ỵ';
-        case U'Ỷ':
-            return U'ỷ';
-        case U'Ỹ':
-            return U'ỹ';
-        default:
-            return cp;
-    }
+    auto it = detail::LOWER_MAP.find(cp);
+    return it != detail::LOWER_MAP.end() ? it->second : cp;
 }
 
 inline char32_t to_upper(char32_t cp) {
     if (cp >= 'a' && cp <= 'z')
         return cp - ('a' - 'A');
-    switch (cp) {
-        case U'à':
-            return U'À';
-        case U'á':
-            return U'Á';
-        case U'â':
-            return U'Â';
-        case U'ã':
-            return U'Ã';
-        case U'è':
-            return U'È';
-        case U'é':
-            return U'É';
-        case U'ê':
-            return U'Ê';
-        case U'ì':
-            return U'Ì';
-        case U'í':
-            return U'Í';
-        case U'ò':
-            return U'Ò';
-        case U'ó':
-            return U'Ó';
-        case U'ô':
-            return U'Ô';
-        case U'õ':
-            return U'Õ';
-        case U'ù':
-            return U'Ù';
-        case U'ú':
-            return U'Ú';
-        case U'ý':
-            return U'Ý';
-        case U'ă':
-            return U'Ă';
-        case U'đ':
-            return U'Đ';
-        case U'ĩ':
-            return U'Ĩ';
-        case U'ũ':
-            return U'Ũ';
-        case U'ơ':
-            return U'Ơ';
-        case U'ư':
-            return U'Ư';
-        case U'ạ':
-            return U'Ạ';
-        case U'ả':
-            return U'Ả';
-        case U'ấ':
-            return U'Ấ';
-        case U'ầ':
-            return U'Ầ';
-        case U'ẩ':
-            return U'Ẩ';
-        case U'ẫ':
-            return U'Ẫ';
-        case U'ậ':
-            return U'Ậ';
-        case U'ắ':
-            return U'Ắ';
-        case U'ằ':
-            return U'Ằ';
-        case U'ẳ':
-            return U'Ẳ';
-        case U'ẵ':
-            return U'Ẵ';
-        case U'ặ':
-            return U'Ặ';
-        case U'ẹ':
-            return U'Ẹ';
-        case U'ẻ':
-            return U'Ẻ';
-        case U'ẽ':
-            return U'Ẽ';
-        case U'ế':
-            return U'Ế';
-        case U'ề':
-            return U'Ề';
-        case U'ể':
-            return U'Ể';
-        case U'ễ':
-            return U'Ễ';
-        case U'ệ':
-            return U'Ệ';
-        case U'ỉ':
-            return U'Ỉ';
-        case U'ị':
-            return U'Ị';
-        case U'ọ':
-            return U'Ọ';
-        case U'ỏ':
-            return U'Ỏ';
-        case U'ố':
-            return U'Ố';
-        case U'ồ':
-            return U'Ồ';
-        case U'ổ':
-            return U'Ổ';
-        case U'ỗ':
-            return U'Ỗ';
-        case U'ộ':
-            return U'Ộ';
-        case U'ớ':
-            return U'Ớ';
-        case U'ờ':
-            return U'Ờ';
-        case U'ở':
-            return U'Ở';
-        case U'ỡ':
-            return U'Ỡ';
-        case U'ợ':
-            return U'Ợ';
-        case U'ụ':
-            return U'Ụ';
-        case U'ủ':
-            return U'Ủ';
-        case U'ứ':
-            return U'Ứ';
-        case U'ừ':
-            return U'Ừ';
-        case U'ử':
-            return U'Ử';
-        case U'ữ':
-            return U'Ữ';
-        case U'ự':
-            return U'Ự';
-        case U'ỳ':
-            return U'Ỳ';
-        case U'ỵ':
-            return U'Ỵ';
-        case U'ỷ':
-            return U'Ỷ';
-        case U'ỹ':
-            return U'Ỹ';
-        default:
-            return cp;
-    }
+    auto it = detail::UPPER_MAP.find(cp);
+    return it != detail::UPPER_MAP.end() ? it->second : cp;
 }
 
 inline std::string to_lower(const std::string& input) {
@@ -390,107 +209,16 @@ inline size_t display_width(const std::string& utf8) {
  * @brief Strips Vietnamese specific tone marks while keeping centering diacritics (ê, ô, etc).
  */
 inline char32_t strip_tone(char32_t cp) {
-    switch (cp) {
-        case U'à':
-        case U'á':
-        case U'ã':
-        case U'ạ':
-        case U'ả':
-            return U'a';
-        case U'ằ':
-        case U'ắ':
-        case U'ẵ':
-        case U'ặ':
-        case U'ẳ':
-            return U'ă';
-        case U'ầ':
-        case U'ấ':
-        case U'ẫ':
-        case U'ậ':
-        case U'ẩ':
-            return U'â';
-        case U'è':
-        case U'é':
-        case U'ẽ':
-        case U'ẹ':
-        case U'ẻ':
-            return U'e';
-        case U'ề':
-        case U'ế':
-        case U'ễ':
-        case U'ệ':
-        case U'ể':
-            return U'ê';
-        case U'ì':
-        case U'í':
-        case U'ĩ':
-        case U'ị':
-        case U'ỉ':
-            return U'i';
-        case U'ò':
-        case U'ó':
-        case U'õ':
-        case U'ọ':
-        case U'ỏ':
-            return U'o';
-        case U'ồ':
-        case U'ố':
-        case U'ỗ':
-        case U'ộ':
-        case U'ổ':
-            return U'ô';
-        case U'ờ':
-        case U'ớ':
-        case U'ỡ':
-        case U'ợ':
-        case U'ở':
-            return U'ơ';
-        case U'ù':
-        case U'ú':
-        case U'ũ':
-        case U'ụ':
-        case U'ủ':
-            return U'u';
-        case U'ừ':
-        case U'ứ':
-        case U'ữ':
-        case U'ự':
-        case U'ử':
-            return U'ư';
-        case U'ỳ':
-        case U'ý':
-        case U'ỹ':
-        case U'ỵ':
-        case U'ỷ':
-            return U'y';
-        default:
-            return cp;
-    }
+    auto it = detail::STRIP_TONE_MAP.find(cp);
+    return it != detail::STRIP_TONE_MAP.end() ? it->second : cp;
 }
 
 /**
  * @brief Returns the Tone of a precomposed Vietnamese character.
  */
 inline Tone get_tone(char32_t cp) {
-    switch (cp) {
-        case U'á': case U'ắ': case U'ấ': case U'é': case U'ế': case U'í': 
-        case U'ó': case U'ố': case U'ớ': case U'ú': case U'ứ': case U'ý':
-            return Tone::ACUTE;
-        case U'à': case U'ằ': case U'ầ': case U'è': case U'ề': case U'ì':
-        case U'ò': case U'ồ': case U'ờ': case U'ù': case U'ừ': case U'ỳ':
-            return Tone::GRAVE;
-        case U'ả': case U'ẳ': case U'ẩ': case U'ẻ': case U'ể': case U'ỉ':
-        case U'ỏ': case U'ổ': case U'ở': case U'ủ': case U'ử': case U'ỷ':
-            return Tone::HOOK;
-        case U'ã': case U'ẵ': case U'ẫ': case U'ẽ': case U'ễ': case U'ĩ':
-        case U'õ': case U'ỗ': case U'ỡ': case U'ũ': case U'ữ': case U'ỹ':
-            return Tone::TILDE;
-        case U'ạ': case U'ặ': case U'ậ': case U'ẹ': case U'ệ': case U'ị':
-        case U'ọ': case U'ộ': case U'ợ': case U'ụ': case U'ự': case U'ỵ':
-            return Tone::DOT;
-        default:
-            return Tone::NONE;
-    }
+    auto it = detail::TONE_MAP.find(cp);
+    return it != detail::TONE_MAP.end() ? it->second : Tone::NONE;
 }
 
 /**
@@ -500,187 +228,14 @@ inline std::string normalize_nfc(const std::string& input) {
     std::u32string u32 = to_utf32(input);
     std::u32string res;
 
-    auto get_nfc = [](char32_t base, char32_t mark) -> char32_t {
-        if (mark == 0x0301) {  // Sắc
-            switch (base) {
-                case 'a':
-                    return U'á';
-                case 0x0103:
-                    return U'ắ';
-                case 0x00E2:
-                    return U'ấ';  // a, ă, â
-                case 'e':
-                    return U'é';
-                case 0x00EA:
-                    return U'ế';  // e, ê
-                case 'i':
-                    return U'í';
-                case 'o':
-                    return U'ó';
-                case 0x00F4:
-                    return U'ố';
-                case 0x01A1:
-                    return U'ớ';  // o, ô, ơ
-                case 'u':
-                    return U'ú';
-                case 0x01B0:
-                    return U'ứ';  // u, ư
-                case 'y':
-                    return U'ý';
-            }
-        } else if (mark == 0x0300) {  // Huyền
-            switch (base) {
-                case 'a':
-                    return U'à';
-                case 0x0103:
-                    return U'ằ';
-                case 0x00E2:
-                    return U'ầ';
-                case 'e':
-                    return U'è';
-                case 0x00EA:
-                    return U'ề';
-                case 'i':
-                    return U'ì';
-                case 'o':
-                    return U'ò';
-                case 0x00F4:
-                    return U'ồ';
-                case 0x01A1:
-                    return U'ờ';
-                case 'u':
-                    return U'ù';
-                case 0x01B0:
-                    return U'ừ';
-                case 'y':
-                    return U'ỳ';
-            }
-        } else if (mark == 0x0309) {  // Hỏi
-            switch (base) {
-                case 'a':
-                    return 0x1EA3;
-                case 0x0103:
-                    return 0x1EB3;
-                case 0x00E2:
-                    return 0x1EA9;
-                case 'e':
-                    return 0x1EBB;
-                case 0x00EA:
-                    return 0x1EC3;
-                case 'i':
-                    return 0x1EC9;
-                case 'o':
-                    return 0x1ECF;
-                case 0x00F4:
-                    return 0x1ED5;
-                case 0x01A1:
-                    return 0x1EDF;
-                case 'u':
-                    return 0x1EE7;
-                case 0x01B0:
-                    return 0x1EED;
-                case 'y':
-                    return 0x1EF7;
-            }
-        } else if (mark == 0x0303) {  // Ngã
-            switch (base) {
-                case 'a':
-                    return U'ã';
-                case 0x0103:
-                    return U'ẵ';
-                case 0x00E2:
-                    return U'ẫ';
-                case 'e':
-                    return U'ẽ';
-                case 0x00EA:
-                    return U'ễ';
-                case 'i':
-                    return U'ĩ';
-                case 'o':
-                    return U'õ';
-                case 0x00F4:
-                    return U'ỗ';
-                case 0x01A1:
-                    return U'ỡ';
-                case 'u':
-                    return U'ũ';
-                case 0x01B0:
-                    return U'ữ';
-                case 'y':
-                    return U'ỹ';
-            }
-        } else if (mark == 0x0323) {  // Nặng
-            switch (base) {
-                case 'a':
-                    return U'ạ';
-                case 0x0103:
-                    return U'ặ';
-                case 0x00E2:
-                    return U'ậ';
-                case 'e':
-                    return U'ẹ';
-                case 0x00EA:
-                    return U'ệ';
-                case 'i':
-                    return U'ị';
-                case 'o':
-                    return U'ọ';
-                case 0x00F4:
-                    return U'ộ';
-                case 0x01A1:
-                    return U'ợ';
-                case 'u':
-                    return U'ụ';
-                case 0x01B0:
-                    return U'ự';
-                case 'y':
-                    return U'ỵ';
-            }
-        } else if (mark == 0x0302) {  // Circumflex (^)
-            switch (base) {
-                case 'a':
-                    return U'â';
-                case 'e':
-                    return U'ê';
-                case 'o':
-                    return U'ô';
-                case 'A':
-                    return U'Â';
-                case 'E':
-                    return U'Ê';
-                case 'O':
-                    return U'Ô';
-            }
-        } else if (mark == 0x0306) {  // Breve (()
-            switch (base) {
-                case 'a':
-                    return U'ă';
-                case 'A':
-                    return U'Ă';
-            }
-        } else if (mark == 0x031B) {  // Horn (+)
-            switch (base) {
-                case 'o':
-                    return U'ơ';
-                case 'u':
-                    return U'ư';
-                case 'O':
-                    return U'Ơ';
-                case 'U':
-                    return U'Ư';
-            }
-        }
-        return 0;
-    };
-
     for (size_t i = 0; i < u32.size(); ++i) {
         char32_t current = u32[i];
         while (i + 1 < u32.size()) {
             char32_t next = u32[i + 1];
             if (next >= 0x0300 && next <= 0x036F) {
-                char32_t combined = get_nfc(current, next);
-                if (combined != 0) {
-                    current = combined;
+                auto it = detail::COMPOSITION_MAP.find({current, next});
+                if (it != detail::COMPOSITION_MAP.end()) {
+                    current = it->second;
                     i++;
                     continue;
                 }

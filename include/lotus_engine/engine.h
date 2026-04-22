@@ -97,6 +97,13 @@ class Engine {
     // Internal VNI modifier application.
     void apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                              Tone& tone_state);
+    
+    // Decomposed process_key helpers
+    bool handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result);
+    bool handle_boundary(char32_t key, EngineResult& result);
+    bool handle_shortcuts(char32_t key, EngineResult& result);
+    bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
+
     EngineResult make_transformation_result(const std::u32string& final_u32);
 
     std::u32string buffer;              ///< The current raw composition buffer (UTF-32).
