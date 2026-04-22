@@ -10,14 +10,15 @@ You are a senior systems engineer specializing in linguistic processing. Maintai
 
 1. **Unit Tests First**: Every new function MUST have a corresponding unit test in `tests/`.
 2. **Modular Pipeline**: Do not implement massive if-else chains. Add new typing methods as configurable pipeline stages.
-3. **Unicode Awareness**: Use `char32_t` for internal processing to avoid UTF-8 indexing issues. Use `std::wstring_convert` for FFI boundaries.
-4. **No Magic Numbers**: Define constants in `include/lotus_engine/types.h` or within the component namespaces.
+3. **Unicode Awareness**: Use `char32_t` for internal processing.
+4. **Professional Documentation**: All code must follow Doxygen standards.
+5. **Performance Tracking**: Always run `./dev.sh bench` after architectural changes.
 
 ## Workflow
 
-1. **Build**: `mkdir build && cd build && cmake .. && make`
-2. **Test**: `./dev.sh` (builds + runs tests). Alternatively: `./build/lotus_tests`.
-3. **Documentation**: Update `ARCHITECTURE.md` if the pipeline structure changes.
+1. **Build & Test**: `./dev.sh` (Initializes build directory, compiles, and runs unit tests).
+2. **Benchmark**: `./dev.sh bench` (Runs the multi-scenario realistic benchmark suite).
+3. **Documentation**: Add Doxygen comments to all new symbols. Use `///` for implementations.
 
 ## Existing Reference Projects
 

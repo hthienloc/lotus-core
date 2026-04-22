@@ -14,32 +14,34 @@
   - Resilient backspace chaining across word boundaries.
   - Action-based feedback for immediate UI updates.
   - Foreign word auto-restore.
+  - **Code Quality**: Chuẩn hóa comment Doxygen cho toàn bộ source code và cải thiện bộ benchmark thực tế.
 - [x] **Giai đoạn 4: Unicode Stability & Integration**
   - Đảm bảo output luôn ở chuẩn NFC để tránh lỗi hiển thị.
   - Xử lý các tổ hợp dấu kết hợp (Combining Marks).
   - Hỗ trợ đổi style bỏ dấu (Kiểu cũ `hòa` vs Kiểu mới `hoà`).
   - Export C-API (`liblotus_engine_core.so`) ổn định cho `fcitx5-lotus`.
 
-## Active Phase: State Reconstruction & Context Awareness
+## Active Phase: System Integration & Polish
 
-Mục tiêu: Đưa Lotus Engine lên tầm cao mới về độ thông minh và trải nghiệm người dùng thực tế.
+Mục tiêu: Hoàn thiện khả năng tích hợp và độ ổn định cho các môi trường thực tế.
 
-### 1. Surrounding Text & State Reconstruction
+### 1. Surrounding Text & Context Awareness
 
 - [x] **State Reconstruction**: Phát triển logic tái cấu trúc trạng thái engine từ text thuần (`rebuild_from_text`). Cho phép nạp phím gõ từ một từ đã có sẵn.
 - [x] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
 - [ ] **Fcitx5 Surrounding Text**: Tích hợp sâu với API surrounding-text của Fcitx5 để đồng bộ hóa trạng thái gõ và xóa.
 
-### 2. Smart Typing Features (Experimental)
+### 2. Smart Typing Features
 
-- [ ] **Double Space to Period**: Gõ dấu cách 2 lần sẽ tự động chuyển thành dấu chấm và dấu cách.
-- [ ] **Auto Capitalize**: Tự động viết hoa sau dấu câu kết thúc câu (`.`, `!`, `?`) hoặc xuống dòng.
+- [x] **Double Space to Period**: Gõ dấu cách 2 lần sẽ tự động chuyển thành dấu chấm và dấu cách.
+- [x] **Auto Capitalize**: Tự động viết hoa sau dấu câu kết thúc câu (`.`, `!`, `?`) hoặc xuống dòng.
 
-### 2. Rigorous Validation & Maintenance
+### 3. Rigorous Validation & Maintenance
 
+- [ ] **English Whitelist**: Xây dựng lại danh sách trắng cho các từ tiếng Anh phổ biến để tránh nhận diện nhầm.
 - [ ] **Enhanced Validation**: Cải thiện `Validator` để ngăn chặn gõ các tổ hợp phím vô lý (ví dụ: `qqu`, `ww`) mà không cần làm quá phức tạp kiến trúc.
 - [ ] **Integration Test Coverage**: Mở rộng bộ test tích hợp với các ứng dụng thực tế (Chromium, Firefox, LibreOffice) để giải quyết các lỗi mất phím.
-- [ ] **CI & Automation**: Hoàn thiện luồng CI GitHub Actions và chuẩn hóa hệ thống logging.
+
 
 ## Long-term Research (Pha tương lai)
 

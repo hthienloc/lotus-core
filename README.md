@@ -1,7 +1,7 @@
 # Lotus Engine
 
 [![CI](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml)
-[![Latency](https://img.shields.io/badge/avg%20latency-0.016%20ms-brightgreen)](https://github.com/fcitx5-lotus/lotus-engine)
+[![Latency](https://img.shields.io/badge/avg%20latency-0.031%20ms-brightgreen)](https://github.com/fcitx5-lotus/lotus-engine)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 
@@ -18,8 +18,9 @@
 | 🔁 **Resilient Recovery** | Auto-reverts invalid compositions and preserves raw keystrokes (e.g. `tests`, `nurses`) |
 | 🎵 **Tone Placement** | Smart heuristics for complex vowel clusters (`iêu`, `uôi`, `ươi`, `ươu`, `ưa`) |
 | 🎨 **Tone Style** | Old style (`hòa`) and New style (`hoà`) selectable at runtime |
+| ⚡ **Smart Typing** | Built-in support for Auto-Capitalization and Double-Space to Period |
 | 🔠 **NFC Output** | All output is Unicode NFC precomposed — eliminates phantom backspace bugs in Electron/Web apps |
-| ⚡ **< 0.15ms/key** | Measured average 0.014ms, peak 0.14ms over 10,000 live keystrokes |
+| ⚡ **< 0.1ms/key** | Measured average 0.031ms, peak 0.44ms under heavy stress tests |
 | 🔌 **C-API** | Stable `lotus_engine_t*` handle, log callbacks, no C++ ABI leakage |
 
 ---

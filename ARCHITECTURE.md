@@ -38,7 +38,7 @@ Applies typing method rules (Telex, VNI, etc.).
 
 Handles undoing and restoring original input when a word becomes phonologically invalid.
 
-## The engine strictly implements the **GoNhanh 7-Stage Pipeline**, prioritizing validation before any transformation
+## The engine strictly implements the **GoNhanh 8-Stage Pipeline**, prioritizing validation before any transformation
 
 ### Processing Pipeline
 
@@ -47,14 +47,21 @@ Handles undoing and restoring original input when a word becomes phonologically 
 3. **STAGE 3: Mark** - Handles tone marks (Telex: `s, f, r, x, j`).
 4. **STAGE 4: Remove** - Handles `z` (Telex) or `0` (VNI) to clear marks or tones.
 5. **STAGE 5: W-Vowel** - Handles free-standing `w` → `ư` (Telex only).
-6. **STAGE 6: Normal Letter** - Passthrough for normal characters.
-7. **STAGE 7: Shortcut** - Expands abbreviations at word boundaries or immediately.
+6. **STAGE 6: Smart Typing** - Handles double-space to period and auto-capitalization.
+7. **STAGE 7: Normal Letter** - Passthrough for normal characters.
+8. **STAGE 8: Shortcut** - Expands abbreviations at word boundaries or immediately.
 
 ### Key Principles
 
 - **Validation First**: Every transformation is gated by a phonotactic check via the `Validator`.
 - **Stateless Buffer**: The engine maintains a raw key buffer, allowing a full re-process on every key for robust recovery.
 - **Double-Key Revert**: Pressing the same modifier key twice reverts the transformation (e.g., `aa` → `â` → `aa`).
+
+## Documentation & Maintenance
+
+- **Doxygen Standards**: All core engine files and tests are documented using Doxygen-style comments for automated documentation generation and developer clarity.
+- **Realistic Benchmarking**: Performance is validated using a multi-scenario benchmark suite that simulates formal writing, flexible typing, mixed-language sessions, and stress tests with complex syllables.
+
 
 ### Result Structure (FFI Compatible)
 

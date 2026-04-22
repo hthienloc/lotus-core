@@ -28,7 +28,7 @@ namespace {
  * @brief Common English words that are short and conflict with TELEX markers.
  */
 const std::vector<std::string_view> ENGLISH_WHITELIST = {
-    "for", "to", "if", "of", "is", "was", "by", "from", "are", "with", "the"
+    // To be populated later.
 };
 
 } // namespace
