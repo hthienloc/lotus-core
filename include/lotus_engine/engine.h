@@ -2,9 +2,9 @@
 
 #include "lotus_engine/linguistics.h"
 #include "lotus_engine/types.h"
+#include "lotus_engine/shortcut_manager.h"
 
 #include <functional>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -119,7 +119,7 @@ class Engine {
     std::u32string buffer;               ///< The current raw composition buffer (UTF-32).
     char32_t last_modifier_key = 0;      ///< The last consumed modifier key (for escape detection).
     std::u32string last_committed_text;  ///< The last committed text (for backspace recovery).
-    std::map<std::string, std::string> shortcuts;  ///< Registered text expansion shortcuts.
+    ShortcutManager shortcut_manager;    ///< Registered text expansion shortcuts.
     WordHistory word_history;                      ///< Ring buffer of recently committed words.
     char32_t last_boundary_key = 0;         ///< The key that triggered the last word boundary.
     bool at_sentence_start = true;          ///< Whether we are at the start of a sentence.

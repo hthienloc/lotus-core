@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <vector>
+#include <array>
 
 namespace lotus_engine {
 
@@ -57,6 +58,19 @@ const std::vector<std::u32string_view> VALID_NUCLEI_U32 = {
 
 const std::vector<std::u32string_view> VALID_FINALS_U32 = {U"c", U"ch", U"m", U"n", U"ng", U"nh",
                                                            U"p", U"t",  U"i", U"y", U"o",  U"u"};
+
+constexpr std::array<char32_t, 4> FRONT_VOWELS = {'e', U'ê', 'i', 'y'};
+constexpr std::array<char32_t, 3> FRONT_VOWELS_STRICT = {'e', U'ê', 'i'};
+constexpr std::array<char32_t, 2> E_VOWELS = {'e', U'ê'};
+
+constexpr std::array<char32_t, 4> CH_NH_NUCLEI = {'a', U'ê', 'i', 'y'};
+
+constexpr std::array<std::u32string_view, 4> CENTERING_DIPHTHONGS_REQ_CODA = {U"iê", U"uô", U"ươ", U"yê"};
+constexpr std::array<std::u32string_view, 3> CENTERING_DIPHTHONGS_NO_CODA = {U"ia", U"ua", U"ưa"};
+
+constexpr std::array<char32_t, 3> GLIDE_O_NEXT = {'a', 'e', U'ă'};
+constexpr std::array<char32_t, 11> GLIDE_U_NEXT_QU = {'a', 'e', 'i', U'â', U'ê', 'o', U'ô', U'ơ', 'u', U'ư', 'y'};
+constexpr std::array<char32_t, 5> GLIDE_U_NEXT = {U'ê', 'y', U'â', U'ơ', U'ô'};
 
 // Navigation and special keys
 const char32_t KEY_UP = 0x11;

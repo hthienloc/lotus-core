@@ -68,6 +68,9 @@ void test_capi_integration();
 // --- Edge Cases ---
 void test_edge_cases_run();
 
+// --- Features ---
+void test_features();
+
 // ============================================================================
 // [ Main Runner ]
 // ============================================================================
@@ -129,6 +132,10 @@ int main() {
     // --- Edge Cases ---
     std::cout << "\n[ Edge Case Tests ]\n";
     test_edge_cases_run();
+
+    // --- Features ---
+    std::cout << "\n[ Feature Tests ]\n";
+    test_features();
 
     std::cout << "\nAll tests PASSED!" << std::endl;
     return 0;

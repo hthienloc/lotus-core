@@ -14,6 +14,7 @@
 #include "lotus_engine/parser.h"
 #include "lotus_engine/unicode.h"
 #include "lotus_engine/validator.h"
+#include "lotus_engine/smart_typing.h"
 
 #include <algorithm>
 #include <cctype>
@@ -72,7 +73,7 @@ Engine::Engine()
  * @param replacement The full string to expand into.
  */
 void Engine::add_shortcut(const std::string& trigger, const std::string& replacement) {
-    shortcuts[trigger] = replacement;
+    shortcut_manager.add_shortcut(trigger, replacement);
 }
 
 /**
@@ -521,31 +522,11 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
  * @return True if a shortcut was matched and expanded.
  */
 bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
-    if (buffer.empty())
-        return false;
-    std::string trigger_raw = unicode::to_utf8(buffer);
-    std::string trigger_lower = unicode::to_lower(trigger_raw);
-    if (shortcuts.count(trigger_lower)) {
-        std::string replacement = shortcuts[trigger_lower];
-        bool is_all_upper = std::all_of(trigger_raw.begin(), trigger_raw.end(),
-                                        [](unsigned char c) { return !isalpha(c) || isupper(c); });
-        bool is_first_upper = isupper((unsigned char)trigger_raw[0]);
-        if (is_all_upper) {
-            std::u32string temp_u32 = unicode::to_utf32(replacement);
-            for (auto& c : temp_u32)
-                c = unicode::to_upper(c);
-            replacement = unicode::to_utf8(temp_u32);
-        } else if (is_first_upper) {
-            std::u32string temp_u32 = unicode::to_utf32(replacement);
-            if (!temp_u32.empty())
-                temp_u32[0] = unicode::to_upper(temp_u32[0]);
-            replacement = unicode::to_utf8(temp_u32);
-        }
-        std::u32string repl_u32 = unicode::to_utf32(replacement);
-        repl_u32.push_back(key);
-        result = make_transformation_result(repl_u32);
+    if (shortcut_manager.handle(key, buffer, result)) {
         reset();
         last_boundary_key = key;
+        last_committed_text.clear();
+        for (int i = 0; i < result.count; i++) last_committed_text.push_back(result.chars[i]);
         return true;
     }
     return false;
@@ -561,24 +542,12 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
  */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
     (void)mods;
-    if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
-        result.action = 1;
-        result.backspace = 1;
-        result.count = 2;
-        result.chars[0] = '.';
-        result.chars[1] = ' ';
-        last_committed_text = U". ";
+    bool handled = SmartTyping::handle(key, double_space_to_period, auto_capitalize, last_boundary_key, at_sentence_start, buffer, result, last_committed_text);
+    if (handled) {
         last_boundary_key = ' ';
         at_sentence_start = true;
-        return true;
     }
-
-    if (auto_capitalize && at_sentence_start && key != 0 && buffer.empty()) {
-        char32_t upper = unicode::to_upper(key);
-        if (upper != key)
-            key = upper;
-    }
-    return false;
+    return handled;
 }
 
 /**

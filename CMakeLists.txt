@@ -9,25 +9,37 @@ include_directories(include)
 
 # Core Library (Static)
 add_library(lotus_engine_core STATIC
-    src/syllable.cpp
-    src/validator.cpp
-    src/parser.cpp
-    src/engine.cpp
-    src/linguistics.cpp
-    src/log.cpp
-    src/capi.cpp
+    src/core/syllable.cpp
+    src/core/validator.cpp
+    src/core/parser/parser.cpp
+    src/core/parser/initial_parser.cpp
+    src/core/parser/glide_parser.cpp
+    src/core/parser/nucleus_parser.cpp
+    src/core/parser/coda_parser.cpp
+    src/core/engine.cpp
+    src/features/shortcut_manager.cpp
+    src/features/smart_typing.cpp
+    src/linguistics/linguistics.cpp
+    src/core/log.cpp
+    src/api/capi.cpp
 )
 set_target_properties(lotus_engine_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Core Library (Shared)
 add_library(lotus_engine_core_shared SHARED
-    src/syllable.cpp
-    src/validator.cpp
-    src/parser.cpp
-    src/engine.cpp
-    src/linguistics.cpp
-    src/log.cpp
-    src/capi.cpp
+    src/core/syllable.cpp
+    src/core/validator.cpp
+    src/core/parser/parser.cpp
+    src/core/parser/initial_parser.cpp
+    src/core/parser/glide_parser.cpp
+    src/core/parser/nucleus_parser.cpp
+    src/core/parser/coda_parser.cpp
+    src/core/engine.cpp
+    src/features/shortcut_manager.cpp
+    src/features/smart_typing.cpp
+    src/linguistics/linguistics.cpp
+    src/core/log.cpp
+    src/api/capi.cpp
 )
 set_target_properties(lotus_engine_core_shared PROPERTIES OUTPUT_NAME lotus_engine_core)
 
@@ -49,6 +61,7 @@ add_executable(lotus_tests
     tests/test_capi.cpp
     tests/test_capi_integration.cpp
     tests/test_edge_cases.cpp
+    tests/test_features_stub.cpp
 )
 target_link_libraries(lotus_tests lotus_engine_core)
 

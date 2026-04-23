@@ -149,27 +149,27 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
 }
 
 bool Validator::is_front_vowel(char32_t c) {
-    return c == 'e' || c == U'ê' || c == 'i' || c == 'y';
+    return std::find(constants::FRONT_VOWELS.begin(), constants::FRONT_VOWELS.end(), c) != constants::FRONT_VOWELS.end();
 }
 
 bool Validator::is_front_vowel_strict(char32_t c) {
-    return c == 'e' || c == U'ê' || c == 'i';
+    return std::find(constants::FRONT_VOWELS_STRICT.begin(), constants::FRONT_VOWELS_STRICT.end(), c) != constants::FRONT_VOWELS_STRICT.end();
 }
 
 bool Validator::is_e_vowel(char32_t c) {
-    return c == 'e' || c == U'ê';
+    return std::find(constants::E_VOWELS.begin(), constants::E_VOWELS.end(), c) != constants::E_VOWELS.end();
 }
 
 bool Validator::is_valid_ch_nh_nucleus(char32_t c) {
-    return c == 'a' || c == U'ê' || c == 'i' || c == 'y';
+    return std::find(constants::CH_NH_NUCLEI.begin(), constants::CH_NH_NUCLEI.end(), c) != constants::CH_NH_NUCLEI.end();
 }
 
 bool Validator::is_centering_diphthong_requiring_coda(std::u32string_view v) {
-    return v == U"iê" || v == U"uô" || v == U"ươ" || v == U"yê";
+    return std::find(constants::CENTERING_DIPHTHONGS_REQ_CODA.begin(), constants::CENTERING_DIPHTHONGS_REQ_CODA.end(), v) != constants::CENTERING_DIPHTHONGS_REQ_CODA.end();
 }
 
 bool Validator::is_centering_diphthong_forbidding_coda(std::u32string_view v) {
-    return v == U"ia" || v == U"ua" || v == U"ưa";
+    return std::find(constants::CENTERING_DIPHTHONGS_NO_CODA.begin(), constants::CENTERING_DIPHTHONGS_NO_CODA.end(), v) != constants::CENTERING_DIPHTHONGS_NO_CODA.end();
 }
 
 /**
