@@ -36,6 +36,7 @@ void test_complex_diphthongs();
 
 // --- Engine ---
 void test_engine_telex_basic();
+void test_engine_expect_bug();
 void test_engine_telex_vowels();
 void test_engine_telex_hooks();
 void test_engine_telex_stroke();
@@ -95,6 +96,7 @@ int main() {
     // --- Engine ---
     std::cout << "\n[ Engine Tests ]\n";
     test_engine_telex_basic();
+    test_engine_expect_bug();
     test_engine_telex_vowels();
     test_engine_telex_hooks();
     test_engine_telex_stroke();

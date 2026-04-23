@@ -130,10 +130,15 @@ bool Linguistics::has_english_x_pattern(const std::string& lower) {
     if (lower.length() >= 3) {
         size_t x_pos = lower.find('x');
         if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
-            // 'x' in the middle followed by a vowel is definitely English.
-            // If followed by another 'x', it's a Telex escape.
-            if (is_vowel(lower[x_pos + 1]))
+            char next = lower[x_pos + 1];
+            // 1. 'x' followed by a vowel is English (e.g., 'boxer', 'taxi')
+            if (is_vowel(next)) return true;
+
+            // 2. 'x' followed by a stop consonant is English (e.g., 'expect', 'context')
+            // Because Vietnamese TILDE (x) cannot coexist with p, t, c, ch.
+            if (next == 'p' || next == 't' || next == 'c' || (next == 'h' && lower[x_pos-1] != 'n' && lower[x_pos-1] != 'c')) {
                 return true;
+            }
         }
     }
     return false;

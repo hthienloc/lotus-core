@@ -499,3 +499,13 @@ void test_engine_english_gating() {
 
     std::cout << "  [PASS] Invalid Initial Gate (English protection)" << std::endl;
 }
+
+void test_engine_expect_bug() {
+    Engine engine;
+    engine.set_auto_restore(true);
+    assert_typing(engine, "expect", "expect");
+    assert_typing(engine, "context", "context");
+    assert_typing(engine, "text", "text");
+    assert_typing(engine, "ngheexnh", "nghễnh");
+    std::cout << "  [PASS] 'expect' auto-restoration bug" << std::endl;
+}
