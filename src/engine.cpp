@@ -27,6 +27,8 @@ namespace lotus_engine {
 
 /**
  * @brief Checks if a character marks the end of a sentence.
+ * @param c UTF-32 character.
+ * @return True if it's a sentence-ending punctuation or newline.
  */
 static bool is_sentence_ending(char32_t c) {
     return c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r';
@@ -36,6 +38,10 @@ static bool is_sentence_ending(char32_t c) {
 // [ EngineResult Implementation ]
 // ============================================================================
 
+/**
+ * @brief Converts the engine result structure to a UTF-8 string.
+ * @return UTF-8 string representation of the transformed characters.
+ */
 std::string EngineResult::to_string() const {
     std::u32string u32;
     for (uint8_t i = 0; i < count; ++i)
@@ -47,6 +53,11 @@ std::string EngineResult::to_string() const {
 // [ Engine Implementation ]
 // ============================================================================
 
+/**
+ * @brief Default constructor for Engine.
+ *
+ * Initializes the engine with default Telex method and all smart features disabled.
+ */
 Engine::Engine()
     : last_modifier_key(0),
       last_boundary_key(0),
@@ -55,10 +66,19 @@ Engine::Engine()
       double_space_to_period(false),
       auto_capitalize(false) {}
 
+/**
+ * @brief Registers a new text shortcut.
+ * @param trigger The short key sequence.
+ * @param replacement The full string to expand into.
+ */
 void Engine::add_shortcut(const std::string& trigger, const std::string& replacement) {
     shortcuts[trigger] = replacement;
 }
 
+/**
+ * @brief Resets the internal engine state (buffer, markers, committed text).
+ * Does NOT clear the word history.
+ */
 void Engine::reset() {
     buffer.clear();
     last_modifier_key = 0;
@@ -66,11 +86,21 @@ void Engine::reset() {
     last_committed_text.clear();
 }
 
+/**
+ * @brief Completely clears the engine state, including word history.
+ * Used when the cursor moves to a completely new, unrelated position.
+ */
 void Engine::clear_all() {
     reset();
     word_history.clear();
 }
 
+/**
+ * @brief Reconstructs the engine state from a block of surrounding text.
+ *
+ * Used for synchronization when the cursor moves or text is modified externally.
+ * @param text The surrounding context string.
+ */
 void Engine::rebuild_from_text(const std::string& text) {
     reset();
     at_sentence_start = true;
@@ -162,6 +192,17 @@ void Engine::rebuild_from_text(const std::string& text) {
     }
 }
 
+/**
+ * @brief Processes a single key press and returns the transformation result.
+ *
+ * This is the main entry point for keyboard input. It handles backspacing,
+ * boundary detection, smart typing features, and initiates IM-specific
+ * modifier application.
+ *
+ * @param original_key The UTF-32 key code.
+ * @param mods Keyboard modifiers (Shift, CapsLock).
+ * @return EngineResult containing the action to perform on the host application.
+ */
 EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     char32_t key = original_key;
     apply_std_uo(key);
@@ -193,6 +234,15 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     return apply_im_pipeline(key, raw_word);
 }
 
+/**
+ * @brief Applies the IM transformations, parsing, linguistic validation, and state updating.
+ *
+ * Coordinates the full pipeline from raw keys to a valid Vietnamese syllable.
+ *
+ * @param key The current key pressed.
+ * @param raw_word The current raw buffer content as UTF-8.
+ * @return EngineResult the final result of the transformation pipeline.
+ */
 EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     std::string current_str = raw_word;
     Tone tone_state = Tone::NONE;
@@ -207,6 +257,10 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         apply_vni_modifiers(current_str, key, key_consumed, tone_state);
     }
 
+    LOTUS_LOG_DEBUG("[Pipeline] After IM: " + current_str +
+                    " (Tone: " + std::to_string(static_cast<int>(tone_state)) +
+                    ", Consumed: " + (key_consumed ? "Y" : "N") + ")");
+
     if (!key_consumed)
         last_modifier_key = 0;
 
@@ -215,7 +269,11 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     if (tone_state != Tone::NONE)
         s.tone = tone_state;
 
-    // GATING: Initial Consonant Validation
+    LOTUS_LOG_DEBUG("[Pipeline] Parsed: " + s.to_string(tone_style));
+
+    // THE GATE (Post-IM): Initial Consonant Validation
+    // This is the first line of defense against English words.
+    // In Vietnamese, everything before the first vowel MUST be a valid initial consonant sequence.
     bool has_valid_initial = true;
     if (!current_str.empty()) {
         std::u32string u32_curr = unicode::to_utf32(current_str);
@@ -233,27 +291,42 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         }
     }
 
+    // If the transformation resulted in an invalid prefix, favor the raw English input.
     if (auto_restore && !has_valid_initial && !key_consumed) {
+        LOTUS_LOG_DEBUG("[Pipeline] Restore: Invalid initial prefix");
         return make_transformation_result(buffer);
     }
 
+    // Second Gate: Structural Vietnamese Validity
+    // If the resulting syllable violates Vietnamese spelling rules AND looks like English,
+    // we restore the raw buffer contents.
     bool is_valid_vn = Validator::is_valid(s);
     bool is_eng = Linguistics::is_likely_english(raw_word);
 
+    LOTUS_LOG_DEBUG("[Pipeline] Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") +
+                    ", LikelyEng=" + std::string(is_eng ? "Y" : "N"));
+
     if (auto_restore && !is_valid_vn && !key_consumed && is_eng) {
+        LOTUS_LOG_DEBUG("[Pipeline] Restore: Invalid structure & likely English");
         return make_transformation_result(buffer);
     }
 
     std::string final_v_word = s.to_string(tone_style);
 
+    // Normalize buffer to canonical keys for valid Vietnamese syllables to ensure deterministic
+    // behavior
     if (is_valid_vn) {
         std::vector<char32_t> canonical = s.to_keys(method);
         buffer.assign(canonical.begin(), canonical.end());
     }
 
+    LOTUS_LOG_DEBUG("[Pipeline] Final: " + final_v_word);
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
+/**
+ * @brief Applies standard UO key mappings.
+ */
 void Engine::apply_std_uo(char32_t& key) {
     if (!std_uo)
         return;
@@ -267,6 +340,9 @@ void Engine::apply_std_uo(char32_t& key) {
         key = U'Ơ';
 }
 
+/**
+ * @brief Handles navigation and escape keys.
+ */
 bool Engine::handle_navigation(char32_t key, EngineResult& result) {
     (void)result;
     if (key == constants::KEY_UP || key == constants::KEY_DOWN || key == constants::KEY_LEFT ||
@@ -277,6 +353,9 @@ bool Engine::handle_navigation(char32_t key, EngineResult& result) {
     return false;
 }
 
+/**
+ * @brief Handles triple-tap escape logic (e.g., typing 'aaa' results in 'aa').
+ */
 bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
     if (key != 0 && key == last_modifier_key && !buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
@@ -297,6 +376,17 @@ bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
     return false;
 }
 
+/**
+ * @brief Handles backspace key logic.
+ *
+ * If the buffer is not empty, it attempts to reconstruct the previous syllable state.
+ * If the buffer is empty, it attempts to recover the last committed word from history.
+ *
+ * @param key The key pressed (8 or 127).
+ * @param mods Keyboard modifiers.
+ * @param result OUT: The engine result to populate.
+ * @return True if the key was a backspace and was handled.
+ */
 bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result) {
     if (key != 8 && key != 127)
         return false;
@@ -328,6 +418,14 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
     return true;
 }
 
+/**
+ * @brief Attempts to pop the last item from history and load it into the active buffer.
+ *
+ * If the item is a boundary, it reclaim the word before it as well.
+ *
+ * @param method The current input method for canonicalization.
+ * @return True if something was reclaimed.
+ */
 bool Engine::reclaim_from_history(InputMethod method) {
     auto recovered = word_history.pop();
     if (recovered.empty())
@@ -338,18 +436,30 @@ bool Engine::reclaim_from_history(InputMethod method) {
                                                   rc == '\n' || (rc < 128 && ispunct((int)rc))));
 
     if (is_boundary) {
+        // If we reclaimed a boundary, we just set it as the active state
         buffer = recovered;
         last_committed_text = recovered;
         last_boundary_key = rc;
     } else {
+        // Re-parse the word string into canonical keys
         Syllable s = SyllableParser::parse(recovered);
         std::vector<char32_t> keys = s.to_keys(method);
         buffer.assign(keys.begin(), keys.end());
         last_committed_text = recovered;
+        LOTUS_LOG_DEBUG("[Backspace] Reclaimed word: '" + unicode::to_utf8(recovered) + "'");
     }
     return true;
 }
 
+/**
+ * @brief Handles word boundaries (space, enter, punctuation).
+ *
+ * Triggers shortcut expansion and English word restoration.
+ *
+ * @param key The current key.
+ * @param result OUT: The engine result to populate.
+ * @return True if the key was a boundary and was handled.
+ */
 bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
                         (key < 128 && (ispunct((int)key) || key == '\t')));
@@ -367,6 +477,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
         return true;
     }
 
+    // Push the transformed word and THEN the boundary to history for exact sync
     if (!buffer.empty()) {
         std::string current_str = unicode::to_utf8(buffer);
         Tone tone_state = Tone::NONE;
@@ -402,6 +513,13 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     return true;
 }
 
+/**
+ * @brief Checks and expands text shortcuts.
+ *
+ * @param key The boundary key that triggered expansion.
+ * @param result OUT: The result containing the expanded text.
+ * @return True if a shortcut was matched and expanded.
+ */
 bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
     if (buffer.empty())
         return false;
@@ -433,6 +551,14 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
     return false;
 }
 
+/**
+ * @brief Handles smart features like double-space to period and auto-capitalize.
+ *
+ * @param key IN/OUT: The current key.
+ * @param mods Keyboard modifiers.
+ * @param result OUT: The engine result to populate.
+ * @return True if a smart feature was triggered and handled.
+ */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
     (void)mods;
     if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
@@ -455,6 +581,17 @@ bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineRes
     return false;
 }
 
+/**
+ * @brief Applies Telex-specific rules and transformations to the current buffer.
+ *
+ * Implements a single-pass transformation pipeline including flexible consonants,
+ * flexible vowels, hooks, and tone marks.
+ *
+ * @param current_str IN/OUT: The string to modify based on Telex rules.
+ * @param key The current key pressed.
+ * @param key_consumed OUT: Set to true if the key triggered a transformation.
+ * @param tone_state OUT: The identified tone for the current word.
+ */
 void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                    Tone& tone_state) {
     const std::u32string& u32 = buffer;
@@ -475,6 +612,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     char32_t lk = unicode::to_lower(key);
     std::vector<bool> to_strip(u32.size(), false);
 
+    // Single pass to gather all candidate indices for transformations.
     std::map<char32_t, std::vector<size_t>> indices;
     std::vector<size_t> tone_indices;
     size_t ir_len = Validator::find_longest_initial(u32, 0);
@@ -494,6 +632,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
 
     std::u32string u32_copy = u32;
 
+    // Stage 1: Flexible Consonants (dd -> đ)
     if ((!key_consumed || key == 0) && indices['d'].size() >= 2) {
         size_t first = indices['d'][0], last = indices['d'].back();
         u32_copy[first] = (u32[first] == 'D') ? U'Đ' : U'đ';
@@ -504,6 +643,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
     }
 
+    // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
     if (!key_consumed || key == 0) {
         auto try_flex = [&](char32_t base, char32_t target_l, char32_t target_u) {
             auto& idxs = indices[base];
@@ -524,6 +664,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         try_flex('o', U'ô', U'Ô');
     }
 
+    // Stage 3: Combined Hooks (uo, uaw, aw, ow, uw)
     if (!indices['w'].empty()) {
         size_t u_pos = indices['u'].empty() ? std::u32string::npos : indices['u'][0];
         size_t o_pos = indices['o'].empty() ? std::u32string::npos : indices['o'][0];
@@ -563,6 +704,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
     }
 
+    // Stage 4: Standalone W -> ư
     if (!key_consumed && lk == 'w' && free_w != FreeWOption::OFF) {
         bool can_transform = (free_w == FreeWOption::ALWAYS) || (u32.size() > 1);
         if (can_transform) {
@@ -579,27 +721,33 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
     }
 
+    // Stage 5: Tone Marks
     if (!tone_indices.empty()) {
         std::vector<bool> is_literal_marker(u32.size(), false);
         std::vector<size_t> potential_active_indices;
 
+        // Pass 1: Identify all escape pairs (xx -> x)
         for (size_t i = 0; i < tone_indices.size(); ++i) {
             size_t idx = tone_indices[i];
             char32_t current_key = unicode::to_lower(u32[idx]);
 
             if (i + 1 < tone_indices.size() &&
                 current_key == unicode::to_lower(u32[tone_indices[i + 1]])) {
-                is_literal_marker[idx] = true;
-                to_strip[tone_indices[i + 1]] = true;
+                // Escape pair!
+                is_literal_marker[idx] = true;         // First one is literal
+                to_strip[tone_indices[i + 1]] = true;  // Second one is stripped
                 i++;
             } else {
                 potential_active_indices.push_back(idx);
             }
         }
 
+        // Pass 2: Apply Linguistic Gating to remaining potential markers
         std::vector<size_t> active_tone_indices;
         for (size_t idx : potential_active_indices) {
             char32_t current_key = unicode::to_lower(u32[idx]);
+
+            // Build base string including literalized markers
             std::u32string base_u32;
             for (size_t j = 0; j < idx; ++j) {
                 if (!to_strip[j] &&
@@ -612,11 +760,14 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
             bool is_literal = false;
             if (!base_u32.empty() && current_key != 'z' && current_key != '0') {
                 char32_t last_base = unicode::to_lower(base_u32.back());
+                // If word ends in impossible final, marker is literal
                 if (last_base == 's' || last_base == 'r' || last_base == 'x' || last_base == 'f' ||
                     last_base == 'j' || last_base == 'w') {
                     is_literal = true;
                 }
 
+                // LINGUISTIC GATING: Tone markers MUST follow a vowel in Vietnamese.
+                // If the base word has no vowels, this marker must be literal.
                 bool has_vowel = false;
                 for (char32_t cp : base_u32) {
                     if (SyllableParser::is_vowel(cp)) {
@@ -633,9 +784,12 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
             }
         }
 
+        // Pass 3: Final tone application
         tone_state = Tone::NONE;
         for (size_t idx : active_tone_indices) {
             char32_t marker = unicode::to_lower(u32[idx]);
+
+            // Map Telex keys to Tone enum
             if (marker == 's')
                 tone_state = Tone::ACUTE;
             else if (marker == 'f')
@@ -653,6 +807,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
         }
     }
 
+    // Stage 6: Final Execution
     std::u32string final_u32;
     for (size_t i = 0; i < u32.size(); ++i)
         if (!to_strip[i])
@@ -660,6 +815,16 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
     current_str = unicode::to_utf8(final_u32);
 }
 
+/**
+ * @brief Applies VNI-specific rules and transformations to the current buffer.
+ *
+ * Implements a high-performance single-pass scanner to identify tones and markers.
+ *
+ * @param current_str IN/OUT: The string to modify based on VNI rules.
+ * @param key The current key pressed.
+ * @param key_consumed OUT: Set to true if the key triggered a transformation.
+ * @param tone_state OUT: The identified tone for the current word.
+ */
 void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::string raw_str = unicode::to_utf8(buffer);
@@ -704,6 +869,12 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
     }
 }
 
+/**
+ * @brief Helper to wrap a transformed string into an EngineResult.
+ *
+ * @param final_u32 The final transformed character sequence.
+ * @return EngineResult indicating a replacement action.
+ */
 EngineResult Engine::make_transformation_result(const std::u32string& final_u32) {
     EngineResult result{};
     result.action = 1;
@@ -712,10 +883,20 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
     for (int i = 0; i < result.count; i++)
         result.chars[i] = final_u32[i];
 
+    LOTUS_LOG_DEBUG("[Pipeline] Result: BS=" + std::to_string((int)result.backspace) +
+                    ", Count=" + std::to_string((int)result.count) + ", PrevText='" +
+                    unicode::to_utf8(last_committed_text) + "'");
+
     last_committed_text = final_u32;
     return result;
 }
 
+/**
+ * @brief Determines if the current buffer likely represents an English word.
+ *
+ * @param word The raw key sequence.
+ * @return True if the word should be preserved as English.
+ */
 bool Engine::is_english_word(const std::string& word) const {
     if (Linguistics::is_on_whitelist(word))
         return true;
