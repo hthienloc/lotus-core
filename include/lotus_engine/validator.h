@@ -37,9 +37,11 @@ class Validator {
      *
      * Validates all component sets and applies orthographic co-occurrence rules.
      * @param syllable The syllable to validate.
+     * @param diagnostic_reason Optional pointer to a string that will be populated with the reason
+     * for failure if the syllable is invalid.
      * @return true if the syllable is phonotactically valid Vietnamese.
      */
-    static bool is_valid(const Syllable& syllable);
+    static bool is_valid(const Syllable& syllable, std::string* diagnostic_reason = nullptr);
 
    private:
     /**
@@ -49,20 +51,30 @@ class Validator {
      * start).
      * @param nucleus_start The first character of the vowel nucleus.
      * @param final_c The final consonant (coda).
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
      */
     static bool check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
-                                           char32_t nucleus_start, std::u32string_view final_c);
+                                           char32_t nucleus_start, std::u32string_view final_c,
+                                           std::string* diagnostic_reason = nullptr);
 
     /**
      * @brief Checks restrictions on specific codas (nh, ch) based on the nucleus.
+     * @param nucleus_start The first character of the vowel nucleus.
+     * @param final_c The final consonant (coda).
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
      */
-    static bool check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c);
+    static bool check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c,
+                                        std::string* diagnostic_reason = nullptr);
 
     /**
      * @brief Checks centering diphthong rules (ia/iê, ua/uô, ưa/ươ) regarding codas.
+     * @param stripped_nucleus The vowel nucleus without tone marks.
+     * @param final_c The final consonant (coda).
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
      */
     static bool check_diphthong_rules(std::u32string_view stripped_nucleus,
-                                      std::u32string_view final_c);
+                                      std::u32string_view final_c,
+                                      std::string* diagnostic_reason = nullptr);
 
     // --- Repetitive cluster helpers ---
     static bool is_front_vowel(char32_t c);
