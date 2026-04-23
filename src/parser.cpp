@@ -36,48 +36,40 @@ bool SyllableParser::is_vowel(char32_t c) {
 }
 
 /**
- * @brief Parses a raw string into a structured Syllable object.
- *
- * Performs linguistic analysis to identify the initial consonant,
- * the glide (if present), the vowel nucleus, and the final coda.
- *
- * @param input The raw character sequence to parse.
- * @return A Syllable object containing the identified components.
+ * @brief Identifies and extracts the initial consonant.
  */
-Syllable SyllableParser::parse(const std::u32string& input) {
-    Syllable s;
-    if (input.empty())
-        return s;
-
-    size_t n = input.size();
-
-    // 1. Find Initial (Longest match for known Vietnamese initials)
+size_t SyllableParser::parse_initial(const std::u32string& input, Syllable& s) {
     size_t initial_len = Validator::find_longest_initial(input, 0);
-    if (initial_len > 0) {
-        s.initial = input.substr(0, initial_len);
-        // Vietnamese rule for 'gi':
-        // 1. If followed by another vowel (e.g., 'gia', 'giáo'), 'gi' is the initial.
-        // 2. If followed by nothing or a consonant (e.g., 'gì', 'gin'), 'g' is initial and 'i' is
-        // vowel.
-        if (s.initial == U"gi" || s.initial == U"Gi") {
-            if (input.size() == 2 || !is_vowel(input[2])) {
-                s.initial = s.initial.substr(0, 1);
-                initial_len = 1;
-            }
-        }
-        // Vietnamese rule for 'qu':
-        // 'qu' is always parsed as 'q' (initial) + 'u' (glide) in our model.
-        else if (s.initial == U"qu" || s.initial == U"Qu") {
+    if (initial_len == 0)
+        return 0;
+
+    s.initial = input.substr(0, initial_len);
+    std::u32string lower_init = unicode::to_lower(s.initial);
+
+    // Vietnamese rule for 'gi':
+    if (lower_init == U"gi") {
+        if (input.size() == 2 || !is_vowel(input[2])) {
             s.initial = s.initial.substr(0, 1);
             initial_len = 1;
         }
     }
+    // Vietnamese rule for 'qu':
+    else if (lower_init == U"qu") {
+        s.initial = s.initial.substr(0, 1);
+        initial_len = 1;
+    }
 
-    size_t pos = initial_len;
+    return initial_len;
+}
+
+/**
+ * @brief Identifies and extracts the glide ('o' or 'u' following an initial).
+ */
+size_t SyllableParser::parse_glide(const std::u32string& input, size_t pos, Syllable& s) {
+    size_t n = input.size();
     if (pos >= n)
-        return s;
+        return 0;
 
-    // 2. Glide
     bool has_glide = false;
     char32_t first_char = unicode::to_lower(input[pos]);
 
@@ -87,7 +79,8 @@ Syllable SyllableParser::parse(const std::u32string& input) {
             if (next_char == 'a' || next_char == 'e' || next_char == U'ă')
                 has_glide = true;
         } else if (first_char == 'u') {
-            bool is_qu = (s.initial == U"q" || s.initial == U"Q");
+            std::u32string lower_init = unicode::to_lower(s.initial);
+            bool is_qu = (lower_init == U"q");
             if (is_qu) {
                 if (next_char == 'a' || next_char == 'e' || next_char == 'i' || next_char == U'â' ||
                     next_char == U'ê' || next_char == 'o' || next_char == U'ô' ||
@@ -103,25 +96,56 @@ Syllable SyllableParser::parse(const std::u32string& input) {
 
     if (has_glide) {
         s.glide = first_char;
-        pos++;
+        return 1;
     }
 
-    // 3. Vowel Nucleus
-    while (pos < n && is_vowel(input[pos])) {
-        // Collect pre-composed tone if any
+    return 0;
+}
+
+/**
+ * @brief Extracts the vowel nucleus sequence and identifies the tone mark if present.
+ */
+size_t SyllableParser::parse_nucleus(const std::u32string& input, size_t pos, Syllable& s) {
+    size_t n = input.size();
+    size_t len = 0;
+
+    while (pos + len < n && is_vowel(input[pos + len])) {
         if (s.tone == Tone::NONE) {
-            Tone t = unicode::get_tone(input[pos]);
+            Tone t = unicode::get_tone(input[pos + len]);
             if (t != Tone::NONE)
                 s.tone = t;
         }
-        s.vowel += unicode::strip_tone(input[pos]);
-        pos++;
+        s.vowel += unicode::strip_tone(input[pos + len]);
+        len++;
     }
 
-    // 4. Final Coda
-    if (pos < n) {
+    return len;
+}
+
+/**
+ * @brief Extracts the remaining characters as the final coda.
+ */
+size_t SyllableParser::parse_coda(const std::u32string& input, size_t pos, Syllable& s) {
+    if (pos < input.size()) {
         s.final_c = input.substr(pos);
+        return s.final_c.size();
     }
+    return 0;
+}
+
+/**
+ * @brief Parses a raw string into a structured Syllable object.
+ */
+Syllable SyllableParser::parse(const std::u32string& input) {
+    Syllable s;
+    if (input.empty())
+        return s;
+
+    size_t pos = 0;
+    pos += parse_initial(input, s);
+    pos += parse_glide(input, pos, s);
+    pos += parse_nucleus(input, pos, s);
+    parse_coda(input, pos, s);
 
     return s;
 }

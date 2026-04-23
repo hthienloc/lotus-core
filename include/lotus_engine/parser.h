@@ -32,6 +32,11 @@ class SyllableParser {
     static bool is_vowel(char32_t c);
 
    private:
+    static size_t parse_initial(const std::u32string& input, Syllable& s);
+    static size_t parse_glide(const std::u32string& input, size_t pos, Syllable& s);
+    static size_t parse_nucleus(const std::u32string& input, size_t pos, Syllable& s);
+    static size_t parse_coda(const std::u32string& input, size_t pos, Syllable& s);
+
     static std::u32string to_u32(const std::string& s);
     static std::string from_u32(const std::u32string& s);
 };
