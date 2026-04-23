@@ -4,6 +4,8 @@
 
 namespace lotus_engine {
 
+#define LOTUS_ENGINE_VERSION "1.0.0"
+
 /**
  * @brief Vietnamese input method types.
  */

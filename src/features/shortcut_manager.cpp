@@ -10,6 +10,10 @@ void ShortcutManager::add_shortcut(const std::string& trigger, const std::string
     shortcuts[trigger] = replacement;
 }
 
+void ShortcutManager::clear() {
+    shortcuts.clear();
+}
+
 bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineResult& result) {
     if (buffer.empty())
         return false;

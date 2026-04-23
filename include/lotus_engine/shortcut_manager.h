@@ -9,6 +9,7 @@ namespace lotus_engine {
 class ShortcutManager {
 public:
     void add_shortcut(const std::string& trigger, const std::string& replacement);
+    void clear();
     bool handle(char32_t key, const std::u32string& buffer, EngineResult& result);
 private:
     std::map<std::string, std::string> shortcuts;
