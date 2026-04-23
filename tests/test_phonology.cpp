@@ -4,8 +4,9 @@
  */
 
 #include "lotus_engine/parser.h"
-#include "lotus_engine/validator.h"
 #include "lotus_engine/unicode.h"
+#include "lotus_engine/validator.h"
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -68,7 +69,7 @@ void test_syllable_parts() {
     // Updated to align with current syllable decomposition logic.
     assert(s3.vowel == U"yê");
     assert(s3.final_c == U"n");
-    
+
     std::cout << "  [PASS] Syllable component parsing" << std::endl;
 }
 

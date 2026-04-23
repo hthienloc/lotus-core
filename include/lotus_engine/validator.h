@@ -45,12 +45,13 @@ class Validator {
     /**
      * @brief Checks orthographic affinity between initial consonants and following vowels/glides.
      * @param lower_init Lowercase initial consonant.
-     * @param affinity_char The character immediately following the initial (glide or nucleus start).
+     * @param affinity_char The character immediately following the initial (glide or nucleus
+     * start).
      * @param nucleus_start The first character of the vowel nucleus.
      * @param final_c The final consonant (coda).
      */
     static bool check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
-                                          char32_t nucleus_start, std::u32string_view final_c);
+                                           char32_t nucleus_start, std::u32string_view final_c);
 
     /**
      * @brief Checks restrictions on specific codas (nh, ch) based on the nucleus.
@@ -60,7 +61,8 @@ class Validator {
     /**
      * @brief Checks centering diphthong rules (ia/iê, ua/uô, ưa/ươ) regarding codas.
      */
-    static bool check_diphthong_rules(std::u32string_view stripped_nucleus, std::u32string_view final_c);
+    static bool check_diphthong_rules(std::u32string_view stripped_nucleus,
+                                      std::u32string_view final_c);
 
     // --- Repetitive cluster helpers ---
     static bool is_front_vowel(char32_t c);

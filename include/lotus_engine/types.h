@@ -1,17 +1,17 @@
 #pragma once
 
+#include "lotus_engine/common.h"
+
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "lotus_engine/common.h"
-
 namespace lotus_engine {
 
 /**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
- * 
+ *
  * Components:
  * - C1: Initial Consonant (Phụ âm đầu)
  * - G: Glide (Âm đệm)
@@ -20,11 +20,11 @@ namespace lotus_engine {
  * - T: Tone (Dấu thanh)
  */
 struct Syllable {
-    std::u32string initial;        ///< Initial Consonant (e.g., b, ch, ngh)
+    std::u32string initial;         ///< Initial Consonant (e.g., b, ch, ngh)
     std::optional<char32_t> glide;  ///< Glide (e.g., o, u)
-    std::u32string vowel;          ///< Vowel Nucleus (e.g., a, ă, ê, iê)
-    std::u32string final_c;        ///< Final Coda (e.g., n, ng, ch, i, y)
-    Tone tone = Tone::NONE;        ///< Tone mark
+    std::u32string vowel;           ///< Vowel Nucleus (e.g., a, ă, ê, iê)
+    std::u32string final_c;         ///< Final Coda (e.g., n, ng, ch, i, y)
+    Tone tone = Tone::NONE;         ///< Tone mark
 
     /**
      * @brief Converts the syllable to a UTF-8 string.
@@ -42,7 +42,7 @@ struct Syllable {
 
     /**
      * @brief Removes the last visual character unit from the syllable.
-     * 
+     *
      * Handles complex Vietnamese character promote/demote logic.
      * Example: xó (x-o-s) -> xo (x-o), tuyến (t-u-y-e-e-n-s) -> tuyế.
      */
@@ -60,9 +60,9 @@ struct Syllable {
  * @brief Active keyboard modifier states.
  */
 struct Modifiers {
-    bool shift = false;     ///< Shift key state
-    bool caps_lock = false; ///< Caps Lock state
-    bool ctrl = false;      ///< Ctrl key state
+    bool shift = false;      ///< Shift key state
+    bool caps_lock = false;  ///< Caps Lock state
+    bool ctrl = false;       ///< Ctrl key state
 };
 
 /**

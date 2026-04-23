@@ -1,8 +1,8 @@
 /**
  * @file capi.cpp
  * @brief C-compatible API wrapper for the Lotus Engine.
- * 
- * Provides an 'extern "C"' interface to allow integration with non-C++ 
+ *
+ * Provides an 'extern "C"' interface to allow integration with non-C++
  * languages and applications.
  */
 
@@ -20,7 +20,7 @@ using namespace lotus_engine;
  * @brief Opaque handle to the internal Engine instance.
  */
 struct lotus_engine_t {
-    Engine core; ///< The underlying C++ Engine instance.
+    Engine core;  ///< The underlying C++ Engine instance.
 };
 
 // ============================================================================

@@ -35,8 +35,8 @@ void assert_capi_typing(lotus_engine_t* engine, const std::string& input,
         res_u32.push_back(res.chars[i]);
     std::string got = unicode::to_utf8(res_u32);
     if (got != expected) {
-        printf("  [FAIL] C-API: typing '%s' expected '%s' got '%s'\n", input.c_str(), expected.c_str(),
-               got.c_str());
+        printf("  [FAIL] C-API: typing '%s' expected '%s' got '%s'\n", input.c_str(),
+               expected.c_str(), got.c_str());
         assert(false);
     }
 }

@@ -1,13 +1,13 @@
 #include "lotus_engine/engine.h"
-#include "lotus_engine/unicode.h"
 #include "lotus_engine/log.h"
+#include "lotus_engine/unicode.h"
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cstdlib>
 
 using namespace lotus_engine;
 
@@ -27,7 +27,7 @@ void type_into(Engine& engine, std::u32string& screen, const std::string& keys,
     for (unsigned char c : keys) {
         auto res = engine.process_key(static_cast<char32_t>(c), mods);
 
-        // Simulate frontend backspace behavior (e.g., when the engine doesn't explicitly 
+        // Simulate frontend backspace behavior (e.g., when the engine doesn't explicitly
         // handle a raw backspace keypress but the user expects the editor to delete).
         if (res.backspace == 0 && (c == 8 || c == 127)) {
             if (!screen.empty())
@@ -56,7 +56,8 @@ void assert_typing(Engine& engine, const std::string& keys, const std::string& e
 
     if (debug_enabled) {
         set_log_callback([&local_logs](LogLevel level, const std::string& msg) {
-            local_logs += "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
+            local_logs +=
+                "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
         });
     }
 
@@ -72,7 +73,8 @@ void assert_typing(Engine& engine, const std::string& keys, const std::string& e
 
     if (actual != expected) {
         if (debug_enabled && !local_logs.empty()) {
-            std::cerr << "\n--- Debug Logs for Failed Test ---\n" << local_logs << "----------------------------------\n";
+            std::cerr << "\n--- Debug Logs for Failed Test ---\n"
+                      << local_logs << "----------------------------------\n";
         }
         std::cerr << "[FAIL] Input: '" << keys << "'\n"
                   << "       Expected: '" << expected << "'\n"
@@ -121,7 +123,7 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "nhungw", "nhưng");
     assert_typing(engine, "duongw", "dương");
     assert_typing(engine, "muaw", "mưa");
-    assert_typing(engine, "what", "what"); // English stability
+    assert_typing(engine, "what", "what");  // English stability
     std::cout << "  [PASS] Telex hook markers (ư, ơ, ă)" << std::endl;
 }
 
@@ -205,14 +207,14 @@ void test_engine_production_features() {
     {
         std::u32string screen;
         type_into(engine, screen, "hello ");
-        auto res = engine.process_key(8, mods); // Backspace
+        auto res = engine.process_key(8, mods);  // Backspace
         assert(res.action == 1);
         assert(res.backspace == 1);
         assert(res.count == 0);
     }
 
     // 2. English Auto-Restore: Prevents Vietnamese transformations for likely English words.
-    assert_typing(engine, "test ", "tét "); // Small words may still transform depending on rules
+    assert_typing(engine, "test ", "tét ");  // Small words may still transform depending on rules
     assert_typing(engine, "status ", "status ");
     assert_typing(engine, "for ", "for ");
     assert_typing(engine, "jump ", "jump ");
@@ -241,23 +243,23 @@ void test_engine_shortcuts() {
  */
 void test_engine_smart_typing() {
     Engine engine;
-    
+
     // 1. Double Space to Period
     engine.set_double_space_to_period(true);
     engine.set_auto_capitalize(false);
     assert_typing(engine, "abc  e", "abc. e");
-    
+
     // 2. Auto Capitalization
     engine.set_double_space_to_period(false);
     engine.set_auto_capitalize(true);
     assert_typing(engine, "abc", "Abc");
-    
+
     // 3. Combined
     engine.reset();
     engine.set_at_sentence_start(true);
     engine.set_double_space_to_period(true);
     engine.set_auto_capitalize(true);
-    
+
     std::u32string screen;
     type_into(engine, screen, "abc  e");
     std::string result = unicode::to_utf8(screen);
@@ -280,20 +282,29 @@ void test_engine_punctuation_backspace() {
 
     // Backspace: deletes ' '
     auto res0 = engine.process_key(127, mods);
-    for (int i = 0; i < res0.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res0.count; i++) screen.push_back(res0.chars[i]);
+    for (int i = 0; i < res0.backspace; i++)
+        if (!screen.empty())
+            screen.pop_back();
+    for (int i = 0; i < res0.count; i++)
+        screen.push_back(res0.chars[i]);
     assert(unicode::to_utf8(screen) == "thử.");
 
     // Backspace: deletes '.'
     auto res1 = engine.process_key(127, mods);
-    for (int i = 0; i < res1.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res1.count; i++) screen.push_back(res1.chars[i]);
+    for (int i = 0; i < res1.backspace; i++)
+        if (!screen.empty())
+            screen.pop_back();
+    for (int i = 0; i < res1.count; i++)
+        screen.push_back(res1.chars[i]);
     assert(unicode::to_utf8(screen) == "thử");
 
     // Backspace again: deletes 'ử' -> "thư"
     auto res2 = engine.process_key(127, mods);
-    for (int i = 0; i < res2.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res2.count; i++) screen.push_back(res2.chars[i]);
+    for (int i = 0; i < res2.backspace; i++)
+        if (!screen.empty())
+            screen.pop_back();
+    for (int i = 0; i < res2.count; i++)
+        screen.push_back(res2.chars[i]);
     assert(unicode::to_utf8(screen) == "th");
 
     std::cout << "  [PASS] Punctuation backspace handling" << std::endl;
@@ -313,14 +324,20 @@ void test_engine_reproduction_user() {
 
     // BS1: delete space
     auto res1 = engine.process_key(127, mods);
-    for (int i = 0; i < res1.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res1.count; i++) screen.push_back(res1.chars[i]);
+    for (int i = 0; i < res1.backspace; i++)
+        if (!screen.empty())
+            screen.pop_back();
+    for (int i = 0; i < res1.count; i++)
+        screen.push_back(res1.chars[i]);
     assert(unicode::to_utf8(screen) == "thử.");
 
     // BS2: delete dot
     auto res2 = engine.process_key(127, mods);
-    for (int i = 0; i < res2.backspace; i++) if (!screen.empty()) screen.pop_back();
-    for (int i = 0; i < res2.count; i++) screen.push_back(res2.chars[i]);
+    for (int i = 0; i < res2.backspace; i++)
+        if (!screen.empty())
+            screen.pop_back();
+    for (int i = 0; i < res2.count; i++)
+        screen.push_back(res2.chars[i]);
     assert(unicode::to_utf8(screen) == "thử");
 
     // English Restoration Cases
@@ -339,8 +356,8 @@ void test_engine_backspace_chaining() {
     assert_typing(engine, "ha cho \b\b\b\b", "ha ");
     assert_typing(engine, "ha cho \b\b\b\b\b", "ha");
     assert_typing(engine, "duw\b", "d");
-    assert_typing(engine, "tuas\b", "tú"); 
-    assert_typing(engine, "huowngf\b", "hườn"); 
+    assert_typing(engine, "tuas\b", "tú");
+    assert_typing(engine, "huowngf\b", "hườn");
     assert_typing(engine, "tuyeens\b", "tuyế");
     assert_typing(engine, "dduowngf\b", "đườn");
     std::cout << "  [PASS] Interactive backspace chaining" << std::endl;
@@ -367,10 +384,10 @@ void test_engine_linguistic_regression() {
 void test_engine_stuck_word_bug() {
     Engine engine;
     std::u32string screen;
-    
+
     type_into(engine, screen, "cho tooi ");
     assert(unicode::to_utf8(screen) == "cho t\xC3\xB4i ");
-    type_into(engine, screen, "\b"); // Restore 'tôi'
+    type_into(engine, screen, "\b");  // Restore 'tôi'
     assert(unicode::to_utf8(screen) == "cho tôi");
     type_into(engine, screen, "s");
     assert(unicode::to_utf8(screen) == "cho tối");
@@ -429,14 +446,14 @@ void test_engine_manual_hook_keys() {
 void test_engine_khuyru_regression() {
     Engine engine;
     engine.set_auto_restore(true);
-    
+
     // Test direct typing
     assert_typing(engine, "khuyu", "khuyu");
     assert_typing(engine, "khuyur", "khuỷu");
-    
+
     // Test mid-word tone typing (The 'khuyru' sequence)
     assert_typing(engine, "khuyru", "khuỷu");
-    
+
     // Test different orders
     assert_typing(engine, "khur", "khủ");
     assert_typing(engine, "khuru", "khủu");
@@ -451,7 +468,7 @@ void test_engine_khuyru_regression() {
 void test_engine_telex_escapes() {
     Engine engine;
     engine.set_auto_restore(true);
-    
+
     assert_typing(engine, "as", "á");
     assert_typing(engine, "ass", "as");
     assert_typing(engine, "mix", "mĩ");
@@ -460,18 +477,18 @@ void test_engine_telex_escapes() {
     assert_typing(engine, "hasss", "hass");
     assert_typing(engine, "curx", "cũ");
     assert_typing(engine, "huowngff", "hươngf");
-    
+
     std::cout << "  [PASS] Telex tone escapes (mixxi, hasss)" << std::endl;
 }
 
 /**
- * @brief Tests the 'Invalid Initial Gate' which prevents Vietnamese transformations 
+ * @brief Tests the 'Invalid Initial Gate' which prevents Vietnamese transformations
  * on words starting with non-Vietnamese consonant clusters (like 'qq', 'f', 'w').
  */
 void test_engine_english_gating() {
     Engine engine;
     engine.set_auto_restore(true);
-    
+
     // Invalid Vietnamese initials should remain raw
     assert_typing(engine, "qquas", "qquas");
     assert_typing(engine, "for", "for");
@@ -479,6 +496,6 @@ void test_engine_english_gating() {
     assert_typing(engine, "status", "status");
     assert_typing(engine, "cs", "cs");
     assert_typing(engine, "ngs", "ngs");
-    
+
     std::cout << "  [PASS] Invalid Initial Gate (English protection)" << std::endl;
 }

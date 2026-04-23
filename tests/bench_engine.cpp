@@ -40,8 +40,8 @@ class BenchmarkSuite {
      * @param keys The raw key sequence to be processed by the engine.
      * @param config Optional callback to initialize engine state/options.
      */
-    void add_scenario(std::string name, std::string keys,
-                      std::function<void(Engine&)> config = [](Engine&) {}) {
+    void add_scenario(
+        std::string name, std::string keys, std::function<void(Engine&)> config = [](Engine&) {}) {
         scenarios.push_back({std::move(name), std::move(keys), std::move(config)});
     }
 

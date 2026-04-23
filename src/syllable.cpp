@@ -15,12 +15,12 @@ namespace lotus_engine {
 // ============================================================================
 
 static const std::u32string TONE_MARKS_U32[] = {
-    U"",       // NONE
-    U"\u0301", // ACUTE
-    U"\u0300", // GRAVE
-    U"\u0309", // HOOK
-    U"\u0303", // TILDE
-    U"\u0323"  // DOT
+    U"",        // NONE
+    U"\u0301",  // ACUTE
+    U"\u0300",  // GRAVE
+    U"\u0309",  // HOOK
+    U"\u0303",  // TILDE
+    U"\u0323"   // DOT
 };
 
 // ============================================================================
@@ -33,13 +33,14 @@ static const std::u32string TONE_MARKS_U32[] = {
  * @return Standardized UTF-8 Vietnamese syllable string.
  */
 std::string Syllable::to_string(ToneStyle style) const {
-    if (is_empty()) return "";
+    if (is_empty())
+        return "";
 
     std::u32string res = initial;
-    
+
     if (tone != Tone::NONE) {
         bool tone_placed = false;
-        
+
         // 1. OLD Style Check (oa, oe, uy)
         if (glide.has_value() && final_c.empty() && vowel.size() == 1) {
             char32_t g = unicode::to_lower(glide.value());
@@ -53,7 +54,8 @@ std::string Syllable::to_string(ToneStyle style) const {
 
         if (!tone_placed) {
             // Handle glide if not already handled
-            if (glide.has_value()) res += glide.value();
+            if (glide.has_value())
+                res += glide.value();
 
             if (!vowel.empty()) {
                 size_t target_idx = 0;
@@ -64,8 +66,7 @@ std::string Syllable::to_string(ToneStyle style) const {
                     if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
                         (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
                         (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
-                        (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) ||
-                        !final_c.empty()) {
+                        (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) || !final_c.empty()) {
                         target_idx = 1;
                     }
                 } else if (vowel.size() == 3) {
@@ -74,18 +75,20 @@ std::string Syllable::to_string(ToneStyle style) const {
 
                 for (size_t i = 0; i < vowel.size(); ++i) {
                     res += vowel[i];
-                    if (i == target_idx) res += TONE_MARKS_U32[static_cast<int>(tone)];
+                    if (i == target_idx)
+                        res += TONE_MARKS_U32[static_cast<int>(tone)];
                 }
             } else if (glide.has_value()) {
                 // Tone on glide if no vowel
-                res.pop_back(); // Remove glide added above
+                res.pop_back();  // Remove glide added above
                 res += glide.value();
                 res += TONE_MARKS_U32[static_cast<int>(tone)];
             }
             tone_placed = true;
         }
     } else {
-        if (glide.has_value()) res += glide.value();
+        if (glide.has_value())
+            res += glide.value();
         res += vowel;
     }
 
@@ -95,7 +98,7 @@ std::string Syllable::to_string(ToneStyle style) const {
 
 /**
  * @brief Removes the last logical component of the syllable.
- * 
+ *
  * Handles backspacing logic by stripping components in reverse linguistic order:
  * Final -> Vowel -> Glide -> Initial.
  */
@@ -133,12 +136,15 @@ std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
     for (char32_t c : initial) {
         if (c == U'đ' || c == U'Đ') {
             keys.push_back((c == U'Đ') ? 'D' : 'd');
-            keys.push_back((method == InputMethod::TELEX) ? (char32_t)((c == U'Đ') ? 'D' : 'd') : (char32_t)'9');
-        } else keys.push_back(c);
+            keys.push_back((method == InputMethod::TELEX) ? (char32_t)((c == U'Đ') ? 'D' : 'd')
+                                                          : (char32_t)'9');
+        } else
+            keys.push_back(c);
     }
 
     // 2. Glide
-    if (glide.has_value()) keys.push_back(glide.value());
+    if (glide.has_value())
+        keys.push_back(glide.value());
 
     // 3. Vowel
     for (char32_t c : vowel) {
@@ -160,7 +166,8 @@ std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
     }
 
     // 4. Final
-    for (char32_t c : final_c) keys.push_back(c);
+    for (char32_t c : final_c)
+        keys.push_back(c);
 
     // 5. Tone
     if (tone != Tone::NONE) {
@@ -175,4 +182,4 @@ std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
     return keys;
 }
 
-} // namespace lotus_engine
+}  // namespace lotus_engine

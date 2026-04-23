@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lotus_engine/types.h"
 #include "lotus_engine/linguistics.h"
+#include "lotus_engine/types.h"
 
 #include <functional>
 #include <map>
@@ -102,30 +102,34 @@ class Engine {
     // Internal VNI modifier application.
     void apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                              Tone& tone_state);
-    
+
     // Decomposed process_key helpers
     bool handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result);
     bool handle_boundary(char32_t key, EngineResult& result);
     bool handle_shortcuts(char32_t key, EngineResult& result);
     bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
+    bool handle_navigation(char32_t key, EngineResult& result);
+    bool handle_modifier_escape(char32_t key, EngineResult& result);
+    void apply_std_uo(char32_t& key);
+    EngineResult apply_im_pipeline(char32_t key, std::string& raw_word);
     bool reclaim_from_history(InputMethod method);
 
     EngineResult make_transformation_result(const std::u32string& final_u32);
 
-    std::u32string buffer;              ///< The current raw composition buffer (UTF-32).
-    char32_t last_modifier_key = 0;     ///< The last consumed modifier key (for escape detection).
-    std::u32string last_committed_text; ///< The last committed text (for backspace recovery).
-    std::map<std::string, std::string> shortcuts; ///< Registered text expansion shortcuts.
-    WordHistory word_history;           ///< Ring buffer of recently committed words.
-    char32_t last_boundary_key = 0;    ///< The key that triggered the last word boundary.
-    bool at_sentence_start = true;      ///< Whether we are at the start of a sentence.
-    InputMethod method;                 ///< The active input method.
-    ToneStyle tone_style = ToneStyle::NEW;     ///< The active tone style.
-    FreeWOption free_w = FreeWOption::NON_START; ///< The standalone 'w' option.
-    bool std_uo = false;               ///< Whether standard uo transformation is active.
-    bool auto_restore = true;          ///< Whether English auto-restore is enabled.
-    bool double_space_to_period = false; ///< Whether double-space converts to period.
-    bool auto_capitalize = false;       ///< Whether auto-capitalize after sentences is enabled.
+    std::u32string buffer;               ///< The current raw composition buffer (UTF-32).
+    char32_t last_modifier_key = 0;      ///< The last consumed modifier key (for escape detection).
+    std::u32string last_committed_text;  ///< The last committed text (for backspace recovery).
+    std::map<std::string, std::string> shortcuts;  ///< Registered text expansion shortcuts.
+    WordHistory word_history;                      ///< Ring buffer of recently committed words.
+    char32_t last_boundary_key = 0;         ///< The key that triggered the last word boundary.
+    bool at_sentence_start = true;          ///< Whether we are at the start of a sentence.
+    InputMethod method;                     ///< The active input method.
+    ToneStyle tone_style = ToneStyle::NEW;  ///< The active tone style.
+    FreeWOption free_w = FreeWOption::NON_START;  ///< The standalone 'w' option.
+    bool std_uo = false;                          ///< Whether standard uo transformation is active.
+    bool auto_restore = true;                     ///< Whether English auto-restore is enabled.
+    bool double_space_to_period = false;          ///< Whether double-space converts to period.
+    bool auto_capitalize = false;  ///< Whether auto-capitalize after sentences is enabled.
 
     // Rule-based English detection using phonotactic linguistics.
     bool is_english_word(const std::string& word) const;

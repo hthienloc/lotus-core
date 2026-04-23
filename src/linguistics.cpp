@@ -1,14 +1,16 @@
 /**
  * @file linguistics.cpp
  * @brief Heuristics and linguistic analysis for language detection.
- * 
+ *
  * Implements detection logic to distinguish between Vietnamese and English text,
  * preventing false transformations on English words.
  */
 
 #include "lotus_engine/linguistics.h"
+
 #include "lotus_engine/constants.h"
 #include "lotus_engine/unicode.h"
+
 #include <algorithm>
 #include <string>
 #include <string_view>
@@ -45,7 +47,7 @@ inline bool is_tone_marker(char c) {
     return TELEX_TONE_MARKERS.find(static_cast<char>(::tolower(c))) != std::string_view::npos;
 }
 
-} // namespace
+}  // namespace
 
 // ============================================================================
 // [ Linguistics Implementation ]
@@ -67,10 +69,11 @@ bool Linguistics::is_on_whitelist(const std::string& word) {
  * @return True if it contains definite English clusters.
  */
 bool Linguistics::is_definite_english(const std::string& word) {
-    if (word.length() < 2) return false;
+    if (word.length() < 2)
+        return false;
     std::string lower = unicode::to_lower(word);
-    
-    // 1. Heuristic: If it contains 'x' in positions that are unlikely for 
+
+    // 1. Heuristic: If it contains 'x' in positions that are unlikely for
     // Vietnamese (which only allows initial 'x') but common for English.
     // For example, 'mixi', 'boxer', 'taxi'.
     if (lower.length() >= 3) {
@@ -78,7 +81,8 @@ bool Linguistics::is_definite_english(const std::string& word) {
         if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
             // 'x' in the middle followed by a vowel is definitely English.
             // If followed by another 'x', it's a Telex escape.
-            if (is_vowel(lower[x_pos + 1])) return true;
+            if (is_vowel(lower[x_pos + 1]))
+                return true;
         }
     }
 
@@ -89,19 +93,23 @@ bool Linguistics::is_definite_english(const std::string& word) {
 
 /**
  * @brief Heuristic check to see if a word is likely English.
- * 
+ *
  * @param word The word to analyze.
  * @return True if heuristics suggest it is English.
  */
 bool Linguistics::is_likely_english(const std::string& word) {
-    if (word.empty()) return false;
-    if (is_definite_english(word)) return true;
-    if (has_impossible_final(word)) return true;
-    
+    if (word.empty())
+        return false;
+    if (is_definite_english(word))
+        return true;
+    if (has_impossible_final(word))
+        return true;
+
     // Check for non-Vietnamese consonant clusters anywhere in the word.
-    // We use this in is_likely_english instead of is_definite_english 
+    // We use this in is_likely_english instead of is_definite_english
     // because some clusters might temporarily appear during typing (e.g., 'st' in 'test').
-    if (contains_english_cluster(word)) return true;
+    if (contains_english_cluster(word))
+        return true;
 
     // Check for English 'y' consonant patterns (e.g., 'yes', 'yard')
     // In Vietnamese, initial 'y' is strictly followed by 'ê' or nothing.
@@ -119,25 +127,29 @@ bool Linguistics::is_likely_english(const std::string& word) {
  * @brief Checks for non-Vietnamese consonant clusters (sh, wh, br, str, etc.)
  */
 bool Linguistics::contains_english_cluster(const std::string& word) {
-    if (word.length() < 2) return false;
+    if (word.length() < 2)
+        return false;
     std::string lower = unicode::to_lower(word);
-    return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
-                       [&lower](std::string_view cluster) {
-                           size_t pos = lower.find(cluster);
-                           if (pos == std::string::npos) return false;
-                           
-                           // Special Case 1: 'st' at the end is common in both English and
-                           // temporary Vietnamese typing (e.g., 'test' -> 'tét').
-                           if (cluster == "st" && pos == lower.length() - 2) return false;
+    return std::any_of(
+        ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(), [&lower](std::string_view cluster) {
+            size_t pos = lower.find(cluster);
+            if (pos == std::string::npos)
+                return false;
 
-                           // Special Case 2: Double-tap escape markers at the end (e.g., 'as' -> 'á', 'ass' -> 'as')
-                           // Telex allows double tapping any tone marker to escape it.
-                           if (cluster.length() == 2 && cluster[0] == cluster[1] && pos == lower.length() - 2) {
-                               if (TELEX_TONE_MARKERS.find(cluster[0]) != std::string_view::npos) return false;
-                           }
-                           
-                           return true;
-                       });
+            // Special Case 1: 'st' at the end is common in both English and
+            // temporary Vietnamese typing (e.g., 'test' -> 'tét').
+            if (cluster == "st" && pos == lower.length() - 2)
+                return false;
+
+            // Special Case 2: Double-tap escape markers at the end (e.g., 'as' -> 'á', 'ass' ->
+            // 'as') Telex allows double tapping any tone marker to escape it.
+            if (cluster.length() == 2 && cluster[0] == cluster[1] && pos == lower.length() - 2) {
+                if (TELEX_TONE_MARKERS.find(cluster[0]) != std::string_view::npos)
+                    return false;
+            }
+
+            return true;
+        });
 }
 
 /**
@@ -146,28 +158,31 @@ bool Linguistics::contains_english_cluster(const std::string& word) {
  * @return True if the final sequence is invalid in Vietnamese.
  */
 bool Linguistics::has_impossible_final(const std::string& word) {
-    if (word.empty()) return false;
+    if (word.empty())
+        return false;
     char last = static_cast<char>(::tolower(word.back()));
-    
+
     bool is_invalid_base = std::any_of(INVALID_FINALS.begin(), INVALID_FINALS.end(),
                                        [last](std::string_view f) { return last == f[0]; });
 
     if (is_invalid_base) {
         // Special Case: 'ng' is valid, but 'g' alone at end is not.
         if (last == 'g') {
-            if (word.length() >= 2 && ::tolower(word[word.length() - 2]) == 'n') return false;
+            if (word.length() >= 2 && ::tolower(word[word.length() - 2]) == 'n')
+                return false;
         }
-        
+
         // TELEX tone markers at the end are allowed if they follow a vowel (likely Vietnamese).
         // If they follow a consonant, they are likely English (e.g., 'was').
         if (is_tone_marker(last) && word.length() >= 2) {
             char prev = static_cast<char>(::tolower(word[word.length() - 2]));
-            if (last == prev) return false; // Telex double-tap escape
-            return !is_vowel(prev);         // English if consonant + marker
+            if (last == prev)
+                return false;        // Telex double-tap escape
+            return !is_vowel(prev);  // English if consonant + marker
         }
         return true;
     }
     return false;
 }
 
-} // namespace lotus_engine
+}  // namespace lotus_engine
