@@ -32,6 +32,16 @@ AI agents MUST use the following tools and scripts:
 - **Canonicalization**: Always maintain deterministic state using `Syllable::to_keys`.
 - **Modularity**: Do not bloat `Engine::process_key`. Extract logic into private helper methods.
 
+## Collaboration Protocol (Gemini & Jules)
+This project uses a tiered AI workflow:
+- **Gemini (Orchestrator)**: Acts as the Engineering Manager and Gatekeeper. Gemini defines task scopes, reviews code for linguistic correctness, ensures comment preservation, and performs final merges.
+- **Jules (Primary Developer)**: Jules is the primary coding agent. It is responsible for implementing logic changes, refactoring, and following the technical standards defined above.
+
+**Rules for Jules**:
+1.  **Surgical Changes**: Focus ONLY on the requested logic. Avoid project-wide reformatting unless explicitly asked.
+2.  **Incremental Updates**: Jules may push changes in stages. Wait for the session to be marked 'Completed' before finalizing.
+3.  **Communication**: Use clear commit messages and explain any discrepancies between requirements and implementation (e.g., outdated tests).
+
 ## Task Delegation Patterns
 If you are asked to "fix a bug" or "add a feature":
 1.  **Research**: Find the relevant linguistic rule in `validator.cpp` or transformation in `engine.cpp`.

@@ -26,6 +26,13 @@ This file defines the foundational constraints and operational standards for the
 - **Doxygen Documentation**: Maintain strict Doxygen standards for all class methods and members. Comments should explain the *why* and the *linguistic rationale* for Vietnamese-specific logic.
 - **Performance**: Always run `./dev.sh bench` after making changes to the core transformation logic (`engine.cpp` or `parser.cpp`).
 
+## Operational Mandates (Manager Role)
+
+- **Gemini as Orchestrator**: My primary role is to delegate complex tasks to specialized agents (like Jules), review their output, and ensure project-wide integrity. 
+- **Code Intervention Policy**: I MUST avoid direct code modification for large-scale changes or refactoring. My priority is writing Task Descriptions for Jules and performing rigorous Code Reviews. Direct edits are reserved for minor fixes, documentation, or emergency restoration.
+- **Comment Preservation (STRICT)**: I am responsible for ensuring that Jules or any other agent does not strip comments. Every review MUST check for comment loss.
+- **Verification over Implementation**: I prioritize running `./dev.sh` and validating linguistic correctness over writing the logic myself.
+
 ## Workflow
 
 1. **Research**: Reproduce bugs in `tui_demo.cpp` or a new test file first.
