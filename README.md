@@ -1,53 +1,57 @@
-# Lotus Engine
+# Lotus Engine 🪷
 
-[![CI](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/fcitx5-lotus/lotus-engine/actions/workflows/ci.yml)
-[![Latency](https://img.shields.io/badge/avg%20latency-0.031%20ms-brightgreen)](https://github.com/fcitx5-lotus/lotus-engine)
+[![CI](https://github.com/hthienloc/lotus-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/hthienloc/lotus-engine/actions/workflows/ci.yml)
+[![Latency](https://img.shields.io/badge/avg%20latency-0.031%20ms-brightgreen)](https://github.com/hthienloc/lotus-engine)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 
-> **Lotus Engine** is a high-performance Vietnamese input processing core — phonologically accurate, zero-dependency, and embeddable via a stable C-API.
+> **Lotus Engine** is a high-performance, zero-dependency, modular Vietnamese input processing core. Built with modern C++20, it focuses on phonological accuracy and strict linguistic correctness, embeddable in any project via a stable C-API.
 
 ---
 
-## Features
+## ✨ Core Features
 
 | Feature | Description |
 | :--- | :--- |
 | 🔤 **TELEX & VNI** | Full support for both standard Vietnamese input methods |
 | 🧠 **Phonotactic Validator** | Validates syllable structure (Initial · Glide · Nucleus · Final) against Vietnamese orthographic rules |
-| 🔁 **Resilient Recovery** | Auto-reverts invalid compositions and preserves raw keystrokes (e.g. `tests`, `nurses`) |
+| 🔁 **Resilient Recovery** | Auto-reverts invalid compositions and preserves raw keystrokes (e.g. `status`, `what`) |
 | 🎵 **Tone Placement** | Smart heuristics for complex vowel clusters (`iêu`, `uôi`, `ươi`, `ươu`, `ưa`) |
 | 🎨 **Tone Style** | Old style (`hòa`) and New style (`hoà`) selectable at runtime |
-| ⚡ **Smart Typing** | Built-in support for Auto-Capitalization and Double-Space to Period |
 | 🔠 **NFC Output** | All output is Unicode NFC precomposed — eliminates phantom backspace bugs in Electron/Web apps |
 | ⚡ **< 0.1ms/key** | Measured average 0.031ms, peak 0.44ms under heavy stress tests |
 | 🔌 **C-API** | Stable `lotus_engine_t*` handle, log callbacks, no C++ ABI leakage |
 
 ---
 
-## Build
+## 🔤 Smart Auto-Restore Comparison
 
-**Requirements:** `cmake ≥ 3.15`, `g++ / clang++` with C++20 support.
+When typing English or mixed-language text, naive engines often mistakenly apply Vietnamese diacritics. Lotus Engine intelligently auto-restores to the original keystrokes, ensuring a seamless typing experience.
 
-```bash
-git clone https://github.com/fcitx5-lotus/lotus-engine.git
-cd lotus-engine
-cmake -B build
-cmake --build build -j$(nproc)
-```
-
-### Using the Dev Script
-
-```bash
-./dev.sh          # Build + run tests
-./dev.sh tui      # Build + launch interactive TUI demo
-./dev.sh bench    # Build + run performance benchmark
-./dev.sh clean    # Clean rebuild
-```
+| Word Typed | Naive Telex | Lotus Engine | Reason |
+| :--- | :--- | :--- | :--- |
+| `status` | statú ❌ | **status** ✅ | Protected final 's' cluster |
+| `for` | fỏ ❌ | **for** ✅ | Invalid Vietnamese initial 'f' |
+| `what` | ưhat ❌ | **what** ✅ | Invalid Vietnamese initial 'w' |
+| `qquas` | qquás ❌ | **qquas** ✅ | Non-Vietnamese 'qq' cluster |
+| `cs` | cớ ❌ | **cs** ✅ | Phonotactically invalid |
+| `expect` | ẽpect ❌ | **expect** ✅ | English heuristic detection |
 
 ---
 
-## Usage
+## 🏗️ Architecture
+
+Lotus Engine implements a robust processing pipeline that prioritizes validation before transformation:
+
+1. **Engine Layer**: Orchestrates the input pipeline and manages the Composition Buffer.
+2. **Parser Layer**: Decomposes strings into Vietnamese phonological components (Initial, Glide, Nucleus, Final).
+3. **Validator Layer**: Enforces strict orthographic rules to ensure absolute linguistic correctness.
+
+> 📖 For an in-depth look, check out the [ARCHITECTURE.md](ARCHITECTURE.md) document.
+
+---
+
+## 💻 Usage & Integration
 
 ### Interactive TUI Demo
 
@@ -55,22 +59,18 @@ cmake --build build -j$(nproc)
 ./build/lotus_tui           # Telex mode (default)
 ./build/lotus_tui --vni     # VNI mode
 ```
-
-Type Vietnamese naturally and press `ESC` to exit with a debug log.
-
----
+*(Press `ESC` to exit and dump the debug log)*
 
 ### C-API Integration
 
-Link against `liblotus_engine_core.so` (or `.a`) and include `lotus_engine/capi.h`:
+Link against `liblotus_engine_core.so` (or `.a`) and include `<lotus_engine/capi.h>`:
 
 ```c
 #include <lotus_engine/capi.h>
 #include <stdio.h>
 
-// Optional: receive engine log events
 void my_logger(lotus_log_level_t level, const char* msg) {
-    if (level >= LOTUS_LOG_LEVEL_WARN)
+    if (level >= LOTUS_LOG_LEVEL_ERROR)
         fprintf(stderr, "[lotus] %s\n", msg);
 }
 
@@ -78,14 +78,15 @@ int main(void) {
     lotus_engine_set_log_callback(my_logger);
 
     lotus_engine_t* engine = lotus_engine_create();
-    lotus_modifiers_t mods = { false, false };
+    lotus_modifiers_t mods = { false, false }; // shift, caps_lock
 
-    // Process a keystroke: "aa" -> "â"
+    // Process a keystroke: 'a' + 'a' -> 'â'
     lotus_engine_process_key(engine, 'a', mods);
     lotus_result_t r = lotus_engine_process_key(engine, 'a', mods);
 
     // r.backspace = number of chars to delete before inserting
-    // r.chars[0..r.count] = new chars to insert
+    // r.count = number of new UTF-32 chars in r.chars buffer
+    // r.action = 0 (pass-through) or 1 (transformation)
     printf("Backspace: %d, Insert: %d chars\n", r.backspace, r.count);
 
     lotus_engine_destroy(engine);
@@ -93,69 +94,25 @@ int main(void) {
 }
 ```
 
-**CMake (after `cmake --install`):**
-
-```cmake
-find_package(lotus_engine REQUIRED)
-target_link_libraries(my_app PRIVATE lotus_engine_core)
-```
-
 ---
 
-## Architecture
+## 🛠️ Development
 
-```text
-lotus-engine/
-├── include/lotus_engine/   # Public headers (C++ + C-API)
-│   ├── capi.h              # Stable C-API
-│   ├── engine.h            # C++20 Engine class
-│   ├── types.h             # Syllable, Tone, InputMethod types
-│   ├── validator.h         # Phonotactic validator
-│   ├── parser.h            # Syllable decomposer
-│   ├── unicode.h           # UTF-8 ↔ UTF-32 utilities
-│   └── log.h               # Internal logging macros
-├── src/                    # Implementation
-├── tests/                  # Unit tests + TUI demo + benchmark
-│   ├── bench_engine.cpp    # Latency benchmark (10k keypresses)
-│   └── tui_demo.cpp        # Interactive terminal demo
-└── .github/workflows/ci.yml
-```
-
-7-stage TELEX/VNI pipeline: **Stroke → Vowel Modifiers → Free-W → Tone → Compose → Validate → Recover**
-
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for full details.
-
----
-
-## Performance
-
-Measured on release build (`-O2`), 10,000 consecutive keypresses:
-
-| Metric | Value |
-| :--- | :--- |
-| Average latency | **0.014 ms** |
-| Peak latency | **0.14 ms** |
-| Target SLA | < 1.0 ms ✅ |
-
-Run yourself: `./dev.sh bench`
-
----
-
-## Development
+**Requirements:** `cmake ≥ 3.15`, `g++` or `clang++` with C++20 support.
 
 ```bash
-# Run full test suite
+# Build the project and run all tests
 ./dev.sh
 
-# Format code (requires clang-format)
-clang-format -i src/*.cpp tests/*.cpp include/lotus_engine/*.h
+# Build and launch the interactive TUI demo
+./dev.sh tui
 
-# Static analysis (optional)
-clang-tidy src/*.cpp -- -std=c++20 -Iinclude
+# Build and run the performance benchmark
+./dev.sh bench
 ```
 
 ---
 
-## License
+## 📄 License
 
-GPL v3 © [fcitx5-lotus contributors](https://github.com/fcitx5-lotus)
+GPL v3 © [hthienloc and contributors](https://github.com/hthienloc/lotus-engine)
