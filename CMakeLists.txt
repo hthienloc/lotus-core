@@ -40,6 +40,7 @@ add_executable(lotus_tests
     tests/test_main.cpp
     tests/test_syllable.cpp
     tests/test_validator.cpp
+    tests/test_edge_cases.cpp
     tests/test_parser.cpp
     tests/test_engine.cpp
     tests/test_vni.cpp

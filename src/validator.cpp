@@ -106,6 +106,30 @@ bool Validator::is_valid(const Syllable& syllable) {
     return true;
 }
 
+bool Validator::is_front_vowel(char32_t c) {
+    return c == 'e' || c == U'ê' || c == 'i' || c == 'y';
+}
+
+bool Validator::is_front_vowel_strict(char32_t c) {
+    return c == 'e' || c == U'ê' || c == 'i';
+}
+
+bool Validator::is_e_vowel(char32_t c) {
+    return c == 'e' || c == U'ê';
+}
+
+bool Validator::is_valid_ch_nh_nucleus(char32_t c) {
+    return c == 'a' || c == U'ê' || c == 'i' || c == 'y';
+}
+
+bool Validator::is_centering_diphthong_requiring_coda(std::u32string_view v) {
+    return v == U"iê" || v == U"uô" || v == U"ươ" || v == U"yê";
+}
+
+bool Validator::is_centering_diphthong_forbidding_coda(std::u32string_view v) {
+    return v == U"ia" || v == U"ua" || v == U"ưa";
+}
+
 /**
  * @brief Checks for co-occurrence rules between initial consonants and vowels.
  * 
@@ -123,8 +147,8 @@ bool Validator::is_valid(const Syllable& syllable) {
  */
 bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
                                            char32_t nucleus_start, std::u32string_view final_c) {
-    bool is_front = (affinity_char == 'e' || affinity_char == U'ê' || affinity_char == 'i' || affinity_char == 'y');
-    bool is_front_no_y = (affinity_char == 'e' || affinity_char == U'ê' || affinity_char == 'i');
+    bool is_front = is_front_vowel(affinity_char);
+    bool is_front_no_y = is_front_vowel_strict(affinity_char);
 
     if (lower_init == U"k" && !is_front) return false;
     if (lower_init == U"c" && is_front) return false;
@@ -133,9 +157,8 @@ bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char3
     if (lower_init == U"ngh" && !is_front_no_y) return false;
     if (lower_init == U"ng" && is_front_no_y) return false;
 
-    if (final_c == U"ng") {
-        if (nucleus_start == 'e' || nucleus_start == U'ê') return false;
-    }
+    if (final_c == U"ng" && is_e_vowel(nucleus_start)) return false;
+    
     return true;
 }
 
@@ -150,8 +173,7 @@ bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char3
  */
 bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c) {
     if (final_c == U"ch" || final_c == U"nh") {
-        if (nucleus_start != 'a' && nucleus_start != U'ê' && nucleus_start != 'i' && nucleus_start != 'y')
-            return false;
+        if (!is_valid_ch_nh_nucleus(nucleus_start)) return false;
     }
     return true;
 }
@@ -167,13 +189,8 @@ bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_v
  * @return True if diphthong rules are respected.
  */
 bool Validator::check_diphthong_rules(std::u32string_view stripped_nucleus, std::u32string_view final_c) {
-    if (stripped_nucleus == U"iê" || stripped_nucleus == U"uô" || stripped_nucleus == U"ươ" ||
-        stripped_nucleus == U"yê") {
-        if (final_c.empty()) return false;
-    }
-    if (stripped_nucleus == U"ia" || stripped_nucleus == U"ua" || stripped_nucleus == U"ưa") {
-        if (!final_c.empty()) return false;
-    }
+    if (is_centering_diphthong_requiring_coda(stripped_nucleus) && final_c.empty()) return false;
+    if (is_centering_diphthong_forbidding_coda(stripped_nucleus) && !final_c.empty()) return false;
     return true;
 }
 

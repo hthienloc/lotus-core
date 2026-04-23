@@ -58,12 +58,16 @@ void test_syllable_parts() {
     auto s2 = p.parse(U"toán");
     assert(s2.initial == U"t");
     assert(s2.glide.has_value() && s2.glide.value() == 'o');
-    assert(s2.vowel == U"an");
+    // Updated to align with current syllable decomposition logic.
+    assert(s2.vowel == U"a");
+    assert(s2.final_c == U"n");
 
     auto s3 = p.parse(U"khuyên");
     assert(s3.initial == U"kh");
     assert(s3.glide.has_value() && s3.glide.value() == 'u');
-    assert(s3.vowel == U"yên");
+    // Updated to align with current syllable decomposition logic.
+    assert(s3.vowel == U"yê");
+    assert(s3.final_c == U"n");
     
     std::cout << "  [PASS] Syllable component parsing" << std::endl;
 }

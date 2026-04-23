@@ -10,18 +10,31 @@
 // [ External Test Declarations ]
 // ============================================================================
 
-// Core Logic Tests
+// --- Core ---
+/** @brief Tests basic syllable-to-string conversion without complex tones. */
 void test_syllable_to_string_basic();
+/** @brief Verifies the 'is_empty' logic for various syllable states. */
 void test_syllable_is_empty();
+/** @brief Tests basic syllable validation including consonant and vowel checks. */
 void test_validator_basic();
+/** @brief Tests complex syllable validation including tones and glides. */
 void test_validator_complex();
+/** @brief Tests basic syllable parsing including initial, vowel, and final components. */
 void test_parser_basic();
+/** @brief Tests parsing of special cases like 'qu-' and 'gi-'. */
 void test_parser_special();
+/** @brief Exhaustive validation of complex Vietnamese rhymes and syllable structures. */
 void test_rhymes_exhaustive();
+/** @brief Verifies correct parsing of syllables into their constituent parts. */
+void test_syllable_parts();
+/** @brief Validates strict Vietnamese orthography and spelling rules. */
+void test_orthography_rules();
+/** @brief Tests tone placement difference between OLD (hòa) and NEW (hoà) styles. */
 void test_tone_style_placement();
+/** @brief Tests tone placement on complex diphthongs and triphthongs. */
 void test_complex_diphthongs();
 
-// Engine Tests
+// --- Engine ---
 void test_engine_telex_basic();
 void test_engine_telex_vowels();
 void test_engine_telex_hooks();
@@ -47,12 +60,12 @@ void test_engine_english_gating();
 void test_engine_punctuation_backspace();
 void test_engine_reproduction_user();
 
-// Edge Case Tests
-void test_edge_cases_run();
-
-// C-API Tests
+// --- C-API ---
 void test_capi_run_all();
 void test_capi_integration();
+
+// --- Edge Cases ---
+void test_edge_cases_run();
 
 // ============================================================================
 // [ Main Runner ]
@@ -65,7 +78,8 @@ void test_capi_integration();
 int main() {
     std::cout << "Running Vietnamese Engine Tests..." << std::endl;
 
-    // 1. Syllable & Validator Tests
+    // --- Core ---
+    std::cout << "\n[ Core Tests ]\n";
     test_syllable_to_string_basic();
     test_syllable_is_empty();
     test_validator_basic();
@@ -73,10 +87,13 @@ int main() {
     test_parser_basic();
     test_parser_special();
     test_rhymes_exhaustive();
+    test_syllable_parts();
+    test_orthography_rules();
     test_tone_style_placement();
     test_complex_diphthongs();
 
-    // 2. Engine Tests (Telex & VNI)
+    // --- Engine ---
+    std::cout << "\n[ Engine Tests ]\n";
     test_engine_telex_basic();
     test_engine_telex_vowels();
     test_engine_telex_hooks();
@@ -102,13 +119,15 @@ int main() {
     test_engine_punctuation_backspace();
     test_engine_reproduction_user();
 
-    // 3. Edge Case Tests
-    test_edge_cases_run();
-
-    // 4. C-API Tests
+    // --- C-API ---
+    std::cout << "\n[ C-API Tests ]\n";
     test_capi_run_all();
     test_capi_integration();
 
-    std::cout << "All tests PASSED!" << std::endl;
+    // --- Edge Cases ---
+    std::cout << "\n[ Edge Case Tests ]\n";
+    test_edge_cases_run();
+
+    std::cout << "\nAll tests PASSED!" << std::endl;
     return 0;
 }

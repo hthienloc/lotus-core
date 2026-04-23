@@ -61,6 +61,14 @@ class Validator {
      * @brief Checks centering diphthong rules (ia/iê, ua/uô, ưa/ươ) regarding codas.
      */
     static bool check_diphthong_rules(std::u32string_view stripped_nucleus, std::u32string_view final_c);
+
+    // --- Repetitive cluster helpers ---
+    static bool is_front_vowel(char32_t c);
+    static bool is_front_vowel_strict(char32_t c);
+    static bool is_e_vowel(char32_t c);
+    static bool is_valid_ch_nh_nucleus(char32_t c);
+    static bool is_centering_diphthong_requiring_coda(std::u32string_view v);
+    static bool is_centering_diphthong_forbidding_coda(std::u32string_view v);
 };
 
 }  // namespace lotus_engine
