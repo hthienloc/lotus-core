@@ -33,12 +33,15 @@ This file defines the foundational constraints and operational standards for the
 - **Comment Preservation (STRICT)**: I am responsible for ensuring that Jules or any other agent does not strip comments. Every review MUST check for comment loss.
 - **Verification over Implementation**: I prioritize running `./dev.sh` and validating linguistic correctness over writing the logic myself.
 
-## Workflow
+## Workflow (Orchestration Model)
 
-1. **Research**: Reproduce bugs in `tui_demo.cpp` or a new test file first.
-2. **Implement**: Use surgical edits. Keep helper methods private in `Engine` unless they are truly generic.
-3. **Self-Audit (MANDATORY)**: Immediately after an edit, review the diff to ensure no important comments were accidentally stripped and that the code follows project formatting/naming conventions.
-4. **Verify**: Run `./dev.sh` (tests). Benchmarking (`./dev.sh bench`) is optional and should not be prioritized over logical correctness.
+1. **Research & Scoping**: Analyze the codebase and reproduce bugs in `tui_demo.cpp` or a new test file. Define a clear, surgical task for Jules.
+2. **Delegation**: Hand over the implementation to **Jules** using the `mcp_julesServer_start_new_jules_task` tool. Provide detailed linguistic and technical constraints in the task description.
+3. **Passive Monitoring**: Wait for Jules to finish. Do not poll continuously. Wait for a signal (user notification or completed session state).
+4. **Rigorous Review**: Once Jules is done, pull the code and perform a meticulous review using `git diff`. 
+    - **Checklist**: Linguistic correctness, modularity, Doxygen standards, and **STRICT comment preservation**.
+5. **Validation**: Execute `./dev.sh` to ensure zero regressions. Benchmarking (`./dev.sh bench`) is optional but recommended for core logic changes.
+6. **Finalization**: Perform the final commit and push if all criteria are met. Any discrepancies found during review should be sent back to Jules as a follow-up task.
 - **Debug Log**: When using `tui_demo`, use `LOTUSDEBUG=1` to see the aligned ASCII table log. Maintain the fixed-width formatting using `unicode::display_width`.
 
 ## Key Files
