@@ -73,22 +73,13 @@ bool Linguistics::is_definite_english(const std::string& word) {
         return false;
     std::string lower = unicode::to_lower(word);
 
-    // 1. Heuristic: If it contains 'x' in positions that are unlikely for
-    // Vietnamese (which only allows initial 'x') but common for English.
-    // For example, 'mixi', 'boxer', 'taxi'.
-    if (lower.length() >= 3) {
-        size_t x_pos = lower.find('x');
-        if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
-            // 'x' in the middle followed by a vowel is definitely English.
-            // If followed by another 'x', it's a Telex escape.
-            if (is_vowel(lower[x_pos + 1]))
-                return true;
-        }
-    }
+    if (has_english_x_pattern(lower))
+        return true;
 
-    // 2. Check for definite English clusters at the start.
-    return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
-                       [&lower](std::string_view cluster) { return lower.find(cluster) == 0; });
+    if (has_english_start_cluster(lower))
+        return true;
+
+    return false;
 }
 
 /**
@@ -100,36 +91,89 @@ bool Linguistics::is_definite_english(const std::string& word) {
 bool Linguistics::is_likely_english(const std::string& word) {
     if (word.empty())
         return false;
+
+    std::string lower = unicode::to_lower(word);
+
     if (is_definite_english(word))
         return true;
-    if (has_impossible_final(word))
+
+    if (has_impossible_final(lower))
         return true;
 
     // Check for non-Vietnamese consonant clusters anywhere in the word.
     // We use this in is_likely_english instead of is_definite_english
     // because some clusters might temporarily appear during typing (e.g., 'st' in 'test').
-    if (contains_english_cluster(word))
+    if (contains_english_cluster(lower))
         return true;
 
-    // Check for English 'y' consonant patterns (e.g., 'yes', 'yard')
-    // In Vietnamese, initial 'y' is strictly followed by 'ê' or nothing.
-    std::string lower = unicode::to_lower(word);
+    if (has_english_y_pattern(lower))
+        return true;
+
+    return false;
+}
+
+// ============================================================================
+// [ Private Helper Methods ]
+// ============================================================================
+
+/**
+ * @brief Checks if the word contains 'x' in positions unlikely for Vietnamese.
+ *
+ * 1. Heuristic: If it contains 'x' in positions that are unlikely for
+ * Vietnamese (which only allows initial 'x') but common for English.
+ * For example, 'mixi', 'boxer', 'taxi'.
+ *
+ * @param lower The lowercased word to check.
+ * @return True if it contains an English 'x' pattern.
+ */
+bool Linguistics::has_english_x_pattern(const std::string& lower) {
+    if (lower.length() >= 3) {
+        size_t x_pos = lower.find('x');
+        if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
+            // 'x' in the middle followed by a vowel is definitely English.
+            // If followed by another 'x', it's a Telex escape.
+            if (is_vowel(lower[x_pos + 1]))
+                return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Checks for definite English clusters at the start.
+ * @param lower The lowercased word to check.
+ * @return True if it starts with an English cluster.
+ */
+bool Linguistics::has_english_start_cluster(const std::string& lower) {
+    // 2. Check for definite English clusters at the start.
+    return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
+                       [&lower](std::string_view cluster) { return lower.find(cluster) == 0; });
+}
+
+/**
+ * @brief Checks for English 'y' consonant patterns (e.g., 'yes', 'yard').
+ *
+ * In Vietnamese, initial 'y' is strictly followed by 'ê' or nothing.
+ *
+ * @param lower The lowercased word to check.
+ * @return True if it contains an English 'y' pattern.
+ */
+bool Linguistics::has_english_y_pattern(const std::string& lower) {
     if (lower.length() >= 2 && lower[0] == 'y') {
         if (is_vowel(lower[1]) && lower[1] != 'w' && lower.find("ê") == std::string::npos) {
             return true;
         }
     }
-
     return false;
 }
 
 /**
  * @brief Checks for non-Vietnamese consonant clusters (sh, wh, br, str, etc.)
  */
-bool Linguistics::contains_english_cluster(const std::string& word) {
-    if (word.length() < 2)
+bool Linguistics::contains_english_cluster(const std::string& lower) {
+    if (lower.length() < 2)
         return false;
-    std::string lower = unicode::to_lower(word);
+
     return std::any_of(
         ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(), [&lower](std::string_view cluster) {
             size_t pos = lower.find(cluster);
@@ -154,13 +198,13 @@ bool Linguistics::contains_english_cluster(const std::string& word) {
 
 /**
  * @brief Checks if the word ends with a character or combination impossible in Vietnamese.
- * @param word The word to check.
+ * @param lower The lowercased word to check.
  * @return True if the final sequence is invalid in Vietnamese.
  */
-bool Linguistics::has_impossible_final(const std::string& word) {
-    if (word.empty())
+bool Linguistics::has_impossible_final(const std::string& lower) {
+    if (lower.empty())
         return false;
-    char last = static_cast<char>(::tolower(word.back()));
+    char last = lower.back();
 
     bool is_invalid_base = std::any_of(INVALID_FINALS.begin(), INVALID_FINALS.end(),
                                        [last](std::string_view f) { return last == f[0]; });
@@ -168,14 +212,14 @@ bool Linguistics::has_impossible_final(const std::string& word) {
     if (is_invalid_base) {
         // Special Case: 'ng' is valid, but 'g' alone at end is not.
         if (last == 'g') {
-            if (word.length() >= 2 && ::tolower(word[word.length() - 2]) == 'n')
+            if (lower.length() >= 2 && lower[lower.length() - 2] == 'n')
                 return false;
         }
 
         // TELEX tone markers at the end are allowed if they follow a vowel (likely Vietnamese).
         // If they follow a consonant, they are likely English (e.g., 'was').
-        if (is_tone_marker(last) && word.length() >= 2) {
-            char prev = static_cast<char>(::tolower(word[word.length() - 2]));
+        if (is_tone_marker(last) && lower.length() >= 2) {
+            char prev = lower[lower.length() - 2];
             if (last == prev)
                 return false;        // Telex double-tap escape
             return !is_vowel(prev);  // English if consonant + marker
