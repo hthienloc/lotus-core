@@ -47,7 +47,8 @@ Lotus Engine implements a robust processing pipeline that prioritizes validation
 2. **Parser Layer**: Decomposes strings into Vietnamese phonological components (Initial, Glide, Nucleus, Final).
 3. **Validator Layer**: Enforces strict orthographic rules to ensure absolute linguistic correctness.
 
-> 📖 For an in-depth look, check out the [ARCHITECTURE.md](ARCHITECTURE.md) document.
+> 📖 For an in-depth look, check out the [ARCHITECTURE.md](docs/ARCHITECTURE.md) document. 
+> You can also explore our [Documentation Index](docs/README.md) and [Gemini Mandates](GEMINI.md).
 
 ---
 

@@ -1,8 +1,10 @@
-# Project Roadmap: Lotus Engine
+# 🗺️ Project Roadmap: Lotus Engine
 
-Lotus Engine is positioned as a high-performance, developer-centric core engine that bridges the gap between Bamboo's linguistic accuracy and GoNhanh's modern efficiency. This roadmap outlines the strategic evolution of the engine, structured into clearly defined Technical Phases.
+> Lotus Engine is positioned as a high-performance, developer-centric core engine that bridges the gap between Bamboo's linguistic accuracy and GoNhanh's modern efficiency. This roadmap outlines the strategic evolution of the engine, structured into clearly defined Technical Phases.
 
-## Phase 1: Core Phonology & Unicode Stability (Completed)
+---
+
+## ✅ Phase 1: Core Phonology & Unicode Stability (Completed)
 
 - [x] **Vietnamese Phonology Base**
   - Robust Syllable Parser with Initial, Glide, Nucleus, and Final consonant separation.
@@ -12,7 +14,7 @@ Lotus Engine is positioned as a high-performance, developer-centric core engine 
   - Comprehensive handling of combining marks.
   - Robust C-API (`liblotus_engine_core.so`) designed for seamless FFI integration (inspired by the stability of bamboo-core).
 
-## Phase 2: High-Performance Processing Pipeline (Active)
+## 🏃 Phase 2: High-Performance Processing Pipeline (Active)
 
 *Objective: Evolve the transformation architecture to achieve GoNhanh's ultra-low latency while maintaining the nuanced correctness of Bamboo.*
 
@@ -28,7 +30,7 @@ Lotus Engine is positioned as a high-performance, developer-centric core engine 
   - Smart heuristics for complex vowel clusters (`iêu`, `uôi`, `ươi`, `ươu`, `ưa`).
   - Runtime selectable Tone Style (Old style `hòa` vs New style `hoà`), matching bamboo-core's precision.
 
-## Phase 3: Developer-Centric Intelligence & State Management (Upcoming)
+## 🧠 Phase 3: Developer-Centric Intelligence & State Management (Upcoming)
 
 *Objective: Enhance the engine's awareness of context, making it robust for complex environments like IDEs, CLIs, and modern web apps.*
 
@@ -42,7 +44,7 @@ Lotus Engine is positioned as a high-performance, developer-centric core engine 
   - Cursor-aware editing to allow mid-syllable diacritic modification.
   - Resilient backspace chaining across word boundaries.
 
-## Phase 4: Long-Term Research & Extensibility (Future)
+## 🔭 Phase 4: Long-Term Research & Extensibility (Future)
 
 - [ ] **Matrix-Based Validation Graph**
   - Migrate the linear phonotactic validator to a CV/VC matrix lookup for O(1) validation latency.

@@ -1,18 +1,20 @@
-# Vietnamese Engine Architecture
+# 🏗️ Vietnamese Engine Architecture
 
-This document describes the design principles and architecture of the modular Vietnamese Input Engine.
+> **Lotus Engine** is designed as a modular, high-performance Vietnamese Input Engine. This document outlines its architectural design principles and internal component structure.
 
-## Overview
+---
+
+## 📖 Overview
 
 The engine is designed as a **processing-only core**. It lacks any I/O direct interaction, receiving key events from a frontend and returning strings to be displayed or committed.
 
-## Core Design Principles
+## 🎯 Core Design Principles
 
 1. **Pipeline-Driven**: Processing is divided into 7 configured stages.
 2. **Linguistic-First**: High-fidelity Vietnamese syllable validation instead of generic regex.
 3. **Stateless Result**: The outcome of every key press provides a full result state (text, number of backspaces, commit status).
 
-## Components
+## 🧩 Components
 
 ### 1. Engine Core (Orchestrator)
 
@@ -38,7 +40,9 @@ Applies typing method rules (Telex, VNI, etc.).
 
 Handles undoing and restoring original input when a word becomes phonologically invalid.
 
-## The engine strictly implements the **GoNhanh 8-Stage Pipeline**, prioritizing validation before any transformation
+## ⚙️ Pipeline Architecture
+
+> **Note:** The engine strictly implements the **GoNhanh 8-Stage Pipeline**, prioritizing validation before any transformation.
 
 ### Processing Pipeline
 
@@ -57,7 +61,7 @@ Handles undoing and restoring original input when a word becomes phonologically 
 - **Stateless Buffer**: The engine maintains a raw key buffer, allowing a full re-process on every key for robust recovery.
 - **Double-Key Revert**: Pressing the same modifier key twice reverts the transformation (e.g., `aa` → `â` → `aa`).
 
-## Documentation & Maintenance
+## 📚 Documentation & Maintenance
 
 - **Doxygen Standards**: All core engine files and tests are documented using Doxygen-style comments for automated documentation generation and developer clarity.
 - **Realistic Benchmarking**: Performance is validated using a multi-scenario benchmark suite that simulates formal writing, flexible typing, mixed-language sessions, and stress tests with complex syllables.
@@ -74,7 +78,7 @@ struct EngineResult {
 };
 ```
 
-## Production-Grade Features
+## 🚀 Production-Grade Features
 
 To align with modern input method expectations, the engine includes:
 
@@ -90,6 +94,6 @@ The engine maintains a `Word History` (Ring Buffer) of the last 10 committed wor
 
 Shortcuts are not just string replacements; they are case-aware. Triggers like `VN` or `Vn` will correctly expand to `VIỆT NAM` or `Việt Nam` using Unicode-aware transformation logic.
 
-## FFI Interface
+## 🔌 FFI Interface
 
 The engine is designed to be C-compatible to allow integration into Windows (IME), Linux (fcitx5), and macOS environments.

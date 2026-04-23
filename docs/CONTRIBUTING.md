@@ -1,12 +1,14 @@
-# Contributing to Lotus Engine
+# 🤝 Contributing to Lotus Engine
 
-Thank you for your interest in contributing to Lotus Engine! As an open-source project, we welcome contributions from the community.
+> Thank you for your interest in contributing to Lotus Engine! As an open-source project, we welcome contributions from the community to help improve this high-performance Vietnamese input engine.
 
-## Code of Conduct
+---
+
+## 📜 Code of Conduct
 
 Please be respectful and professional in all interactions within the project.
 
-## How to Contribute
+## 🛠️ How to Contribute
 
 1. **Bug Reports**: If you find a bug, please open an issue on GitHub with a clear description and reproduction steps.
 2. **Feature Requests**: We welcome ideas for new features. Open an issue to discuss them.
@@ -17,10 +19,10 @@ Please be respectful and professional in all interactions within the project.
    - Run tests using `./dev.sh` before submitting.
    - Write clear, concise commit messages.
 
-## Development Setup
+## 💻 Development Setup
 
-See `README.md` for build instructions.
+See the main [`README.md`](../README.md) for build instructions and setup details.
 
-## License
+## 📄 License
 
 By contributing, you agree that your contributions will be licensed under the project's GPL-3.0 License.
