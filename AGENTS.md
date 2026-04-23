@@ -21,9 +21,9 @@ This file provides context and instructions for AI agents (like Jules, Gemini, o
 ## Development Workflow
 AI agents MUST use the following tools and scripts:
 
-1.  **Build & Test**: Run `./dev.sh` to compile and execute all unit tests.
-2.  **Manual Verification**: Use `./dev.sh tui` to launch an interactive demo for manual testing.
-3.  **Benchmarking**: Run `./dev.sh bench` after any change to core logic to ensure no performance regression (Average latency target: < 0.05ms).
+1.  **Build & Test**: Run `./dev.sh` to compile and execute all unit tests. This is the primary verification step.
+2.  **Manual Verification**: Use `./dev.sh tui` to launch an interactive demo for manual testing if needed.
+3.  **Benchmarking (Optional)**: Performance is secondary. Only run `./dev.sh bench` if specifically requested. The main goal is correctness.
 4.  **Debugging**: Use `LOTUSDEBUG=1` environment variable when running the TUI to see internal alignment logs.
 
 ## Critical Mandates

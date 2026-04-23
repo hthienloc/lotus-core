@@ -31,7 +31,7 @@ This file defines the foundational constraints and operational standards for the
 1. **Research**: Reproduce bugs in `tui_demo.cpp` or a new test file first.
 2. **Implement**: Use surgical edits. Keep helper methods private in `Engine` unless they are truly generic.
 3. **Self-Audit (MANDATORY)**: Immediately after an edit, review the diff to ensure no important comments were accidentally stripped and that the code follows project formatting/naming conventions.
-4. **Verify**: Run `./dev.sh` (tests) and `./dev.sh bench` (performance).
+4. **Verify**: Run `./dev.sh` (tests). Benchmarking (`./dev.sh bench`) is optional and should not be prioritized over logical correctness.
 - **Debug Log**: When using `tui_demo`, use `LOTUSDEBUG=1` to see the aligned ASCII table log. Maintain the fixed-width formatting using `unicode::display_width`.
 
 ## Key Files
