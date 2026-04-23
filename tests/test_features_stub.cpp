@@ -37,6 +37,26 @@ void test_features() {
         }
     }
 
+    // ShortcutManagerMacroModes
+    {
+        ShortcutManager mgr;
+        mgr.add_shortcut("vn", "Việt Nam");
+
+        EngineResult res;
+        if (mgr.handle(' ', U"vn", res, MacroMode::OFF)) {
+            std::cerr << "[FAIL] MacroMode::OFF failed." << std::endl; exit(1);
+        }
+        if (!mgr.handle(' ', U"vn", res, MacroMode::EXACT) || mgr.handle(' ', U"Vn", res, MacroMode::EXACT)) {
+            std::cerr << "[FAIL] MacroMode::EXACT failed." << std::endl; exit(1);
+        }
+        if (!mgr.handle(' ', U"vn", res, MacroMode::FIXED) || res.chars[0] != 'V' || !mgr.handle(' ', U"Vn", res, MacroMode::FIXED) || res.chars[0] != 'V') {
+            std::cerr << "[FAIL] MacroMode::FIXED failed." << std::endl; exit(1);
+        }
+        if (!mgr.handle(' ', U"vn", res, MacroMode::ADAPTIVE) || res.chars[0] != 'v' || !mgr.handle(' ', U"VN", res, MacroMode::ADAPTIVE) || res.chars[0] != 'V') {
+            std::cerr << "[FAIL] MacroMode::ADAPTIVE failed." << std::endl; exit(1);
+        }
+    }
+
     // ShortcutManagerClear
     {
         ShortcutManager mgr;

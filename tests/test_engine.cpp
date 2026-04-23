@@ -231,7 +231,7 @@ void test_engine_shortcuts() {
     engine.add_shortcut("vn", "Việt Nam");
 
     assert_typing(engine, "vn", "vn");
-    assert_typing(engine, "vn ", "Việt Nam ");
+    assert_typing(engine, "vn ", "việt nam "); // default adaptive mode transforms to lower
     assert_typing(engine, "Vn ", "Việt Nam ");
     assert_typing(engine, "VN ", "VIỆT NAM ");
 

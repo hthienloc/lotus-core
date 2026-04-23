@@ -176,6 +176,15 @@ inline std::u32string to_lower(const std::u32string& input) {
     return res;
 }
 
+/**
+ * @brief Checks if a character is alphabetical (ASCII or Vietnamese letters).
+ */
+inline bool is_alpha(char32_t cp) {
+    if ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z'))
+        return true;
+    return detail::LOWER_MAP.count(cp) > 0 || detail::UPPER_MAP.count(cp) > 0;
+}
+
 inline std::string to_upper(const std::string& input) {
     std::u32string u32 = to_utf32(input);
     for (auto& cp : u32)

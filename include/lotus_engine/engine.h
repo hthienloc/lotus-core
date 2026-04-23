@@ -62,6 +62,11 @@ class Engine {
     /** @brief Returns whether the engine is currently at a sentence start. */
     bool get_at_sentence_start() const { return at_sentence_start; }
 
+    /** @brief Sets the active macro expansion mode. */
+    void set_macro_mode(MacroMode mode) { this->macro_mode = mode; }
+    /** @brief Returns the current macro expansion mode. */
+    MacroMode get_macro_mode() const { return macro_mode; }
+
     /**
      * @brief Processes a single keypress and returns the required UI action.
      * @param key The UTF-32 codepoint of the pressed key.
@@ -130,6 +135,7 @@ class Engine {
     bool auto_restore = true;                     ///< Whether English auto-restore is enabled.
     bool double_space_to_period = false;          ///< Whether double-space converts to period.
     bool auto_capitalize = false;  ///< Whether auto-capitalize after sentences is enabled.
+    MacroMode macro_mode = MacroMode::ADAPTIVE;   ///< The active macro expansion mode.
 
     // Rule-based English detection using phonotactic linguistics.
     bool is_english_word(const std::string& word) const;

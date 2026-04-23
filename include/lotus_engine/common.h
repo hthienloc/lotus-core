@@ -40,4 +40,14 @@ enum class FreeWOption : uint8_t {
     ALWAYS      // w -> ư (everywhere)
 };
 
+/**
+ * @brief Professional macro expansion modes for shortcuts.
+ */
+enum class MacroMode : uint8_t {
+    OFF = 0,      // Disable shortcuts.
+    EXACT = 1,    // Match case exactly (e.g., vn matches vn only).
+    FIXED = 2,    // Match case-insensitively, return fixed string.
+    ADAPTIVE = 3  // Match case-insensitively, return transformed case.
+};
+
 }  // namespace lotus_engine

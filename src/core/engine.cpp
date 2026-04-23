@@ -522,7 +522,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
  * @return True if a shortcut was matched and expanded.
  */
 bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
-    if (shortcut_manager.handle(key, buffer, result)) {
+    if (shortcut_manager.handle(key, buffer, result, macro_mode)) {
         reset();
         last_boundary_key = key;
         last_committed_text.clear();
