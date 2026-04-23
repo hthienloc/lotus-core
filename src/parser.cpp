@@ -37,6 +37,9 @@ bool SyllableParser::is_vowel(char32_t c) {
 
 /**
  * @brief Identifies and extracts the initial consonant.
+ * @param input The raw input character sequence.
+ * @param s OUT: The Syllable object to populate.
+ * @return size_t The number of characters consumed as the initial consonant.
  */
 size_t SyllableParser::parse_initial(const std::u32string& input, Syllable& s) {
     size_t initial_len = Validator::find_longest_initial(input, 0);
@@ -64,6 +67,10 @@ size_t SyllableParser::parse_initial(const std::u32string& input, Syllable& s) {
 
 /**
  * @brief Identifies and extracts the glide ('o' or 'u' following an initial).
+ * @param input The raw input character sequence.
+ * @param pos The current parsing position.
+ * @param s OUT: The Syllable object to populate.
+ * @return size_t The number of characters consumed as the glide (0 or 1).
  */
 size_t SyllableParser::parse_glide(const std::u32string& input, size_t pos, Syllable& s) {
     size_t n = input.size();
@@ -104,6 +111,10 @@ size_t SyllableParser::parse_glide(const std::u32string& input, size_t pos, Syll
 
 /**
  * @brief Extracts the vowel nucleus sequence and identifies the tone mark if present.
+ * @param input The raw input character sequence.
+ * @param pos The current parsing position.
+ * @param s OUT: The Syllable object to populate.
+ * @return size_t The number of characters consumed as the nucleus.
  */
 size_t SyllableParser::parse_nucleus(const std::u32string& input, size_t pos, Syllable& s) {
     size_t n = input.size();
@@ -124,6 +135,10 @@ size_t SyllableParser::parse_nucleus(const std::u32string& input, size_t pos, Sy
 
 /**
  * @brief Extracts the remaining characters as the final coda.
+ * @param input The raw input character sequence.
+ * @param pos The current parsing position.
+ * @param s OUT: The Syllable object to populate.
+ * @return size_t The number of characters consumed as the coda.
  */
 size_t SyllableParser::parse_coda(const std::u32string& input, size_t pos, Syllable& s) {
     if (pos < input.size()) {
@@ -135,6 +150,12 @@ size_t SyllableParser::parse_coda(const std::u32string& input, size_t pos, Sylla
 
 /**
  * @brief Parses a raw string into a structured Syllable object.
+ *
+ * Performs linguistic analysis to identify the initial consonant,
+ * the glide (if present), the vowel nucleus, and the final coda.
+ *
+ * @param input The raw character sequence to parse.
+ * @return A Syllable object containing the identified components.
  */
 Syllable SyllableParser::parse(const std::u32string& input) {
     Syllable s;
