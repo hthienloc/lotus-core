@@ -1,50 +1,52 @@
 # Project Roadmap: Lotus Engine
 
-## Completed Milestones
+Lotus Engine is positioned as a high-performance, developer-centric core engine that bridges the gap between Bamboo's linguistic accuracy and GoNhanh's modern efficiency. This roadmap outlines the strategic evolution of the engine, structured into clearly defined Technical Phases.
 
-- [x] **Giai đoạn 1: Vietnamese Phonology**
-  - Robust Syllable Parser with Glide/Nucleus separation.
-  - Component-based validation with strict orthic rules.
-  - Exhaustive 173+ rhyme coverage.
-- [x] **Giai đoạn 2: Transformation Pipeline**
-  - Advanced 7-stage Telex transformer.
-  - Full VNI method support.
-  - Shortcut expansion system.
-- [x] **Giai đoạn 3: State & Recovery**
+## Phase 1: Core Phonology & Unicode Stability (Completed)
+
+- [x] **Vietnamese Phonology Base**
+  - Robust Syllable Parser with Initial, Glide, Nucleus, and Final consonant separation.
+  - Component-based validation with strict orthic rules and exhaustive 173+ rhyme coverage.
+- [x] **Unicode & Integration Layer**
+  - Guaranteed NFC output for cross-platform rendering stability.
+  - Comprehensive handling of combining marks.
+  - Robust C-API (`liblotus_engine_core.so`) designed for seamless FFI integration (inspired by the stability of bamboo-core).
+
+## Phase 2: High-Performance Processing Pipeline (Active)
+
+*Objective: Evolve the transformation architecture to achieve GoNhanh's ultra-low latency while maintaining the nuanced correctness of Bamboo.*
+
+- [x] **Advanced Transformation Engine**
+  - Full TELEX and VNI method support with shortcut expansion system.
+  - Initial 7-stage transformer implementation.
+- [ ] **Streamlined 4-Stage Pipeline Integration**
+  - Refactor the current 7/8-stage pipeline into a highly optimized 4-stage processing pipeline (Stroke, Vowel, Mark, Cleanup) analogous to GoNhanh's architecture, drastically reducing cycle count per keystroke.
+- [ ] **Ultra-Low Latency Design**
+  - Optimize memory footprint and state transitions to guarantee < 0.05ms average processing latency.
+  - Implement zero-allocation data paths for the hot loop in `process_key`.
+- [x] **Complex Tone Placement Heuristics**
+  - Smart heuristics for complex vowel clusters (`iêu`, `uôi`, `ươi`, `ươu`, `ưa`).
+  - Runtime selectable Tone Style (Old style `hòa` vs New style `hoà`), matching bamboo-core's precision.
+
+## Phase 3: Developer-Centric Intelligence & State Management (Upcoming)
+
+*Objective: Enhance the engine's awareness of context, making it robust for complex environments like IDEs, CLIs, and modern web apps.*
+
+- [ ] **Developer-First Auto-Restore Logic**
+  - Implement an advanced English auto-restore mechanism tailored for developer tools (e.g., CLI inputs, Claude Code, VIM).
+  - Intelligently differentiate between fast Vietnamese typing and code syntax, reverting to raw keystrokes instantly upon detecting non-Vietnamese phonotactics without explicit whitelist bloat.
+- [ ] **Complex Vowel Reordering Logic**
+  - Adopt advanced vowel reordering algorithms (inspired by bamboo-core) to gracefully handle out-of-order typing without dropping the composition state.
+- [ ] **Context-Aware Composition**
+  - Deep surrounding-text API integration for robust state reconstruction (`rebuild_from_text`).
+  - Cursor-aware editing to allow mid-syllable diacritic modification.
   - Resilient backspace chaining across word boundaries.
-  - Action-based feedback for immediate UI updates.
-  - Foreign word auto-restore.
-  - **Code Quality**: Chuẩn hóa comment Doxygen cho toàn bộ source code và cải thiện bộ benchmark thực tế.
-- [x] **Giai đoạn 4: Unicode Stability & Integration**
-  - Đảm bảo output luôn ở chuẩn NFC để tránh lỗi hiển thị.
-  - Xử lý các tổ hợp dấu kết hợp (Combining Marks).
-  - Hỗ trợ đổi style bỏ dấu (Kiểu cũ `hòa` vs Kiểu mới `hoà`).
-  - Export C-API (`liblotus_engine_core.so`) ổn định cho `fcitx5-lotus`.
 
-## Active Phase: System Integration & Polish
+## Phase 4: Long-Term Research & Extensibility (Future)
 
-Mục tiêu: Hoàn thiện khả năng tích hợp và độ ổn định cho các môi trường thực tế.
-
-### 1. Surrounding Text & Context Awareness
-
-- [x] **State Reconstruction**: Phát triển logic tái cấu trúc trạng thái engine từ text thuần (`rebuild_from_text`). Cho phép nạp phím gõ từ một từ đã có sẵn.
-- [x] **Cursor-Aware Editing**: Hỗ trợ nạp syllable hiện tại vào engine khi di chuyển con trỏ, cho phép sửa dấu/typo ở bất kỳ đâu trong từ.
-- [ ] **Fcitx5 Surrounding Text**: Tích hợp sâu với API surrounding-text của Fcitx5 để đồng bộ hóa trạng thái gõ và xóa.
-
-### 2. Smart Typing Features
-
-- [x] **Double Space to Period**: Gõ dấu cách 2 lần sẽ tự động chuyển thành dấu chấm và dấu cách.
-- [x] **Auto Capitalize**: Tự động viết hoa sau dấu câu kết thúc câu (`.`, `!`, `?`) hoặc xuống dòng.
-
-### 3. Rigorous Validation & Maintenance
-
-- [ ] **English Whitelist**: Xây dựng lại danh sách trắng cho các từ tiếng Anh phổ biến để tránh nhận diện nhầm.
-- [ ] **Enhanced Validation**: Cải thiện `Validator` để ngăn chặn gõ các tổ hợp phím vô lý (ví dụ: `qqu`, `ww`) mà không cần làm quá phức tạp kiến trúc.
-- [ ] **Integration Test Coverage**: Mở rộng bộ test tích hợp với các ứng dụng thực tế (Chromium, Firefox, LibreOffice) để giải quyết các lỗi mất phím.
-
-
-## Long-term Research (Pha tương lai)
-
-- [ ] **Matrix-based Validation**: Chuyển đổi sang ma trận CV/VC nếu cần độ chính xác 100% về phương ngữ.
-- [ ] **Memory & Performance**: Tiếp tục tối ưu RAM footprint (< 512KB) và latency.
-- [ ] **Structured Composition Graph**: Chỉ thực hiện nếu phát hiện các giới hạn của buffer phẳng trong việc xử lý Undo/Redo phức tạp.
+- [ ] **Matrix-Based Validation Graph**
+  - Migrate the linear phonotactic validator to a CV/VC matrix lookup for O(1) validation latency.
+- [ ] **Structured Composition Graph**
+  - Replace the flat raw buffer with a directed acyclic graph (DAG) to represent complex Undo/Redo states natively within the engine.
+- [ ] **Plugin & Extension API**
+  - Expand the C-API to allow dynamic loading of custom shortcut dictionaries and localized linguistic rules.
