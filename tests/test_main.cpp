@@ -47,6 +47,9 @@ void test_engine_english_gating();
 void test_engine_punctuation_backspace();
 void test_engine_reproduction_user();
 
+// Edge Case Tests
+void test_edge_cases_run();
+
 // C-API Tests
 void test_capi_run_all();
 void test_capi_integration();
@@ -99,7 +102,10 @@ int main() {
     test_engine_punctuation_backspace();
     test_engine_reproduction_user();
 
-    // 3. C-API Tests
+    // 3. Edge Case Tests
+    test_edge_cases_run();
+
+    // 4. C-API Tests
     test_capi_run_all();
     test_capi_integration();
 

@@ -47,6 +47,7 @@ add_executable(lotus_tests
     tests/test_tone_style.cpp
     tests/test_capi.cpp
     tests/test_capi_integration.cpp
+    tests/test_edge_cases.cpp
 )
 target_link_libraries(lotus_tests lotus_engine_core)
 
