@@ -69,3 +69,8 @@ dist/
 *.tar.gz
 *.zip
 node_modules/
+
+# ========================
+# Temporary Patches
+# ========================
+*.patch
