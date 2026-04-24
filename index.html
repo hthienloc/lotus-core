@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotus Engine - Web Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🪷 Lotus Engine</h1>
+            <p>High-performance, zero-dependency Vietnamese input processing core.</p>
+        </header>
+
+        <main>
+            <div class="settings">
+                <div class="setting-group">
+                    <label>Method:</label>
+                    <select id="method-select">
+                        <option value="0">Telex</option>
+                        <option value="1">VNI</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Tone Style:</label>
+                    <select id="tone-style-select">
+                        <option value="1">New (hoà)</option>
+                        <option value="0">Old (hòa)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Free-W (Telex):</label>
+                    <select id="free-w-select">
+                        <option value="1">Non-Start (w -> ư)</option>
+                        <option value="0">Off (w -> w)</option>
+                        <option value="2">Always (w -> ư)</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="std-uo-checkbox">
+                        [ , ] Hooks
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label>
+                        <input type="checkbox" id="auto-restore-checkbox" checked>
+                        Auto-Restore
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <button id="reset-btn">Reset Engine</button>
+                </div>
+            </div>
+
+            <div class="editor-container">
+                <textarea id="editor" placeholder="Type here to test Vietnamese composition... (e.g. t r u o n g f)"></textarea>
+            </div>
+
+            <div class="log-container">
+                <h3>Under the hood (Engine Logs)</h3>
+                <div id="log-output" class="log-output"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by C++20 and WebAssembly</p>
+        </footer>
+    </div>
+
+    <!-- WASM Bundle -->
+    <script src="lotus_engine.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
