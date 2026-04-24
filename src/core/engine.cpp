@@ -797,50 +797,96 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
  */
 void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
-    const std::string raw_str = unicode::to_utf8(buffer);
+    const std::u32string& u32 = buffer;
+    if (u32.empty())
+        return;
+
+    const std::string raw_str = unicode::to_utf8(u32);
     if (Linguistics::is_definite_english(raw_str))
         return;
+
+    std::u32string u32_copy = u32;
+    std::vector<bool> to_strip(u32.size(), false);
 
     bool has_mod = false;
     char32_t lk = unicode::to_lower(key);
 
-    for (size_t i = 0; i < raw_str.length(); ++i) {
-        char k = raw_str[i];
-        if (k < '0' || k > '9')
-            continue;
+    bool has_6 = false;
+    bool has_7 = false;
+    bool has_8 = false;
+    bool has_9 = false;
+    bool has_a = false;
 
-        has_mod = true;
-        if (k >= '1' && k <= '5')
-            tone_state = static_cast<Tone>(k - '0');
-        else if (k == '0')
-            tone_state = Tone::NONE;
-        else if (k == '6') {
-            unicode::replace_all(current_str, "a", "â");
-            unicode::replace_all(current_str, "e", "ê");
-            unicode::replace_all(current_str, "o", "ô");
-        } else if (k == '7') {
-            unicode::replace_all(current_str, "u", "ư");
-            if (current_str.find('a') == std::string::npos && 
-                current_str.find("ă") == std::string::npos && 
-                current_str.find("â") == std::string::npos) {
-                unicode::replace_all(current_str, "o", "ơ");
+    // Single pass to gather digits and flags
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t k = u32[i];
+        if (k == 'a' || k == 'A' || k == U'ă' || k == U'Ă' || k == U'â' || k == U'Â') has_a = true;
+
+        if (k >= '0' && k <= '9') {
+            has_mod = true;
+            to_strip[i] = true;
+
+            // Tier 3: Tones
+            if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
+            else if (k == '0') tone_state = Tone::NONE;
+            else if (k == '6') has_6 = true;
+            else if (k == '7') has_7 = true;
+            else if (k == '8') has_8 = true;
+            else if (k == '9') has_9 = true;
+
+            if (k == lk && !key_consumed) {
+                last_modifier_key = key;
+                key_consumed = true;
             }
-        } else if (k == '8') {
-            unicode::replace_all(current_str, "a", "ă");
-        } else if (k == '9') {
-            unicode::replace_all(current_str, "d", "đ");
-        }
-
-        if (i == raw_str.length() - 1 && (char32_t)k == lk) {
-            last_modifier_key = key;
-            key_consumed = true;
         }
     }
 
-    if (has_mod) {
-        current_str.erase(std::remove_if(current_str.begin(), current_str.end(), ::isdigit),
-                          current_str.end());
+    if (!has_mod) return;
+
+    // One-pass character transformation in tier priority
+    for (size_t i = 0; i < u32_copy.size(); ++i) {
+        char32_t c = u32_copy[i];
+
+        // Tier 1: Base/Hooks
+        if (has_9) {
+            if (c == 'd') c = U'đ';
+            else if (c == 'D') c = U'Đ';
+        }
+        if (has_8) {
+            if (c == 'a') c = U'ă';
+            else if (c == 'A') c = U'Ă';
+        }
+        if (has_7) {
+            if (c == 'u') c = U'ư';
+            else if (c == 'U') c = U'Ư';
+            if (!has_a) {
+                if (c == 'o') c = U'ơ';
+                else if (c == 'O') c = U'Ơ';
+            }
+        }
+
+        // Tier 2: Circumflex
+        if (has_6) {
+            if (c == 'a' || c == U'ă') c = U'â';
+            else if (c == 'A' || c == U'Ă') c = U'Â';
+            else if (c == 'e') c = U'ê';
+            else if (c == 'E') c = U'Ê';
+            else if (c == 'o' || c == U'ơ') c = U'ô';
+            else if (c == 'O' || c == U'Ơ') c = U'Ô';
+        }
+
+        u32_copy[i] = c;
     }
+
+    // Assembly
+    std::u32string final_u32;
+    for (size_t i = 0; i < u32.size(); ++i) {
+        if (!to_strip[i]) {
+            final_u32 += u32_copy[i];
+        }
+    }
+
+    current_str = unicode::to_utf8(final_u32);
 }
 
 /**
