@@ -118,6 +118,20 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
     }
 
     if (!syllable.final_c.empty()) {
+        static const std::vector<std::u32string_view> CLOSING_DIPHTHONGS = {
+            U"ai", U"ao", U"au", U"âu", U"ay", U"ây", U"eo", U"êu", U"iu",
+            U"oi", U"ôi", U"ơi", U"ui", U"ưi", U"ưu", U"iêu", U"yêu", U"uôi", U"ươi", U"ươu"
+        };
+        std::u32string lower_v;
+        for (char32_t cp : syllable.vowel)
+            lower_v += unicode::to_lower(cp);
+        if (std::find(CLOSING_DIPHTHONGS.begin(), CLOSING_DIPHTHONGS.end(), lower_v) !=
+            CLOSING_DIPHTHONGS.end()) {
+            if (diagnostic_reason)
+                *diagnostic_reason = "Closing diphthongs cannot have a coda.";
+            return false;
+        }
+
         std::u32string lower_f;
         for (char32_t cp : syllable.final_c)
             lower_f += unicode::to_lower(cp);

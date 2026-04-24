@@ -314,12 +314,11 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
 
     std::string final_v_word = s.to_string(tone_style);
 
-    // Normalize buffer to canonical keys for valid Vietnamese syllables to ensure deterministic
-    // behavior
-    if (is_valid_vn) {
-        std::vector<char32_t> canonical = s.to_keys(method);
-        buffer.assign(canonical.begin(), canonical.end());
-    }
+    // We explicitly DO NOT normalize the buffer here.
+    // The Engine class uses `buffer` to store the EXACT, raw sequence of keystrokes 
+    // typed by the user without normalization.
+    // This ensures `auto_restore` restores exactly what was typed and allows 
+    // `Linguistics::is_likely_english` to accurately evaluate the original key sequence.
 
     LOTUS_LOG_DEBUG("[Pipeline] Final: " + final_v_word);
     return make_transformation_result(unicode::to_utf32(final_v_word));

@@ -10,6 +10,8 @@
 
 #include "lotus_engine/constants.h"
 #include "lotus_engine/unicode.h"
+#include "lotus_engine/validator.h"
+#include "lotus_engine/parser.h"
 
 #include <algorithm>
 #include <string>
@@ -30,7 +32,7 @@ namespace {
  * @brief Common English words that are short and conflict with TELEX markers.
  */
 const std::vector<std::string_view> ENGLISH_WHITELIST = {
-    // To be populated later.
+    "taxi", "exit"
 };
 
 /**
@@ -73,6 +75,9 @@ bool Linguistics::is_definite_english(const std::string& word) {
         return false;
     std::string lower = unicode::to_lower(word);
 
+    if (is_on_whitelist(lower))
+        return true;
+
     if (has_english_x_pattern(lower))
         return true;
 
@@ -93,6 +98,9 @@ bool Linguistics::is_likely_english(const std::string& word) {
         return false;
 
     std::string lower = unicode::to_lower(word);
+    
+    if (is_on_whitelist(lower))
+        return true;
 
     if (is_definite_english(word))
         return true;
@@ -132,7 +140,21 @@ bool Linguistics::has_english_x_pattern(const std::string& lower) {
         if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
             char next = lower[x_pos + 1];
             // 1. 'x' followed by a vowel is English (e.g., 'boxer', 'taxi')
-            if (is_vowel(next)) return true;
+            if (is_vowel(next)) {
+                // If it's Vowel + 'x' + Vowel, check if the string without 'x' 
+                // forms a valid Vietnamese syllable (e.g., "maxi" -> "mai").
+                // If it does, 'x' might be a tone marker, so we bypass English detection.
+                char prev = lower[x_pos - 1];
+                if (is_vowel(prev)) {
+                    std::string copy = lower;
+                    copy.erase(x_pos, 1);
+                    Syllable s = SyllableParser::parse(unicode::to_utf32(copy));
+                    if (Validator::is_valid(s)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
 
             // 2. 'x' followed by a stop consonant is English (e.g., 'expect', 'context')
             // Because Vietnamese TILDE (x) cannot coexist with p, t, c, ch.

@@ -509,6 +509,8 @@ void test_engine_expect_bug() {
     assert_typing(engine, "expect", "expect");
     assert_typing(engine, "context", "context");
     assert_typing(engine, "text", "text");
+    assert_typing(engine, "maxi", "mãi");
+    assert_typing(engine, "toxic", "toxic");
     assert_typing(engine, "ngheexnh", "nghễnh");
     std::cout << "  \033[1;32m[PASS]\033[0m 'expect' auto-restoration bug" << std::endl;
 }
