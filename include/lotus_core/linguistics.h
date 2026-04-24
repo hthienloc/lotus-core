@@ -50,6 +50,11 @@ class Linguistics {
      * @brief Checks if a word ends with a consonant that is impossible in Vietnamese.
      */
     static bool has_impossible_final(const std::string& lower);
+
+    /**
+     * @brief Checks if a word ends with a common English suffix (like 'ine', 'one', 'ase').
+     */
+    static bool has_english_suffix(const std::string& lower);
 };
 
 }  // namespace lotus_core

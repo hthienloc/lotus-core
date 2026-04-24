@@ -307,8 +307,8 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     LOTUS_LOG_DEBUG("[Pipeline] Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") +
                     ", LikelyEng=" + std::string(is_eng ? "Y" : "N"));
 
-    if (auto_restore && !is_valid_vn && !key_consumed && is_eng) {
-        LOTUS_LOG_DEBUG("[Pipeline] Restore: Invalid structure & likely English");
+    if (auto_restore && is_eng && (!is_valid_vn || (!key_consumed && key != 'z' && key != 'Z'))) {
+        LOTUS_LOG_DEBUG("[Pipeline] Restore: English word logic");
         return make_transformation_result(buffer);
     }
 

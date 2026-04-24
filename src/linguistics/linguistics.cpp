@@ -117,6 +117,9 @@ bool Linguistics::is_likely_english(const std::string& word) {
     if (has_english_y_pattern(lower))
         return true;
 
+    if (has_english_suffix(lower))
+        return true;
+
     return false;
 }
 
@@ -249,11 +252,43 @@ bool Linguistics::has_impossible_final(const std::string& lower) {
             char prev = lower[lower.length() - 2];
             if (last == prev)
                 return false;        // Telex double-tap escape
+            
+            // Also allow 'r' because 'r' is a tone marker in TELEX (hỏi). For example 'cur' (củ)
+            if (prev == 'r' || prev == 's' || prev == 'f' || prev == 'j' || prev == 'x') {
+                return false; // Follows another tone marker, might be escape or compound
+            }
+
+            // Allow tone markers after 'ng', 'ch', 'nh' which are valid finals
+            if (lower.ends_with("ng" + std::string(1, last)) ||
+                lower.ends_with("ch" + std::string(1, last)) ||
+                lower.ends_with("nh" + std::string(1, last))) {
+                return false;
+            }
+
+            // Also allow after 'c', 'p', 't', 'm', 'n' (valid Vietnamese finals)
+            bool prev_is_valid_final = prev == 'c' || prev == 'p' || prev == 't' || prev == 'm' || prev == 'n';
+            if (prev_is_valid_final) return false;
+
             return !is_vowel(prev);  // English if consonant + marker
         }
         return true;
     }
     return false;
+}
+
+/**
+ * @brief Checks if a word ends with a common English suffix (like 'ine', 'one', 'ase').
+ * @param lower The lowercased word to check.
+ * @return True if the final sequence is a common English suffix.
+ */
+bool Linguistics::has_english_suffix(const std::string& lower) {
+    if (lower.length() < 4) return false;
+
+    return lower.ends_with("ine") || lower.ends_with("one") ||
+           lower.ends_with("ase") || lower.ends_with("ese") ||
+           lower.ends_with("ose") || lower.ends_with("ome") ||
+           lower.ends_with("ute") || lower.ends_with("ate") ||
+           lower.ends_with("ive") || lower.ends_with("ice");
 }
 
 }  // namespace lotus_core
