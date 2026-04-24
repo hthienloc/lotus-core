@@ -5,6 +5,7 @@
  */
 
 #include "lotus_core/engine.h"
+#include "lotus_core/constants.h"
 #include "lotus_core/log.h"
 #include "lotus_core/unicode.h"
 
@@ -249,6 +250,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
     Engine engine;
     Modifiers mods;
     std::u32string screen;
+    size_t cursor_pos = 0;
     std::stringstream debug_log;
 
     const char* vndebug = std::getenv("LOTUSDEBUG");
@@ -274,7 +276,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
         while (true) {
             std::cout << "\33[H\33[3B";  // Move to 4th line
             print_status(engine);
-            std::cout << "\n\r> \33[2K" << unicode::to_utf8(screen) << "\33[5m_\33[0m"
+            
+            // Render line with cursor
+            std::u32string pre = screen.substr(0, cursor_pos);
+            std::u32string post = screen.substr(cursor_pos);
+            std::cout << "\n\r> \33[2K" << unicode::to_utf8(pre) 
+                      << "\33[7m" << (post.empty() ? " " : unicode::to_utf8(post.substr(0, 1))) << "\33[0m"
+                      << (post.size() > 1 ? unicode::to_utf8(post.substr(1)) : "")
                       << std::flush;
 
             char32_t key = read_key();
@@ -309,16 +317,30 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                           << std::endl;
                 continue;
             }
-            if (key == 0xF005) {  // F5
-                engine.set_double_space_to_period(!engine.get_double_space_to_period());
-                debug_log << "[CONFIG] DoubleSpace changed to: "
-                          << (engine.get_double_space_to_period() ? "ON" : "OFF") << std::endl;
+
+            // Handle Navigation in TUI
+            if (key == constants::KEY_LEFT) {
+                if (cursor_pos > 0) cursor_pos--;
+                engine.reset();
+                debug_log << "[NAV] Left (Cursor: " << cursor_pos << ")" << std::endl;
                 continue;
             }
-            if (key == 0xF006) {  // F6
-                engine.set_auto_capitalize(!engine.get_auto_capitalize());
-                debug_log << "[CONFIG] AutoCapitalize changed to: "
-                          << (engine.get_auto_capitalize() ? "ON" : "OFF") << std::endl;
+            if (key == constants::KEY_RIGHT) {
+                if (cursor_pos < screen.size()) cursor_pos++;
+                engine.reset();
+                debug_log << "[NAV] Right (Cursor: " << cursor_pos << ")" << std::endl;
+                continue;
+            }
+            if (key == constants::KEY_HOME) {
+                cursor_pos = 0;
+                engine.reset();
+                debug_log << "[NAV] Home" << std::endl;
+                continue;
+            }
+            if (key == constants::KEY_END) {
+                cursor_pos = screen.size();
+                engine.reset();
+                debug_log << "[NAV] End" << std::endl;
                 continue;
             }
 
@@ -326,19 +348,26 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
             if (key == 8 || key == 23) {
                 engine.reset();
                 debug_log << "[ACTION] Word deleted (Ctrl+W/BS)" << std::endl;
-                // Delete until we hit a word boundary
-                while (!screen.empty() && screen.back() == ' ')
-                    screen.pop_back();
-                while (!screen.empty() && screen.back() != ' ')
-                    screen.pop_back();
+                while (cursor_pos > 0 && screen[cursor_pos - 1] == ' ') {
+                    screen.erase(cursor_pos - 1, 1);
+                    cursor_pos--;
+                }
+                while (cursor_pos > 0 && screen[cursor_pos - 1] != ' ') {
+                    screen.erase(cursor_pos - 1, 1);
+                    cursor_pos--;
+                }
                 continue;
             }
 
             auto res = engine.process_key(key, mods);
 
+            // Manual Backspace handling if engine doesn't consume it
             if (key == 127 && res.backspace == 0 && res.count == 0) {
-                if (!screen.empty())
-                    screen.pop_back();
+                if (cursor_pos > 0) {
+                    screen.erase(cursor_pos - 1, 1);
+                    cursor_pos--;
+                }
+                continue;
             }
 
             std::string opts = "[";
@@ -355,12 +384,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                       << pad_right(unicode::to_utf8(screen), 28) << "| " << pad_right(opts, 10)
                       << " |" << std::endl;
 
-            for (int i = 0; i < res.backspace; i++) {
-                if (!screen.empty())
-                    screen.pop_back();
+            // Apply engine results at cursor position
+            if (res.backspace > 0) {
+                screen.erase(cursor_pos - res.backspace, res.backspace);
+                cursor_pos -= res.backspace;
             }
-            for (int i = 0; i < res.count; i++) {
-                screen.push_back(res.chars[i]);
+            if (res.count > 0) {
+                std::u32string chars;
+                for (int i = 0; i < res.count; i++) chars += res.chars[i];
+                screen.insert(cursor_pos, chars);
+                cursor_pos += res.count;
             }
         }
     }
