@@ -19,7 +19,8 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
         return 0;
 
     bool has_glide = false;
-    char32_t first_char = unicode::to_lower(input[pos]);
+    char32_t raw_char = input[pos];
+    char32_t first_char = unicode::to_lower(raw_char);
 
     if (pos + 1 < n) {
         char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
@@ -40,7 +41,7 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
     }
 
     if (has_glide) {
-        s.glide = first_char;
+        s.glide = unicode::strip_tone(raw_char);
         return 1;
     }
 
