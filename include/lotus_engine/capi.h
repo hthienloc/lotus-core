@@ -41,15 +41,18 @@ typedef enum {
 typedef enum {
     LOTUS_LOG_LEVEL_DEBUG = 0,
     LOTUS_LOG_LEVEL_INFO = 1,
-    LOTUS_LOG_LEVEL_ERROR = 2
+    LOTUS_LOG_LEVEL_WARN = 2,
+    LOTUS_LOG_LEVEL_ERROR = 3
 } lotus_log_level_t;
 
 /**
- * @brief Callback function type for receiving log messages.
+ * @brief Callback function type for receiving log and tracing messages.
  * @param level Sensitivity level of the log message.
+ * @param stage The pipeline stage name.
+ * @param time_us The execution duration in microseconds.
  * @param message The logging string (null-terminated).
  */
-typedef void (*lotus_log_callback_t)(lotus_log_level_t level, const char* message);
+typedef void (*lotus_log_callback_t)(lotus_log_level_t level, const char* stage, double time_us, const char* message);
 
 /**
  * @brief Result structure for a key processing action.
@@ -71,89 +74,71 @@ typedef struct {
 
 /**
  * @brief Create a new engine instance.
- * @return A pointer to the newly created lotus_engine_t instance.
- *         Must be destroyed with lotus_engine_destroy.
  */
 lotus_engine_t* lotus_engine_create();
 
 /**
  * @brief Destroy an engine instance.
- * @param engine The engine instance to destroy.
  */
 void lotus_engine_destroy(lotus_engine_t* engine);
 
 /**
  * @brief Process a key press and return a transformation result.
- * @param engine The engine instance.
- * @param key The UTF-32 key code to process.
- * @param mods Active modifier keys (Shift, Caps Lock).
- * @return A lotus_result_t structure containing the required UI actions.
  */
 lotus_result_t lotus_engine_process_key(lotus_engine_t* engine, uint32_t key,
                                         lotus_modifiers_t mods);
 
 /**
- * @brief Reset engine state (clears the composition buffer).
- * @param engine The engine instance.
+ * @brief Reset engine state.
  */
 void lotus_engine_reset(lotus_engine_t* engine);
 
 /**
- * @brief Configure the input method (Telex or VNI).
- * @param engine The engine instance.
- * @param method The input method to use.
+ * @brief Configure the input method.
  */
 void lotus_engine_set_method(lotus_engine_t* engine, lotus_method_t method);
 
 /**
  * @brief Configure the tone placement style.
- * @param engine The engine instance.
- * @param style The tone style (Old or New).
  */
 void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t style);
 
 /**
- * @brief Configure the Free-W option (Telex).
- * @param engine The engine instance.
- * @param option The Free-W option (Off, Non-start, Always).
+ * @brief Configure the Free-W option.
  */
 void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option);
 
 /**
- * @brief Configure the manual hook keys option ([,] -> ư,ơ).
- * @param engine The engine instance.
- * @param enabled True to enable [ and ] as Vietnamese hooks.
+ * @brief Configure the manual hook keys option.
  */
 void lotus_engine_set_std_uo(lotus_engine_t* engine, bool enabled);
 
 /**
  * @brief Add a custom shortcut for string expansion.
- * @param engine The engine instance.
- * @param trigger The shortcut trigger string.
- * @param replacement The expansion string.
  */
 void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
                                const char* replacement);
 
 /**
- * @brief Set the global logging callback to capture diagnostic info from the engine.
- * @param callback Function pointer to the handler, or NULL to disable logging.
+ * @brief Set the global logging callback.
  */
 void lotus_engine_set_log_callback(lotus_log_callback_t callback);
 
 /**
  * @brief Enables or disables automatic English word restoration.
- * @param engine The engine instance.
- * @param enabled True to enable, false to disable.
  */
 void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled);
 
 /**
  * @brief Enables or disables allowing non-standard initial consonants (z, w, j, f).
- * @param engine The engine instance.
- * @param enabled True to enable, false to disable.
  */
 void lotus_engine_set_allow_non_standard_initials(lotus_engine_t* engine, bool enabled);
+
+/**
+ * @brief Export current tracing buffer to a JSON file.
+ * @param filepath The output path.
+ */
+void lotus_engine_export_tracing(const char* filepath);
 
 #ifdef __cplusplus
 }

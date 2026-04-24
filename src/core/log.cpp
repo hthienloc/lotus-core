@@ -1,13 +1,23 @@
 /**
  * @file log.cpp
- * @brief Logging infrastructure for the Lotus Engine.
+ * @brief Logging and performance tracing infrastructure.
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/log.h"
-
 #include <mutex>
+#include <vector>
+#include <fstream>
+#include <iomanip>
 
 namespace lotus_engine {
+
+struct TraceEvent {
+    LogLevel level;
+    std::string stage;
+    double time_us;
+    std::string message;
+};
 
 // ============================================================================
 // [ Internal State ]
@@ -18,42 +28,60 @@ bool g_has_log_callback = false;
 
 static LogCallback g_log_callback = nullptr;
 static std::mutex g_log_mutex;
+static std::vector<TraceEvent> g_trace_buffer;
 
 // ============================================================================
-// [ Logging Implementation ]
+// [ Logging & Tracing Implementation ]
 // ============================================================================
 
-/**
- * @brief Registers a global callback for engine log events.
- * @param callback The function to invoke for log messages.
- */
 void set_log_callback(LogCallback callback) {
     std::lock_guard<std::mutex> lock(g_log_mutex);
     g_log_callback = std::move(callback);
     g_has_log_callback = (g_log_callback != nullptr);
 }
 
-/**
- * @brief Set the maximum log level.
- * @param level The new maximum log level.
- */
 void set_max_log_level(LogLevel level) {
     g_max_log_level = level;
 }
 
-/**
- * @brief Emits a log message to the registered callback.
- * @param level The severity level of the log.
- * @param message The log message content.
- */
-void emit_log(LogLevel level, const std::string& message) {
-    if (!g_has_log_callback || level < g_max_log_level) {
-        return;
-    }
+void emit_log(LogLevel level, const std::string& message, const std::string& stage, double time_us) {
+    if (level < g_max_log_level) return;
+
     std::lock_guard<std::mutex> lock(g_log_mutex);
+    
+    // Store in buffer for tracing export
+    g_trace_buffer.push_back({level, stage, time_us, message});
+    if (g_trace_buffer.size() > 10000) { // Limit buffer size
+        g_trace_buffer.erase(g_trace_buffer.begin());
+    }
+
     if (g_log_callback) {
-        g_log_callback(level, message);
+        g_log_callback(level, stage, time_us, message);
     }
 }
 
-}  // namespace lotus_engine
+void export_tracing(const std::string& filepath) {
+    std::lock_guard<std::mutex> lock(g_log_mutex);
+    std::ofstream file(filepath);
+    if (!file.is_open()) return;
+
+    file << "[\n";
+    for (size_t i = 0; i < g_trace_buffer.size(); ++i) {
+        const auto& ev = g_trace_buffer[i];
+        file << "  {\n";
+        file << "    \"level\": " << static_cast<int>(ev.level) << ",\n";
+        file << "    \"stage\": \"" << ev.stage << "\",\n";
+        file << "    \"duration_us\": " << std::fixed << std::setprecision(3) << ev.time_us << ",\n";
+        file << "    \"message\": \"" << ev.message << "\"\n";
+        file << "  }" << (i == g_trace_buffer.size() - 1 ? "" : ",") << "\n";
+    }
+    file << "]\n";
+}
+
+TraceScope::~TraceScope() {
+    auto end = std::chrono::steady_clock::now();
+    double duration = std::chrono::duration<double, std::micro>(end - start).count();
+    emit_log(LogLevel::DEBUG, "Scope finished", name, duration);
+}
+
+} // namespace lotus_engine

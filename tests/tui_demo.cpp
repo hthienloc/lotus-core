@@ -245,7 +245,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
 
     const char* vndebug = std::getenv("LOTUSDEBUG");
     if (vndebug && std::string(vndebug) == "1") {
-        set_log_callback([&debug_log](LogLevel level, const std::string& msg) {
+        set_log_callback([&debug_log](LogLevel level, const std::string& stage, double time_us, const std::string& msg) {
+            (void)stage; (void)time_us;
             debug_log << "[" << (level == LogLevel::ERROR ? "ERR" : "DBG") << "] " << msg << "\n";
         });
         // Print table header

@@ -1,0 +1,368 @@
+diff --git a/include/lotus_engine/capi.h b/include/lotus_engine/capi.h
+index 2e0567f..d11a7e4 100644
+--- a/include/lotus_engine/capi.h
++++ b/include/lotus_engine/capi.h
+@@ -41,7 +41,8 @@ typedef enum {
+ typedef enum {
+     LOTUS_LOG_LEVEL_DEBUG = 0,
+     LOTUS_LOG_LEVEL_INFO = 1,
+-    LOTUS_LOG_LEVEL_ERROR = 2
++    LOTUS_LOG_LEVEL_WARN = 2,
++    LOTUS_LOG_LEVEL_ERROR = 3
+ } lotus_log_level_t;
+ 
+ /**
+@@ -148,6 +149,12 @@ void lotus_engine_set_log_callback(lotus_log_callback_t callback);
+  */
+ void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled);
+ 
++/**
++ * @brief Export tracing data to a JSON file.
++ * @param filepath The output file path.
++ */
++void lotus_engine_export_tracing(const char* filepath);
++
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/include/lotus_engine/log.h b/include/lotus_engine/log.h
+index 6e39325..63828f4 100644
+--- a/include/lotus_engine/log.h
++++ b/include/lotus_engine/log.h
+@@ -9,14 +9,16 @@ namespace lotus_engine {
+ /**
+  * @brief Log levels for the Lotus Engine.
+  */
+-enum class LogLevel { DEBUG = 0, INFO = 1, ERROR = 2 };
++enum class LogLevel { DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3 };
+ 
+ /**
+  * @brief Global logging callback type.
+  * @param level The log level.
++ * @param stage The pipeline stage name.
++ * @param time_us The execution time in microseconds.
+  * @param message The log message.
+  */
+-using LogCallback = std::function<void(LogLevel level, const std::string& message)>;
++using LogCallback = std::function<void(LogLevel level, const std::string& stage, double time_us, const std::string& message)>;
+ 
+ /**
+  * @brief The maximum log level to emit. Messages below this level are ignored.
+@@ -43,7 +45,26 @@ void set_max_log_level(LogLevel level);
+ /**
+  * @brief Internal function to emit a log message.
+  */
+-void emit_log(LogLevel level, const std::string& message);
++void emit_log(LogLevel level, const std::string& stage, double time_us, const std::string& message);
++
++/**
++ * @brief Export tracing data to a JSON file.
++ * @param filepath The path to the file to export to.
++ */
++void export_tracing(const std::string& filepath);
++
++/**
++ * @brief RAII helper for measuring scope duration and emitting trace events.
++ */
++class TraceScope {
++   public:
++    TraceScope(const std::string& name);
++    ~TraceScope();
++
++   private:
++    std::string name;
++    long long start_time;
++};
+ 
+ }  // namespace lotus_engine
+ 
+@@ -52,7 +73,7 @@ void emit_log(LogLevel level, const std::string& message);
+     do {                                                                      \
+         if (lotus_engine::g_has_log_callback &&                               \
+             lotus_engine::LogLevel::DEBUG >= lotus_engine::g_max_log_level) { \
+-            lotus_engine::emit_log(lotus_engine::LogLevel::DEBUG, msg);       \
++            lotus_engine::emit_log(lotus_engine::LogLevel::DEBUG, "General", 0.0, msg); \
+         }                                                                     \
+     } while (0)
+ 
+@@ -60,14 +81,30 @@ void emit_log(LogLevel level, const std::string& message);
+     do {                                                                     \
+         if (lotus_engine::g_has_log_callback &&                              \
+             lotus_engine::LogLevel::INFO >= lotus_engine::g_max_log_level) { \
+-            lotus_engine::emit_log(lotus_engine::LogLevel::INFO, msg);       \
++            lotus_engine::emit_log(lotus_engine::LogLevel::INFO, "General", 0.0, msg); \
+         }                                                                    \
+     } while (0)
+ 
++#define LOTUS_LOG_WARN(msg)                                                   \
++    do {                                                                      \
++        if (lotus_engine::g_has_log_callback &&                               \
++            lotus_engine::LogLevel::WARN >= lotus_engine::g_max_log_level) {  \
++            lotus_engine::emit_log(lotus_engine::LogLevel::WARN, "General", 0.0, msg);  \
++        }                                                                     \
++    } while (0)
++
+ #define LOTUS_LOG_ERROR(msg)                                                  \
+     do {                                                                      \
+         if (lotus_engine::g_has_log_callback &&                               \
+             lotus_engine::LogLevel::ERROR >= lotus_engine::g_max_log_level) { \
+-            lotus_engine::emit_log(lotus_engine::LogLevel::ERROR, msg);       \
++            lotus_engine::emit_log(lotus_engine::LogLevel::ERROR, "General", 0.0, msg); \
+         }                                                                     \
+     } while (0)
++
++#ifdef LOTUS_ENABLE_TRACING
++#define LOTUS_CONCAT_IMPL(a, b) a##b
++#define LOTUS_CONCAT(a, b) LOTUS_CONCAT_IMPL(a, b)
++#define LOTUS_TRACE_SCOPE(name) lotus_engine::TraceScope LOTUS_CONCAT(__trace_scope_, __LINE__)(name)
++#else
++#define LOTUS_TRACE_SCOPE(name) do {} while(0)
++#endif
+diff --git a/src/api/capi.cpp b/src/api/capi.cpp
+index 6904a30..9dbeeef 100644
+--- a/src/api/capi.cpp
++++ b/src/api/capi.cpp
+@@ -167,18 +167,38 @@ void lotus_engine_set_log_callback(lotus_log_callback_t callback) {
+         lotus_engine::set_log_callback(nullptr);
+     } else {
+         lotus_engine::set_log_callback(
+-            [callback](lotus_engine::LogLevel level, const std::string& message) {
++            [callback](lotus_engine::LogLevel level, const std::string& stage, double time_us, const std::string& message) {
+                 lotus_log_level_t c_level;
+                 if (level == lotus_engine::LogLevel::ERROR)
+                     c_level = LOTUS_LOG_LEVEL_ERROR;
++                else if (level == lotus_engine::LogLevel::WARN)
++                    c_level = LOTUS_LOG_LEVEL_WARN;
+                 else if (level == lotus_engine::LogLevel::INFO)
+                     c_level = LOTUS_LOG_LEVEL_INFO;
+                 else
+                     c_level = LOTUS_LOG_LEVEL_DEBUG;
+ 
+-                callback(c_level, message.c_str());
++                // Format the message with stage and time
++                std::string formatted_message;
++                if (time_us > 0.0) {
++                    formatted_message = "[" + stage + "] (" + std::to_string(time_us) + " us) " + message;
++                } else {
++                    formatted_message = "[" + stage + "] " + message;
++                }
++
++                callback(c_level, formatted_message.c_str());
+             });
+     }
+ }
+ 
++/**
++ * @brief Export tracing data to a JSON file.
++ * @param filepath The output file path.
++ */
++void lotus_engine_export_tracing(const char* filepath) {
++    if (filepath) {
++        lotus_engine::export_tracing(filepath);
++    }
++}
++
+ }  // extern "C"
+diff --git a/src/core/engine.cpp b/src/core/engine.cpp
+index e8f8371..592e0d7 100644
+--- a/src/core/engine.cpp
++++ b/src/core/engine.cpp
+@@ -205,6 +205,7 @@ void Engine::rebuild_from_text(const std::string& text) {
+  * @return EngineResult containing the action to perform on the host application.
+  */
+ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
++    LOTUS_TRACE_SCOPE("Engine::process_key");
+     char32_t key = original_key;
+     apply_std_uo(key);
+ 
+@@ -245,6 +246,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
+  * @return EngineResult the final result of the transformation pipeline.
+  */
+ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
++    LOTUS_TRACE_SCOPE("Engine::apply_im_pipeline");
+     std::string current_str = raw_word;
+     Tone tone_state = Tone::NONE;
+     bool key_consumed = (key == 0);
+diff --git a/src/core/log.cpp b/src/core/log.cpp
+index 0a1b427..7eb2144 100644
+--- a/src/core/log.cpp
++++ b/src/core/log.cpp
+@@ -1,11 +1,16 @@
+ /**
+  * @file log.cpp
+  * @brief Logging infrastructure for the Lotus Engine.
++ * @author Huỳnh Thiện Lộc
+  */
+ 
+ #include "lotus_engine/log.h"
+ 
++#include <chrono>
++#include <fstream>
+ #include <mutex>
++#include <thread>
++#include <vector>
+ 
+ namespace lotus_engine {
+ 
+@@ -19,6 +24,49 @@ bool g_has_log_callback = false;
+ static LogCallback g_log_callback = nullptr;
+ static std::mutex g_log_mutex;
+ 
++// Tracing structures
++struct TraceEvent {
++    std::string name;
++    long long start_time_us;
++    long long duration_us;
++    std::thread::id thread_id;
++};
++
++#define MAX_TRACE_EVENTS 10000
++static std::vector<TraceEvent> g_trace_events;
++static std::mutex g_trace_mutex;
++
++// Helper to get time in microseconds
++static inline long long get_time_us() {
++    auto now = std::chrono::steady_clock::now();
++    return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
++}
++
++// ============================================================================
++// [ Tracing Scope ]
++// ============================================================================
++
++TraceScope::TraceScope(const std::string& name) : name(name), start_time(get_time_us()) {}
++
++TraceScope::~TraceScope() {
++    long long end_time = get_time_us();
++    long long duration = end_time - start_time;
++
++    {
++        std::lock_guard<std::mutex> lock(g_trace_mutex);
++        if (g_trace_events.size() >= MAX_TRACE_EVENTS) {
++            // Keep the vector size bounded by removing the oldest half
++            g_trace_events.erase(g_trace_events.begin(), g_trace_events.begin() + (MAX_TRACE_EVENTS / 2));
++        }
++        g_trace_events.push_back({name, start_time, duration, std::this_thread::get_id()});
++    }
++
++    // Also emit a log if DEBUG is enabled
++    if (g_has_log_callback && LogLevel::DEBUG >= g_max_log_level) {
++        emit_log(LogLevel::DEBUG, name, static_cast<double>(duration), "Scope completed");
++    }
++}
++
+ // ============================================================================
+ // [ Logging Implementation ]
+ // ============================================================================
+@@ -44,16 +92,58 @@ void set_max_log_level(LogLevel level) {
+ /**
+  * @brief Emits a log message to the registered callback.
+  * @param level The severity level of the log.
++ * @param stage The pipeline stage name.
++ * @param time_us The execution time in microseconds.
+  * @param message The log message content.
+  */
+-void emit_log(LogLevel level, const std::string& message) {
++void emit_log(LogLevel level, const std::string& stage, double time_us, const std::string& message) {
+     if (!g_has_log_callback || level < g_max_log_level) {
+         return;
+     }
+     std::lock_guard<std::mutex> lock(g_log_mutex);
+     if (g_log_callback) {
+-        g_log_callback(level, message);
++        g_log_callback(level, stage, time_us, message);
++    }
++}
++
++/**
++ * @brief Export tracing data to a JSON file.
++ * @param filepath The path to the file to export to.
++ */
++void export_tracing(const std::string& filepath) {
++    std::lock_guard<std::mutex> lock(g_trace_mutex);
++
++    std::ofstream out(filepath);
++    if (!out.is_open()) {
++        return;
++    }
++
++    out << "{\"traceEvents\":[\n";
++    bool first = true;
++    for (const auto& event : g_trace_events) {
++        if (!first) {
++            out << ",\n";
++        }
++        first = false;
++
++        // Convert thread ID to a stable number for tracing tools
++        size_t tid = std::hash<std::thread::id>{}(event.thread_id);
++
++        out << "  {\n"
++            << "    \"name\": \"" << event.name << "\",\n"
++            << "    \"cat\": \"lotus_engine\",\n"
++            << "    \"ph\": \"X\",\n"
++            << "    \"ts\": " << event.start_time_us << ",\n"
++            << "    \"dur\": " << event.duration_us << ",\n"
++            << "    \"pid\": 1,\n"
++            << "    \"tid\": " << tid << "\n"
++            << "  }";
+     }
++    out << "\n]}\n";
++    out.close();
++    
++    // Clear events after export
++    g_trace_events.clear();
+ }
+ 
+ }  // namespace lotus_engine
+diff --git a/tests/test_edge_cases.cpp b/tests/test_edge_cases.cpp
+index 67fec09..3231990 100644
+--- a/tests/test_edge_cases.cpp
++++ b/tests/test_edge_cases.cpp
+@@ -49,9 +49,10 @@ void assert_typing_edge(Engine& engine, const std::string& keys, const std::stri
+     bool debug_enabled = (vndebug && std::string(vndebug) == "1");
+ 
+     if (debug_enabled) {
+-        set_log_callback([&local_logs](LogLevel level, const std::string& msg) {
++        set_log_callback([&local_logs](LogLevel level, const std::string& stage, double time_us, const std::string& msg) {
+             local_logs +=
+-                "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
++                "[" + std::string(level == LogLevel::ERROR ? "ERR" : (level == LogLevel::WARN ? "WARN" : "DBG")) 
++                + "][" + stage + "] (" + std::to_string(time_us) + " us) " + msg + "\n";
+         });
+     }
+ 
+diff --git a/tests/test_engine.cpp b/tests/test_engine.cpp
+index ba10dc7..fc94628 100644
+--- a/tests/test_engine.cpp
++++ b/tests/test_engine.cpp
+@@ -55,9 +55,10 @@ void assert_typing(Engine& engine, const std::string& keys, const std::string& e
+     bool debug_enabled = (vndebug && std::string(vndebug) == "1");
+ 
+     if (debug_enabled) {
+-        set_log_callback([&local_logs](LogLevel level, const std::string& msg) {
++        set_log_callback([&local_logs](LogLevel level, const std::string& stage, double time_us, const std::string& msg) {
+             local_logs +=
+-                "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
++                "[" + std::string(level == LogLevel::ERROR ? "ERR" : (level == LogLevel::WARN ? "WARN" : "DBG")) 
++                + "][" + stage + "] (" + std::to_string(time_us) + " us) " + msg + "\n";
+         });
+     }
+ 
+diff --git a/tests/tui_demo.cpp b/tests/tui_demo.cpp
+index 532aec6..1febb52 100644
+--- a/tests/tui_demo.cpp
++++ b/tests/tui_demo.cpp
+@@ -245,8 +245,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
+ 
+     const char* vndebug = std::getenv("LOTUSDEBUG");
+     if (vndebug && std::string(vndebug) == "1") {
+-        set_log_callback([&debug_log](LogLevel level, const std::string& msg) {
+-            debug_log << "[" << (level == LogLevel::ERROR ? "ERR" : "DBG") << "] " << msg << "\n";
++        set_log_callback([&debug_log](LogLevel level, const std::string& stage, double time_us, const std::string& msg) {
++            debug_log << "[" << (level == LogLevel::ERROR ? "ERR" : (level == LogLevel::WARN ? "WARN" : "DBG")) 
++                      << "][" << stage << "] (" << time_us << " us) " << msg << "\n";
+         });
+         // Print table header
+         debug_log << "| " << pad_right("Key", 8) << "| " << pad_right("Result", 13) << "| "
+

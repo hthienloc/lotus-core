@@ -55,7 +55,8 @@ void assert_typing(Engine& engine, const std::string& keys, const std::string& e
     bool debug_enabled = (vndebug && std::string(vndebug) == "1");
 
     if (debug_enabled) {
-        set_log_callback([&local_logs](LogLevel level, const std::string& msg) {
+        set_log_callback([&local_logs](LogLevel level, const std::string& stage, double time_us, const std::string& msg) {
+            (void)stage; (void)time_us;
             local_logs +=
                 "[" + std::string(level == LogLevel::ERROR ? "ERR" : "DBG") + "] " + msg + "\n";
         });
