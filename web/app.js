@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const freeWSelect = document.getElementById('free-w-select');
     const stdUoCheckbox = document.getElementById('std-uo-checkbox');
     const autoRestoreCheckbox = document.getElementById('auto-restore-checkbox');
+    const showDebugCheckbox = document.getElementById('show-debug-checkbox');
     const resetBtn = document.getElementById('reset-btn');
 
     let engine = null;
@@ -15,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Helper to log messages to UI
     function uiLog(level, msg) {
+        if (level === 'debug' && !showDebugCheckbox.checked) {
+            return;
+        }
+
         const div = document.createElement('div');
         div.className = `log-entry ${level}`;
         div.textContent = `[${level.toUpperCase()}] ${msg}`;
