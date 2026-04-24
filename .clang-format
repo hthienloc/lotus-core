@@ -1,59 +1,37 @@
-# Lotus Engine — C/C++ clang-format style
-# Based on Google style with project-specific adjustments
-
-BasedOnStyle: Google
+---
 Language: Cpp
-
-# Indentation
+# Thụt lề 4 dấu cách
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-ContinuationIndentWidth: 4
 
-# Column limit
+# Giới hạn độ dài dòng
 ColumnLimit: 100
 
-# Braces
+# Vị trí dấu ngoặc nhọn (Attach kiểu K&R/Google)
 BreakBeforeBraces: Attach
 
-# Alignment
+# Sắp xếp Include
+SortIncludes: true
+IncludeBlocks: Preserve
+
+# Không tự động xóa các dòng trắng do người dùng chủ đích
+MaxEmptyLinesToKeep: 2
+
+# Giữ nguyên các định dạng của khối comment lớn
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignTrailingComments: true
 
-# Include sorting
-SortIncludes: CaseSensitive
-IncludeCategories:
-  - Regex: '^"lotus_engine/'     # Project headers first
-    Priority: 1
-  - Regex: '^<[a-z_]+>'          # System/STL headers
-    Priority: 2
-  - Regex: '.*'
-    Priority: 3
+# Cho phép gộp các hàm ngắn vào 1 dòng để code gọn hơn
+AllowShortFunctionsOnASingleLine: All
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: WithoutElse
 
-# Spacing
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 2
-SpacesInAngles: false
-SpacesInContainerLiterals: false
+# C++ 20 Standard
+Standard: Latest
 
-# Newlines
-MaxEmptyLinesToKeep: 1
-KeepEmptyLinesAtTheStartOfBlocks: false
-EmptyLineBeforeAccessModifier: LogicalBlock
-
-# Pointers and references
-PointerAlignment: Left
-ReferenceAlignment: Left
-
-# Function declarations
-AllowShortFunctionsOnASingleLine: Inline
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-
-# Lambda
-LambdaBodyIndentation: Signature
-
-# C++20
-Standard: c++20
+# Bảo tồn định dạng của danh sách khởi tạo
+ConstructorInitializerIndentWidth: 4
+PackConstructorInitializers: BinPack
+...
