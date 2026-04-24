@@ -20,8 +20,20 @@ document.addEventListener("DOMContentLoaded", () => {
         logOutput.scrollTop = logOutput.scrollHeight;
     }
 
+    // Define Module for Emscripten
+    const basePath = window.location.pathname.includes('/lotus-engine/') ? '/lotus-engine/' : '/';
+    
+    window.Module = {
+        locateFile: function(path) {
+            if (path.endsWith('.wasm')) {
+                return basePath + path;
+            }
+            return path;
+        }
+    };
+
     // Initialize WASM Module
-    Module.onRuntimeInitialized = function() {
+    window.Module.onRuntimeInitialized = function() {
         uiLog('info', 'WASM Module Loaded successfully.');
 
         // Initialize Lotus Engine
@@ -52,6 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
         
         updateConfig();
     };
+
+    // Load the WASM script dynamically
+    const script = document.createElement('script');
+    script.src = basePath + 'lotus_engine.js';
+    document.body.appendChild(script);
 
     function updateConfig() {
         if (!engine) return;

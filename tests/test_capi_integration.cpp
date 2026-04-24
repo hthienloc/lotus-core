@@ -1,7 +1,7 @@
 /**
  * @file test_capi_integration.cpp
  * @brief Integration tests for the Lotus C-API.
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/capi.h"

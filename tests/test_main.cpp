@@ -1,7 +1,7 @@
 /**
  * @file test_main.cpp
  * @brief Main test runner for the Lotus engine test suite.
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include <iostream>

@@ -1,7 +1,7 @@
 /**
  * @file tui_demo.cpp
  * @brief Interactive TUI demo for the Lotus engine.
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/engine.h"

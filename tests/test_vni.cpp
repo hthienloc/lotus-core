@@ -1,7 +1,7 @@
 /**
  * @file test_vni.cpp
  * @brief Unit tests for the VNI input method.
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/engine.h"

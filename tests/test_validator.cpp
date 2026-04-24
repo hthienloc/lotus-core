@@ -1,7 +1,7 @@
 /**
  * @file test_validator.cpp
  * @brief Unit tests for the Vietnamese syllable validator.
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/parser.h"

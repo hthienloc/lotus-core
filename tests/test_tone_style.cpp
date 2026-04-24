@@ -1,7 +1,7 @@
 /**
  * @file test_tone_style.cpp
  * @brief Unit tests for Vietnamese tone placement styles (Old vs. New).
- * @author Gemini CLI
+ * @author Huỳnh Thiện Lộc
  */
 
 #include "lotus_engine/engine.h"
