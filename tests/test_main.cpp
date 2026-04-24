@@ -15,6 +15,8 @@
 void test_syllable_to_string_basic();
 /** @brief Verifies the 'is_empty' logic for various syllable states. */
 void test_syllable_is_empty();
+/** @brief Tests out-of-order vowel typing (Bamboo-style reordering). */
+void test_vowel_reordering();
 /** @brief Tests basic syllable validation including consonant and vowel checks. */
 void test_validator_basic();
 /** @brief Tests complex syllable validation including tones and glides. */
@@ -86,6 +88,7 @@ int main() {
     std::cout << "\n[ Core Tests ]\n";
     test_syllable_to_string_basic();
     test_syllable_is_empty();
+    test_vowel_reordering();
     test_validator_basic();
     test_validator_complex();
     test_parser_basic();

@@ -37,6 +37,8 @@ class SyllableParser {
     static size_t parse_nucleus(const std::u32string& input, size_t pos, Syllable& s);
     static size_t parse_coda(const std::u32string& input, size_t pos, Syllable& s);
 
+    static void reorder_vowels(Syllable& s);
+
     static std::u32string to_u32(const std::string& s);
     static std::string from_u32(const std::u32string& s);
 };
