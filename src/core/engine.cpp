@@ -653,8 +653,10 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
                 hooked = true;
             }
             if (o_pos != std::u32string::npos) {
-                u32_copy[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
-                hooked = true;
+                if (a_pos == std::u32string::npos) {
+                    u32_copy[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
+                    hooked = true;
+                }
             }
             if (a_pos != std::u32string::npos) {
                 u32_copy[a_pos] = (u32[a_pos] == 'A') ? U'Ă' : U'ă';
@@ -819,7 +821,11 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
             unicode::replace_all(current_str, "o", "ô");
         } else if (k == '7') {
             unicode::replace_all(current_str, "u", "ư");
-            unicode::replace_all(current_str, "o", "ơ");
+            if (current_str.find('a') == std::string::npos && 
+                current_str.find("ă") == std::string::npos && 
+                current_str.find("â") == std::string::npos) {
+                unicode::replace_all(current_str, "o", "ơ");
+            }
         } else if (k == '8') {
             unicode::replace_all(current_str, "a", "ă");
         } else if (k == '9') {

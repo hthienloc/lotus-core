@@ -125,6 +125,8 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "duongw", "dương");
     assert_typing(engine, "muaw", "mưa");
     assert_typing(engine, "what", "what");  // English stability
+    assert_typing(engine, "hoawjc", "hoặc");
+    assert_typing(engine, "huowng", "hương");
     std::cout << "  \033[1;32m[PASS]\033[0m Telex hook markers (ư, ơ, ă)" << std::endl;
 }
 
