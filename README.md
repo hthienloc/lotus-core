@@ -1,6 +1,6 @@
-# Lotus Engine - WebAssembly Demo 🌐
+# Lotus Core - WebAssembly Demo 🌐
 
-This directory contains a minimalist web demo showcasing the speed and accuracy of the **Lotus Engine** running directly in the browser via WebAssembly (WASM).
+This directory contains a minimalist web demo showcasing the speed and accuracy of the **Lotus Core** running directly in the browser via WebAssembly (WASM).
 
 ## ✨ Features
 
@@ -18,7 +18,7 @@ Then, from the root of the project, run:
 ./build_wasm.sh
 ```
 
-This script will compile the core engine and its C-API wrapper using `emcc`, generating `lotus_engine.js` and `lotus_engine.wasm` inside the `web/` directory.
+This script will compile the core engine and its C-API wrapper using `emcc`, generating `lotus_core.js` and `lotus_core.wasm` inside the `web/` directory.
 
 ## 🚀 Running Locally
 
@@ -38,4 +38,4 @@ Then open `http://localhost:8000` in your web browser.
 Since the demo is just static HTML/JS/WASM files, you can easily host this directory on GitHub Pages or any static file hosting service.
 
 1. Configure GitHub Pages to serve from the `docs` folder or `gh-pages` branch.
-2. Ensure `index.html`, `style.css`, `app.js`, `lotus_engine.js`, and `lotus_engine.wasm` are included.
+2. Ensure `index.html`, `style.css`, `app.js`, `lotus_core.js`, and `lotus_core.wasm` are included.
