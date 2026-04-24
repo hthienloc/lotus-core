@@ -20,17 +20,19 @@ class Validator {
     /**
      * @brief Checks whether a string is a valid Vietnamese initial consonant.
      * @param initial The initial consonant to check, in lowercase UTF-32.
+     * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f' as valid initials.
      * @return true if the initial is in the valid inventory.
      */
-    static bool is_valid_initial(std::u32string_view initial);
+    static bool is_valid_initial(std::u32string_view initial, bool allow_non_standard = false);
 
     /**
      * @brief Finds the length of the longest valid initial at the given position.
      * @param input The full UTF-32 input string.
      * @param start_pos The position to start matching from.
+     * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
      * @return The length (in codepoints) of the matched initial, or 0 if none.
      */
-    static size_t find_longest_initial(const std::u32string& input, size_t start_pos);
+    static size_t find_longest_initial(const std::u32string& input, size_t start_pos, bool allow_non_standard = false);
 
     /**
      * @brief Performs comprehensive phonotactic validation of a syllable.
@@ -39,9 +41,10 @@ class Validator {
      * @param syllable The syllable to validate.
      * @param diagnostic_reason Optional pointer to a string that will be populated with the reason
      * for failure if the syllable is invalid.
+     * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
      * @return true if the syllable is phonotactically valid Vietnamese.
      */
-    static bool is_valid(const Syllable& syllable, std::string* diagnostic_reason = nullptr);
+    static bool is_valid(const Syllable& syllable, std::string* diagnostic_reason = nullptr, bool allow_non_standard = false);
 
    private:
     /**

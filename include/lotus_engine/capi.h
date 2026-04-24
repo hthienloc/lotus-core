@@ -148,6 +148,13 @@ void lotus_engine_set_log_callback(lotus_log_callback_t callback);
  */
 void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled);
 
+/**
+ * @brief Enables or disables allowing non-standard initial consonants (z, w, j, f).
+ * @param engine The engine instance.
+ * @param enabled True to enable, false to disable.
+ */
+void lotus_engine_set_allow_non_standard_initials(lotus_engine_t* engine, bool enabled);
+
 #ifdef __cplusplus
 }
 #endif

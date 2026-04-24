@@ -87,13 +87,13 @@ size_t SyllableParser::parse_coda(const std::u32string& input, size_t pos, Sylla
  * @param input The raw character sequence to parse.
  * @return A Syllable object containing the identified components.
  */
-Syllable SyllableParser::parse(const std::u32string& input) {
+Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_standard) {
     Syllable s;
     if (input.empty())
         return s;
 
     size_t pos = 0;
-    pos += parse_initial(input, s);
+    pos += InitialParser::parse(input, s, allow_non_standard);
     pos += parse_glide(input, pos, s);
     pos += parse_nucleus(input, pos, s);
 

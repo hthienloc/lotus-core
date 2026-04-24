@@ -9,10 +9,11 @@ namespace lotus_engine {
  * @brief Identifies and extracts the initial consonant.
  * @param input The raw input character sequence.
  * @param s OUT: The Syllable object to populate.
+ * @param allow_non_standard Whether to allow z, w, j, f.
  * @return size_t The number of characters consumed as the initial consonant.
  */
-size_t InitialParser::parse(const std::u32string& input, Syllable& s) {
-    size_t initial_len = Validator::find_longest_initial(input, 0);
+size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow_non_standard) {
+    size_t initial_len = Validator::find_longest_initial(input, 0, allow_non_standard);
     if (initial_len == 0)
         return 0;
 

@@ -8,7 +8,7 @@ namespace lotus_engine {
 
 class InitialParser {
 public:
-    static size_t parse(const std::u32string& input, Syllable& s);
+    static size_t parse(const std::u32string& input, Syllable& s, bool allow_non_standard = false);
 };
 
 class GlideParser {

@@ -23,9 +23,16 @@ using namespace lotus_engine::constants;
 /**
  * @brief Checks if a given initial consonant sequence is valid in Vietnamese.
  * @param initial The UTF-32 character sequence to validate.
+ * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f' as valid initials.
  * @return True if the sequence is a valid initial consonant.
  */
-bool Validator::is_valid_initial(std::u32string_view initial) {
+bool Validator::is_valid_initial(std::u32string_view initial, bool allow_non_standard) {
+    if (allow_non_standard) {
+        if (std::find(NON_STANDARD_INITIALS_U32.begin(), NON_STANDARD_INITIALS_U32.end(), initial) !=
+            NON_STANDARD_INITIALS_U32.end()) {
+            return true;
+        }
+    }
     return std::find(VALID_INITIALS_U32.begin(), VALID_INITIALS_U32.end(), initial) !=
            VALID_INITIALS_U32.end();
 }
@@ -34,16 +41,17 @@ bool Validator::is_valid_initial(std::u32string_view initial) {
  * @brief Finds the longest valid initial consonant at the specified position in a string.
  * @param input The full input string to search.
  * @param start_pos The starting index for the search.
+ * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
  * @return The length (in code points) of the longest valid initial found.
  */
-size_t Validator::find_longest_initial(const std::u32string& input, size_t start_pos) {
+size_t Validator::find_longest_initial(const std::u32string& input, size_t start_pos, bool allow_non_standard) {
     size_t n = input.size();
     for (size_t len = 3; len >= 1; --len) {
         if (start_pos + len <= n) {
             std::u32string lower_prefix;
             for (auto cp : input.substr(start_pos, len))
                 lower_prefix += unicode::to_lower(cp);
-            if (is_valid_initial(lower_prefix))
+            if (is_valid_initial(lower_prefix, allow_non_standard))
                 return len;
         }
     }
@@ -55,19 +63,18 @@ size_t Validator::find_longest_initial(const std::u32string& input, size_t start
  * @param syllable The syllable instance to validate.
  * @param diagnostic_reason Optional pointer to a string that will be populated with the reason for
  * failure if the syllable is invalid.
+ * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
  * @return True if the syllable is phonotactically and orthographically valid.
  */
-bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reason) {
+bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reason, bool allow_non_standard) {
     if (syllable.vowel.empty() && !syllable.glide.has_value()) {
         if (syllable.initial.empty()) {
             if (diagnostic_reason)
                 *diagnostic_reason = "Empty syllable.";
             return false;
         }
-        std::u32string lower_i;
-        for (char32_t cp : syllable.initial)
-            lower_i += unicode::to_lower(cp);
-        bool valid_init = is_valid_initial(lower_i);
+        std::u32string lower_i = unicode::to_lower(syllable.initial);
+        bool valid_init = is_valid_initial(lower_i, allow_non_standard);
         if (!valid_init && diagnostic_reason) {
             *diagnostic_reason = "Invalid initial consonant.";
         }
@@ -77,7 +84,7 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
     // 1. Component Set Checks
     std::u32string lower_init = unicode::to_lower(syllable.initial);
     if (!lower_init.empty()) {
-        if (!is_valid_initial(lower_init)) {
+        if (!is_valid_initial(lower_init, allow_non_standard)) {
             if (diagnostic_reason)
                 *diagnostic_reason = "Invalid initial consonant.";
             return false;

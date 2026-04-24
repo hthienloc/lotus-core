@@ -20,9 +20,10 @@ class SyllableParser {
     /**
      * @brief Parses a UTF-32 character sequence into a Syllable structure.
      * @param input The raw input string in UTF-32 encoding.
+     * @param allow_non_standard Whether to allow z, w, j, f.
      * @return Syllable The parsed syllable components.
      */
-    static Syllable parse(const std::u32string& input);
+    static Syllable parse(const std::u32string& input, bool allow_non_standard = false);
 
     /**
      * @brief Checks whether a UTF-32 codepoint is a Vietnamese vowel.

@@ -145,6 +145,11 @@ void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled) {
         engine->core.set_auto_restore(enabled);
 }
 
+void lotus_engine_set_allow_non_standard_initials(lotus_engine_t* engine, bool enabled) {
+    if (engine)
+        engine->core.set_allow_non_standard_initials(enabled);
+}
+
 /**
  * @brief Adds a text expansion shortcut.
  * @param engine The engine handle.

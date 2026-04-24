@@ -266,7 +266,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         last_modifier_key = 0;
 
     current_str = unicode::normalize_nfc(current_str);
-    Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
+    Syllable s = SyllableParser::parse(unicode::to_utf32(current_str), this->allow_non_standard_initials);
     if (tone_state != Tone::NONE)
         s.tone = tone_state;
 
@@ -287,7 +287,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         }
         std::u32string prefix =
             (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
-        if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower(prefix))) {
+        if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower(prefix), this->allow_non_standard_initials)) {
             has_valid_initial = false;
         }
     }
@@ -301,7 +301,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     // Second Gate: Structural Vietnamese Validity
     // If the resulting syllable violates Vietnamese spelling rules AND looks like English,
     // we restore the raw buffer contents.
-    bool is_valid_vn = Validator::is_valid(s);
+    bool is_valid_vn = Validator::is_valid(s, nullptr, this->allow_non_standard_initials);
     bool is_eng = Linguistics::is_likely_english(raw_word);
 
     LOTUS_LOG_DEBUG("[Pipeline] Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") +
