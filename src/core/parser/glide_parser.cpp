@@ -1,10 +1,10 @@
-#include "lotus_engine/parser_components.h"
-#include "lotus_engine/constants.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/parser_components.h"
+#include "lotus_core/constants.h"
+#include "lotus_core/unicode.h"
 
 #include <algorithm>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Identifies and extracts the glide ('o' or 'u' following an initial).
@@ -48,4 +48,4 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
     return 0;
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

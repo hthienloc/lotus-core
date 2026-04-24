@@ -1,8 +1,8 @@
-#include "lotus_engine/shortcut_manager.h"
-#include "lotus_engine/smart_typing.h"
+#include "lotus_core/shortcut_manager.h"
+#include "lotus_core/smart_typing.h"
 #include <iostream>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 void test_features() {
     // ShortcutManagerExpands

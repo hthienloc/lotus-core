@@ -1,10 +1,10 @@
-#include "lotus_engine/shortcut_manager.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/shortcut_manager.h"
+#include "lotus_core/unicode.h"
 
 #include <algorithm>
 #include <cctype>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 void ShortcutManager::add_shortcut(const std::string& trigger, const std::string& replacement) {
     shortcuts[unicode::to_lower(trigger)] = replacement;
@@ -96,4 +96,4 @@ EngineResult ShortcutManager::_make_transformation_result(const std::u32string& 
     return result;
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

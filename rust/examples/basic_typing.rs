@@ -1,4 +1,4 @@
-use lotus_engine::{LotusEngine, Method};
+use lotus_core::{LotusEngine, Method};
 
 fn main() {
     let mut engine = LotusEngine::new();

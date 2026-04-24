@@ -1,12 +1,12 @@
 # 🤝 Developer Onboarding Guide
 
-> Welcome to Lotus Engine! This guide is designed to onboard developers, linguists, and contributors into our high-performance Vietnamese input engine ecosystem.
+> Welcome to Lotus Core! This guide is designed to onboard developers, linguists, and contributors into our high-performance Vietnamese input engine ecosystem.
 
 ---
 
 ## 🏛️ Project Philosophy
 
-Lotus Engine is more than just a key-mapper. It is a strictly **phonotactic, linguistic-first** engine built for the most demanding developer environments. We prioritize correctness, zero dependencies, and high performance (sub 0.1ms latency).
+Lotus Core is more than just a key-mapper. It is a strictly **phonotactic, linguistic-first** engine built for the most demanding developer environments. We prioritize correctness, zero dependencies, and high performance (sub 0.1ms latency).
 
 ## 🔤 Understanding Vietnamese Phonotactics
 
@@ -24,7 +24,7 @@ Our engine decomposes strings into these structures to enforce linguistic rules,
 
 ## ⚙️ The 8-Stage Processing Pipeline
 
-Lotus Engine follows a strict **pipeline architecture**. Every keystroke goes through these stages sequentially:
+Lotus Core follows a strict **pipeline architecture**. Every keystroke goes through these stages sequentially:
 
 ```mermaid
 graph TD

@@ -1,8 +1,8 @@
-#include "lotus_engine/shortcut_manager.h"
-#include "lotus_engine/smart_typing.h"
+#include "lotus_core/shortcut_manager.h"
+#include "lotus_core/smart_typing.h"
 #include <gtest/gtest.h>
 
-namespace lotus_engine {
+namespace lotus_core {
 namespace testing {
 
 TEST(FeatureTests, ShortcutManagerExpands) {
@@ -134,4 +134,4 @@ TEST(FeatureTests, SmartTypingAutoCapitalization) {
 }
 
 } // namespace testing
-} // namespace lotus_engine
+} // namespace lotus_core

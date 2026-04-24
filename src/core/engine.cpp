@@ -6,21 +6,21 @@
  * managing word history, and handling advanced features like shortcuts and auto-restore.
  */
 
-#include "lotus_engine/engine.h"
+#include "lotus_core/engine.h"
 
-#include "lotus_engine/constants.h"
-#include "lotus_engine/linguistics.h"
-#include "lotus_engine/log.h"
-#include "lotus_engine/parser.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/validator.h"
-#include "lotus_engine/smart_typing.h"
+#include "lotus_core/constants.h"
+#include "lotus_core/linguistics.h"
+#include "lotus_core/log.h"
+#include "lotus_core/parser.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/validator.h"
+#include "lotus_core/smart_typing.h"
 
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 // ============================================================================
 // [ Internal Helpers ]
@@ -210,7 +210,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     EngineResult res{};
 
-    if (handle_navigation(key, res))
+    if (handle_navigation(key, mods, res))
         return res;
     if (handle_backspace(key, mods, res))
         return res;
@@ -343,10 +343,17 @@ void Engine::apply_std_uo(char32_t& key) {
 /**
  * @brief Handles navigation and escape keys.
  */
-bool Engine::handle_navigation(char32_t key, EngineResult& result) {
+bool Engine::handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result) {
     (void)result;
-    if (key == constants::KEY_UP || key == constants::KEY_DOWN || key == constants::KEY_LEFT ||
-        key == constants::KEY_RIGHT || key == constants::KEY_ESC) {
+    bool is_nav_key = key == constants::KEY_UP || key == constants::KEY_DOWN ||
+                      key == constants::KEY_LEFT || key == constants::KEY_RIGHT ||
+                      key == constants::KEY_HOME || key == constants::KEY_END ||
+                      key == constants::KEY_PAGE_UP || key == constants::KEY_PAGE_DOWN ||
+                      key == constants::KEY_TAB || key == constants::KEY_ESC;
+                      
+    bool is_ctrl_nav = mods.ctrl && (key == constants::KEY_LEFT || key == constants::KEY_RIGHT || key == constants::KEY_HOME || key == constants::KEY_END);
+
+    if (is_nav_key || is_ctrl_nav) {
         clear_all();
         return true;
     }
@@ -446,6 +453,11 @@ bool Engine::reclaim_from_history(InputMethod method) {
         last_committed_text = recovered;
         last_boundary_key = rc;
     } else {
+        // Context Validation: If the reclaimed word does not look like a valid structure
+        // after being recovered, it might be due to a desync. If it's a completely invalid
+        // combination that neither parses as English nor valid VN, we might optionally discard it.
+        // However, for consistency, we always reclaim the literal string as raw keys.
+        
         // Re-parse the word string into canonical keys
         Syllable s = SyllableParser::parse(recovered);
         std::vector<char32_t> keys = s.to_keys(method);
@@ -482,25 +494,38 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
         return true;
     }
 
-    // Push the transformed word and THEN the boundary to history for exact sync
-    if (!buffer.empty()) {
-        std::string current_str = unicode::to_utf8(buffer);
-        Tone tone_state = Tone::NONE;
-        bool consumed = false;
+    // Check if the boundary is a non-word breaking symbol that should clear context.
+    // Standard sentence punctuation like .,!?;: and quotes/brackets might be safe to keep in history
+    // but math symbols and special characters like @, #, $, +, = etc. should invalidate history.
+    bool is_safe_boundary = (key == ' ' || key == '\r' || key == '\n' || key == '\t' ||
+                             key == '.' || key == ',' || key == '!' || key == '?' ||
+                             key == ';' || key == ':' || key == '"' || key == '\'' ||
+                             key == '(' || key == ')' || key == '[' || key == ']' ||
+                             key == '{' || key == '}' || key == '-' || key == '_');
 
-        if (method == InputMethod::TELEX) {
-            apply_telex_modifiers(current_str, 0, consumed, tone_state);
-        } else {
-            apply_vni_modifiers(current_str, 0, consumed, tone_state);
+    if (!is_safe_boundary) {
+        word_history.clear();
+    } else {
+        // Push the transformed word and THEN the boundary to history for exact sync
+        if (!buffer.empty()) {
+            std::string current_str = unicode::to_utf8(buffer);
+            Tone tone_state = Tone::NONE;
+            bool consumed = false;
+
+            if (method == InputMethod::TELEX) {
+                apply_telex_modifiers(current_str, 0, consumed, tone_state);
+            } else {
+                apply_vni_modifiers(current_str, 0, consumed, tone_state);
+            }
+
+            current_str = unicode::normalize_nfc(current_str);
+            Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
+            if (tone_state != Tone::NONE)
+                s.tone = tone_state;
+            word_history.push(unicode::to_utf32(s.to_string(tone_style)));
         }
-
-        current_str = unicode::normalize_nfc(current_str);
-        Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
-        if (tone_state != Tone::NONE)
-            s.tone = tone_state;
-        word_history.push(unicode::to_utf32(s.to_string(tone_style)));
+        word_history.push({key});
     }
-    word_history.push({key});
 
     if (handle_shortcuts(key, result))
         return true;
@@ -941,4 +966,4 @@ bool Engine::is_english_word(const std::string& word) const {
     return Linguistics::is_likely_english(word);
 }
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

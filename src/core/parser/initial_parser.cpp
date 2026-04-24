@@ -1,9 +1,9 @@
-#include "lotus_engine/parser_components.h"
-#include "lotus_engine/parser.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/validator.h"
+#include "lotus_core/parser_components.h"
+#include "lotus_core/parser.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/validator.h"
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Identifies and extracts the initial consonant.
@@ -36,4 +36,4 @@ size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow
     return initial_len;
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

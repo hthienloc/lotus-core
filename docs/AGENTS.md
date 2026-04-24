@@ -1,11 +1,11 @@
-# 🤖 Agent Instructions: Lotus Engine
+# 🤖 Agent Instructions: Lotus Core
 
-> This file provides context and instructions for AI agents (like Jules, Gemini, or GitHub Copilot) working on the `lotus-engine` project.
+> This file provides context and instructions for AI agents (like Jules, Gemini, or GitHub Copilot) working on the `lotus-core` project.
 
 ---
 
 ## 📖 Project Context
-`lotus-engine` is a high-performance, modular Vietnamese Input Method (IM) engine written in C++20. It follows a 7/8-stage pipeline architecture (GoNhanh) and prioritizes linguistic correctness through phonotactic validation.
+`lotus-core` is a high-performance, modular Vietnamese Input Method (IM) engine written in C++20. It follows a 7/8-stage pipeline architecture (GoNhanh) and prioritizes linguistic correctness through phonotactic validation.
 
 ## ⚙️ Technical Standards
 - **Language**: C++20.
@@ -18,7 +18,7 @@
 - `src/engine.cpp`: The main orchestrator. Keep it high-level.
 - `src/validator.cpp`: Vietnamese linguistic rules. Add helper methods for new rules.
 - `src/parser.cpp`: Syllable decomposition (Initial, Glide, Nucleus, Final).
-- `include/lotus_engine/unicode.h`: Character mapping and NFC normalization tables.
+- `include/lotus_core/unicode.h`: Character mapping and NFC normalization tables.
 
 ## 🔄 Development Workflow
 AI agents MUST use the following tools and scripts:

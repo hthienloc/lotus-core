@@ -1,10 +1,10 @@
-# Lotus Engine Python Wrapper
+# Lotus Core Python Wrapper
 
-A high-performance C-API wrapper for integrating Lotus Engine directly into Python environments using purely `ctypes` (no external dependencies).
+A high-performance C-API wrapper for integrating Lotus Core directly into Python environments using purely `ctypes` (no external dependencies).
 
 ## Installation
 
-Ensure that `liblotus_engine_core.so` (or `.dll` on Windows / `.dylib` on macOS) is available in the library path, or compiled within the main project. You can compile the project using standard CMake tools or the provided script:
+Ensure that `liblotus_core_core.so` (or `.dll` on Windows / `.dylib` on macOS) is available in the library path, or compiled within the main project. You can compile the project using standard CMake tools or the provided script:
 
 ```bash
 cd .. && ./dev.sh
@@ -15,7 +15,7 @@ cd .. && ./dev.sh
 The Python wrapper closely mimics the core Engine C-API.
 
 ```python
-from python.lotus_engine import LotusEngine, Method, ToneStyle, FreeW
+from python.lotus_core import LotusEngine, Method, ToneStyle, FreeW
 
 def main():
     # 1. Initialize Engine

@@ -3,12 +3,12 @@
  * @brief Implementation of Vietnamese syllable structure and transformations.
  */
 
-#include "lotus_engine/types.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/types.h"
+#include "lotus_core/unicode.h"
 
 #include <map>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 // ============================================================================
 // [ Constants ]
@@ -182,4 +182,4 @@ std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
     return keys;
 }
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

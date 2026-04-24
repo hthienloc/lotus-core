@@ -1,10 +1,10 @@
 import sys
 import os
 
-# Add the parent directory to sys.path so we can import the lotus_engine module
+# Add the parent directory to sys.path so we can import the lotus_core module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from python.lotus_engine import LotusEngine, Method, ToneStyle, FreeW, LogLevel
+from python.lotus_core import LotusEngine, Method, ToneStyle, FreeW, LogLevel
 
 def log_handler(level: int, message: str):
     prefix = ["[DEBUG]", "[INFO]", "[ERROR]"]
@@ -41,7 +41,7 @@ def process_and_print(engine: LotusEngine, text: str):
     return ''.join(current_str)
 
 def main():
-    print("Lotus Engine Python Demo")
+    print("Lotus Core Python Demo")
     print("------------------------")
     
     # 1. Setup Logging

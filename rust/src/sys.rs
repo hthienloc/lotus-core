@@ -3,7 +3,7 @@
 use libc::{c_char, c_double};
 
 #[repr(C)]
-pub struct lotus_engine_t {
+pub struct lotus_core_t {
     _private: [u8; 0],
 }
 
@@ -64,25 +64,25 @@ pub struct lotus_modifiers_t {
 }
 
 extern "C" {
-    pub fn lotus_engine_create() -> *mut lotus_engine_t;
-    pub fn lotus_engine_destroy(engine: *mut lotus_engine_t);
-    pub fn lotus_engine_process_key(
-        engine: *mut lotus_engine_t,
+    pub fn lotus_core_create() -> *mut lotus_core_t;
+    pub fn lotus_core_destroy(engine: *mut lotus_core_t);
+    pub fn lotus_core_process_key(
+        engine: *mut lotus_core_t,
         key: u32,
         mods: lotus_modifiers_t,
     ) -> lotus_result_t;
-    pub fn lotus_engine_reset(engine: *mut lotus_engine_t);
-    pub fn lotus_engine_set_method(engine: *mut lotus_engine_t, method: lotus_method_t);
-    pub fn lotus_engine_set_tone_style(engine: *mut lotus_engine_t, style: lotus_tone_style_t);
-    pub fn lotus_engine_set_free_w(engine: *mut lotus_engine_t, option: lotus_free_w_t);
-    pub fn lotus_engine_set_std_uo(engine: *mut lotus_engine_t, enabled: bool);
-    pub fn lotus_engine_add_shortcut(
-        engine: *mut lotus_engine_t,
+    pub fn lotus_core_reset(engine: *mut lotus_core_t);
+    pub fn lotus_core_set_method(engine: *mut lotus_core_t, method: lotus_method_t);
+    pub fn lotus_core_set_tone_style(engine: *mut lotus_core_t, style: lotus_tone_style_t);
+    pub fn lotus_core_set_free_w(engine: *mut lotus_core_t, option: lotus_free_w_t);
+    pub fn lotus_core_set_std_uo(engine: *mut lotus_core_t, enabled: bool);
+    pub fn lotus_core_add_shortcut(
+        engine: *mut lotus_core_t,
         trigger: *const c_char,
         replacement: *const c_char,
     );
-    pub fn lotus_engine_set_log_callback(callback: lotus_log_callback_t);
-    pub fn lotus_engine_set_auto_restore(engine: *mut lotus_engine_t, enabled: bool);
-    pub fn lotus_engine_set_allow_non_standard_initials(engine: *mut lotus_engine_t, enabled: bool);
-    pub fn lotus_engine_export_tracing(filepath: *const c_char);
+    pub fn lotus_core_set_log_callback(callback: lotus_log_callback_t);
+    pub fn lotus_core_set_auto_restore(engine: *mut lotus_core_t, enabled: bool);
+    pub fn lotus_core_set_allow_non_standard_initials(engine: *mut lotus_core_t, enabled: bool);
+    pub fn lotus_core_export_tracing(filepath: *const c_char);
 }

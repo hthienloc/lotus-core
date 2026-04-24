@@ -1,8 +1,8 @@
-#include "lotus_engine/parser_components.h"
-#include "lotus_engine/parser.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/parser_components.h"
+#include "lotus_core/parser.h"
+#include "lotus_core/unicode.h"
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Extracts the vowel nucleus sequence and identifies the tone mark if present.
@@ -28,4 +28,4 @@ size_t NucleusParser::parse(const std::u32string& input, size_t pos, Syllable& s
     return len;
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

@@ -5,16 +5,16 @@
  * Implements orthographic rules and syllable structure validation for the Vietnamese language.
  */
 
-#include "lotus_engine/validator.h"
+#include "lotus_core/validator.h"
 
-#include "lotus_engine/constants.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/constants.h"
+#include "lotus_core/unicode.h"
 
 #include <algorithm>
 
-namespace lotus_engine {
+namespace lotus_core {
 
-using namespace lotus_engine::constants;
+using namespace lotus_core::constants;
 
 // ============================================================================
 // [ Validator Implementation ]
@@ -309,4 +309,4 @@ bool Validator::check_diphthong_rules(std::u32string_view stripped_nucleus,
     return true;
 }
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

@@ -4,13 +4,13 @@
  * @author Huỳnh Thiện Lộc
  */
 
-#include "lotus_engine/log.h"
+#include "lotus_core/log.h"
 #include <mutex>
 #include <vector>
 #include <fstream>
 #include <iomanip>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 struct TraceEvent {
     LogLevel level;
@@ -84,4 +84,4 @@ TraceScope::~TraceScope() {
     emit_log(LogLevel::DEBUG, "Scope finished", name, duration);
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

@@ -23,7 +23,7 @@ Steps to reproduce the behavior:
 
 **Environment**
  - OS: [e.g. Windows, Linux, macOS]
- - Lotus Engine version/commit: [e.g. v1.0.0, main]
+ - Lotus Core version/commit: [e.g. v1.0.0, main]
  - Integration: [e.g. TUI demo, Custom Frontend, FFI wrapper]
 
 **Additional context**

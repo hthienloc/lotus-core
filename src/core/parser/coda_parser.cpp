@@ -1,6 +1,6 @@
-#include "lotus_engine/parser_components.h"
+#include "lotus_core/parser_components.h"
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Extracts the remaining characters as the final coda.
@@ -17,4 +17,4 @@ size_t CodaParser::parse(const std::u32string& input, size_t pos, Syllable& s) {
     return 0;
 }
 
-} // namespace lotus_engine
+} // namespace lotus_core

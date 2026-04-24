@@ -1,5 +1,5 @@
-#include "lotus_engine/engine.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/engine.h"
+#include "lotus_core/unicode.h"
 
 #include <algorithm>
 #include <chrono>
@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 /**
  * @struct LatencyStats
@@ -49,7 +49,7 @@ class BenchmarkSuite {
      * @brief Executes all registered scenarios and outputs results to stdout and CSV.
      */
     void run_all() {
-        std::cout << "\n[Lotus Engine Benchmark] " << suite_name << "\n";
+        std::cout << "\n[Lotus Core Benchmark] " << suite_name << "\n";
         std::cout << std::string(90, '=') << "\n";
         std::cout << std::left << std::setw(35) << "Scenario" << std::right << std::setw(12)
                   << "Avg (ms)" << std::setw(12) << "Max (ms)" << std::setw(12) << "P99 (ms)"

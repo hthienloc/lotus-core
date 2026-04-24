@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 class Linguistics {
    public:
@@ -52,4 +52,4 @@ class Linguistics {
     static bool has_impossible_final(const std::string& lower);
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

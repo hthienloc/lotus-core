@@ -1,11 +1,11 @@
 #pragma once
 
-#include "lotus_engine/types.h"
-#include "lotus_engine/common.h"
+#include "lotus_core/types.h"
+#include "lotus_core/common.h"
 #include <string>
 #include <map>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 class ShortcutManager {
 public:
@@ -20,4 +20,4 @@ private:
     EngineResult _make_transformation_result(const std::u32string& final_u32, size_t prev_size) const;
 };
 
-} // namespace lotus_engine
+} // namespace lotus_core

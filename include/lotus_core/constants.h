@@ -4,7 +4,7 @@
 #include <vector>
 #include <array>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 namespace constants {
 
@@ -80,10 +80,14 @@ const char32_t KEY_UP = 0x11;
 const char32_t KEY_DOWN = 0x12;
 const char32_t KEY_LEFT = 0x13;
 const char32_t KEY_RIGHT = 0x14;
+const char32_t KEY_HOME = 0x15;
+const char32_t KEY_END = 0x16;
+const char32_t KEY_PAGE_UP = 0x17;
+const char32_t KEY_PAGE_DOWN = 0x18;
 const char32_t KEY_ENTER = 0x0D;
 const char32_t KEY_TAB = 0x09;
 const char32_t KEY_ESC = 0x1B;
 
 }  // namespace constants
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

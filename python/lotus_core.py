@@ -43,12 +43,12 @@ LogCallbackType = ctypes.CFUNCTYPE(None, ctypes.c_int, ctypes.c_char_p)
 # --- Library Loading ---
 def _load_library():
     """Finds and loads the shared library."""
-    lib_name = "liblotus_engine_core.so"
+    lib_name = "liblotus_core_core.so"
     # Depending on the OS, we might want to change the extension (e.g., .dylib on macOS, .dll on Windows)
     if sys.platform == "darwin":
-        lib_name = "liblotus_engine_core.dylib"
+        lib_name = "liblotus_core_core.dylib"
     elif sys.platform == "win32":
-        lib_name = "lotus_engine_core.dll"
+        lib_name = "lotus_core_core.dll"
 
     # Default to current directory or standard paths
     search_paths = [
@@ -74,56 +74,56 @@ def _load_library():
 _lib = _load_library()
 
 # --- C API Setup ---
-_lib.lotus_engine_create.restype = ctypes.c_void_p
-_lib.lotus_engine_create.argtypes = []
+_lib.lotus_core_create.restype = ctypes.c_void_p
+_lib.lotus_core_create.argtypes = []
 
-_lib.lotus_engine_destroy.restype = None
-_lib.lotus_engine_destroy.argtypes = [ctypes.c_void_p]
+_lib.lotus_core_destroy.restype = None
+_lib.lotus_core_destroy.argtypes = [ctypes.c_void_p]
 
-_lib.lotus_engine_process_key.restype = LotusResult
-_lib.lotus_engine_process_key.argtypes = [ctypes.c_void_p, ctypes.c_uint32, LotusModifiers]
+_lib.lotus_core_process_key.restype = LotusResult
+_lib.lotus_core_process_key.argtypes = [ctypes.c_void_p, ctypes.c_uint32, LotusModifiers]
 
-_lib.lotus_engine_reset.restype = None
-_lib.lotus_engine_reset.argtypes = [ctypes.c_void_p]
+_lib.lotus_core_reset.restype = None
+_lib.lotus_core_reset.argtypes = [ctypes.c_void_p]
 
-_lib.lotus_engine_set_method.restype = None
-_lib.lotus_engine_set_method.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.lotus_core_set_method.restype = None
+_lib.lotus_core_set_method.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
-_lib.lotus_engine_set_tone_style.restype = None
-_lib.lotus_engine_set_tone_style.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.lotus_core_set_tone_style.restype = None
+_lib.lotus_core_set_tone_style.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
-_lib.lotus_engine_set_free_w.restype = None
-_lib.lotus_engine_set_free_w.argtypes = [ctypes.c_void_p, ctypes.c_int]
+_lib.lotus_core_set_free_w.restype = None
+_lib.lotus_core_set_free_w.argtypes = [ctypes.c_void_p, ctypes.c_int]
 
-_lib.lotus_engine_set_std_uo.restype = None
-_lib.lotus_engine_set_std_uo.argtypes = [ctypes.c_void_p, ctypes.c_bool]
+_lib.lotus_core_set_std_uo.restype = None
+_lib.lotus_core_set_std_uo.argtypes = [ctypes.c_void_p, ctypes.c_bool]
 
-_lib.lotus_engine_add_shortcut.restype = None
-_lib.lotus_engine_add_shortcut.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
+_lib.lotus_core_add_shortcut.restype = None
+_lib.lotus_core_add_shortcut.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
 
-_lib.lotus_engine_set_log_callback.restype = None
-_lib.lotus_engine_set_log_callback.argtypes = [LogCallbackType]
+_lib.lotus_core_set_log_callback.restype = None
+_lib.lotus_core_set_log_callback.argtypes = [LogCallbackType]
 
-_lib.lotus_engine_set_auto_restore.restype = None
-_lib.lotus_engine_set_auto_restore.argtypes = [ctypes.c_void_p, ctypes.c_bool]
+_lib.lotus_core_set_auto_restore.restype = None
+_lib.lotus_core_set_auto_restore.argtypes = [ctypes.c_void_p, ctypes.c_bool]
 
 
 # --- Python Wrapper ---
 class LotusEngine:
-    """Python wrapper for the Lotus Engine C-API."""
+    """Python wrapper for the Lotus Core C-API."""
 
     def __init__(self):
         """Initializes a new engine instance."""
-        self._engine = _lib.lotus_engine_create()
+        self._engine = _lib.lotus_core_create()
         if not self._engine:
-            raise RuntimeError("Failed to create lotus_engine_t instance.")
+            raise RuntimeError("Failed to create lotus_core_t instance.")
         # Keep a reference to callbacks to prevent garbage collection
         self._log_callback_ref = None
 
     def __del__(self):
         """Destroys the engine instance."""
         if hasattr(self, '_engine') and self._engine:
-            _lib.lotus_engine_destroy(self._engine)
+            _lib.lotus_core_destroy(self._engine)
 
     def process_key(self, key_char: str, shift: bool = False, caps_lock: bool = False) -> tuple:
         """
@@ -145,7 +145,7 @@ class LotusEngine:
         
         mods = LotusModifiers(shift=shift, caps_lock=caps_lock)
         
-        res = _lib.lotus_engine_process_key(self._engine, keycode, mods)
+        res = _lib.lotus_core_process_key(self._engine, keycode, mods)
         
         output_str = ""
         if res.count > 0:
@@ -157,31 +157,31 @@ class LotusEngine:
 
     def reset(self):
         """Resets the engine state."""
-        _lib.lotus_engine_reset(self._engine)
+        _lib.lotus_core_reset(self._engine)
 
     def set_method(self, method: Method):
         """Sets the input method (TELEX or VNI)."""
-        _lib.lotus_engine_set_method(self._engine, int(method))
+        _lib.lotus_core_set_method(self._engine, int(method))
 
     def set_tone_style(self, style: ToneStyle):
         """Sets the tone placement style (OLD or NEW)."""
-        _lib.lotus_engine_set_tone_style(self._engine, int(style))
+        _lib.lotus_core_set_tone_style(self._engine, int(style))
 
     def set_free_w(self, option: FreeW):
         """Sets the Free-W option."""
-        _lib.lotus_engine_set_free_w(self._engine, int(option))
+        _lib.lotus_core_set_free_w(self._engine, int(option))
 
     def set_std_uo(self, enabled: bool):
         """Enables or disables manual hook keys ([ and ] -> ư, ơ)."""
-        _lib.lotus_engine_set_std_uo(self._engine, enabled)
+        _lib.lotus_core_set_std_uo(self._engine, enabled)
 
     def add_shortcut(self, trigger: str, replacement: str):
         """Adds a custom shortcut."""
-        _lib.lotus_engine_add_shortcut(self._engine, trigger.encode('utf-8'), replacement.encode('utf-8'))
+        _lib.lotus_core_add_shortcut(self._engine, trigger.encode('utf-8'), replacement.encode('utf-8'))
         
     def set_auto_restore(self, enabled: bool):
         """Enables or disables automatic English word restoration."""
-        _lib.lotus_engine_set_auto_restore(self._engine, enabled)
+        _lib.lotus_core_set_auto_restore(self._engine, enabled)
 
     @staticmethod
     def set_log_callback(callback):
@@ -197,4 +197,4 @@ class LotusEngine:
         cb = LogCallbackType(_wrapper)
         # Store callback globally to prevent GC issues since it's a global C API function
         LotusEngine._global_log_callback = cb 
-        _lib.lotus_engine_set_log_callback(cb)
+        _lib.lotus_core_set_log_callback(cb)

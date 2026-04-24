@@ -1,6 +1,6 @@
 # 🏗️ Vietnamese Engine Architecture
 
-> **Lotus Engine** is designed as a modular, high-performance Vietnamese Input Engine. This document outlines its architectural design principles and internal component structure.
+> **Lotus Core** is designed as a modular, high-performance Vietnamese Input Engine. This document outlines its architectural design principles and internal component structure.
 
 ---
 

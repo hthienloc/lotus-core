@@ -1,17 +1,17 @@
-# GEMINI Foundational Mandates — Lotus Engine
+# GEMINI Foundational Mandates — Lotus Core
 
-This file defines the foundational constraints and operational standards for the `lotus-engine` project. These directives take absolute precedence over general defaults.
+This file defines the foundational constraints and operational standards for the `lotus-core` project. These directives take absolute precedence over general defaults.
 
 ## Project Context
 
-`lotus-engine` is a high-performance, modular Vietnamese Input Method (IM) engine. It is designed for low-latency processing while maintaining strict linguistic correctness.
+`lotus-core` is a high-performance, modular Vietnamese Input Method (IM) engine. It is designed for low-latency processing while maintaining strict linguistic correctness.
 
 ## Core Directives
 
 ### 1. Architectural Integrity (READ THIS FIRST)
 
 - **Modularity is Non-Negotiable**: Keep the engine decomposed. The `Engine::process_key` function must remain a high-level orchestrator. New features (e.g., new smart typing rules) must be added as private helper methods, not directly into the main loop.
-- **Table-Driven Logic**: Vietnamese character transformations (casing, tones, NFC) MUST use the data-driven lookup tables in `include/lotus_engine/unicode.h`. Avoid re-introducing long `switch` statements or manual if-else chains for character mapping.
+- **Table-Driven Logic**: Vietnamese character transformations (casing, tones, NFC) MUST use the data-driven lookup tables in `include/lotus_core/unicode.h`. Avoid re-introducing long `switch` statements or manual if-else chains for character mapping.
 - **Rule-Based Validation**: Linguistic rules in `Validator::is_valid` must be encapsulated in semantic helper methods (e.g., `check_front_vowel_affinity`).
 - **Determinism through Canonicalization**: The engine MUST maintain a deterministic state. Any valid Vietnamese syllable in the active buffer or history should be stored/reclaimed in its canonical form (via `Syllable::to_keys`). This ensures that backspacing and late-transformation behaviors are consistent regardless of the original raw input sequence (e.g., `ddoanj` vs `ddoajn`).
 
@@ -48,7 +48,7 @@ This file defines the foundational constraints and operational standards for the
 
 ## Key Files
 
-- `include/lotus_engine/unicode.h`: Character mapping & NFC normalization.
+- `include/lotus_core/unicode.h`: Character mapping & NFC normalization.
 - `src/engine.cpp`: Orchestrator of input methods.
 - `src/validator.cpp`: Vietnamese linguistic rules.
 - `src/parser.cpp`: Syllable decomposition logic.

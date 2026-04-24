@@ -1,13 +1,13 @@
 #pragma once
 
-#include "lotus_engine/common.h"
+#include "lotus_core/common.h"
 
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
@@ -141,4 +141,4 @@ struct EngineResult {
     std::string to_string() const;
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

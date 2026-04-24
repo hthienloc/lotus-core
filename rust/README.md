@@ -1,6 +1,6 @@
-# Lotus Engine - Rust Wrapper
+# Lotus Core - Rust Wrapper
 
-This crate provides safe, idiomatic Rust bindings for **Lotus Engine**, a zero-dependency, high-performance Vietnamese Input Method Core.
+This crate provides safe, idiomatic Rust bindings for **Lotus Core**, a zero-dependency, high-performance Vietnamese Input Method Core.
 
 ## Author
 
@@ -8,7 +8,7 @@ This crate provides safe, idiomatic Rust bindings for **Lotus Engine**, a zero-d
 
 ## Prerequisites
 
-The crate statically links to `lotus_engine_core`. You must build the core C++ library before compiling this crate.
+The crate statically links to `lotus_core_core`. You must build the core C++ library before compiling this crate.
 
 From the root of the project:
 ```bash
@@ -22,7 +22,7 @@ Include this crate in your project, and ensure the build script can find the sta
 ### Example
 
 ```rust
-use lotus_engine::{LotusEngine, Method};
+use lotus_core::{LotusEngine, Method};
 
 fn main() {
     let mut engine = LotusEngine::new();

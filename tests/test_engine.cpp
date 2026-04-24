@@ -1,6 +1,6 @@
-#include "lotus_engine/engine.h"
-#include "lotus_engine/log.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/engine.h"
+#include "lotus_core/log.h"
+#include "lotus_core/unicode.h"
 
 #include <algorithm>
 #include <cassert>
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 // ============================================================================
 // [ Test Utilities ]

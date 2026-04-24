@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lotus_engine/common.h"
+#include "lotus_core/common.h"
 
 #include <algorithm>
 #include <iostream>
@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 namespace unicode {
 
 namespace detail {
@@ -270,4 +270,4 @@ inline void replace_all(std::string& str, const std::string& from, const std::st
 }
 
 }  // namespace unicode
-}  // namespace lotus_engine
+}  // namespace lotus_core

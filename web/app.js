@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Define Module for Emscripten
-    const basePath = window.location.pathname.includes('/lotus-engine/') ? '/lotus-engine/' : '/';
+    const basePath = window.location.pathname.includes('/lotus-core/') ? '/lotus-core/' : '/';
     
     window.Module = {
         locateFile: function(path) {
@@ -43,8 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
     window.Module.onRuntimeInitialized = function() {
         uiLog('info', 'WASM Module Loaded successfully.');
 
-        // Initialize Lotus Engine
-        engine = Module._lotus_engine_create();
+        // Initialize Lotus Core
+        engine = Module._lotus_core_create();
 
         // Allocate memory for lotus_result_t
         // struct lotus_result_t { uint8_t action; uint8_t backspace; uint8_t count; uint8_t pad; uint32_t chars[32]; }
@@ -65,25 +65,25 @@ document.addEventListener("DOMContentLoaded", () => {
             uiLog(levelStr, msg);
         }, 'vii'); // void func(int, int)
 
-        Module._lotus_engine_set_log_callback(logCallback);
+        Module._lotus_core_set_log_callback(logCallback);
 
-        uiLog('info', 'Lotus Engine initialized.');
+        uiLog('info', 'Lotus Core initialized.');
         
         updateConfig();
     };
 
     // Load the WASM script dynamically
     const script = document.createElement('script');
-    script.src = basePath + 'lotus_engine.js';
+    script.src = basePath + 'lotus_core.js';
     document.body.appendChild(script);
 
     function updateConfig() {
         if (!engine) return;
-        Module._lotus_engine_set_method(engine, parseInt(methodSelect.value));
-        Module._lotus_engine_set_tone_style(engine, parseInt(toneStyleSelect.value));
-        Module._lotus_engine_set_free_w(engine, parseInt(freeWSelect.value));
-        Module._lotus_engine_set_std_uo(engine, stdUoCheckbox.checked ? 1 : 0);
-        Module._lotus_engine_set_auto_restore(engine, autoRestoreCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_method(engine, parseInt(methodSelect.value));
+        Module._lotus_core_set_tone_style(engine, parseInt(toneStyleSelect.value));
+        Module._lotus_core_set_free_w(engine, parseInt(freeWSelect.value));
+        Module._lotus_core_set_std_uo(engine, stdUoCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_auto_restore(engine, autoRestoreCheckbox.checked ? 1 : 0);
         uiLog('info', 'Engine configuration updated.');
         editor.focus();
     }
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resetBtn.addEventListener('click', () => {
         if (engine) {
-            Module._lotus_engine_reset(engine);
+            Module._lotus_core_reset(engine);
             editor.value = '';
             uiLog('info', 'Engine reset.');
             editor.focus();
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Only intercept normal character keys and backspace
         if (e.key.length > 1 && e.key !== 'Backspace' && e.key !== 'Enter') {
             if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) {
-                Module._lotus_engine_reset(engine);
+                Module._lotus_core_reset(engine);
                 uiLog('debug', `Navigation key '${e.key}' pressed, resetting engine buffer.`);
             }
             return;
@@ -123,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (e.ctrlKey || e.altKey || e.metaKey) {
             if (e.key === 'Backspace' || e.key === 'w' || e.key === 'W') {
-                Module._lotus_engine_reset(engine);
+                Module._lotus_core_reset(engine);
             }
             return; 
         }
@@ -141,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const isCaps = e.getModifierState("CapsLock") ? 1 : 0;
 
         // Call JS wrapper function
-        Module._lotus_engine_process_key_js(engine, keyChar, isShift, isCaps, resultPtr);
+        Module._lotus_core_process_key_js(engine, keyChar, isShift, isCaps, resultPtr);
 
         // Fallback robust memory read for headless tests
         const heap8 = Module.HEAPU8 || window.HEAPU8;

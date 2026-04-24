@@ -1,10 +1,10 @@
 #pragma once
 
-#include "lotus_engine/types.h"
+#include "lotus_core/types.h"
 
 #include <string>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 class InitialParser {
 public:
@@ -26,4 +26,4 @@ public:
     static size_t parse(const std::u32string& input, size_t pos, Syllable& s);
 };
 
-} // namespace lotus_engine
+} // namespace lotus_core

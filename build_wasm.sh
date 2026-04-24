@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Lotus Engine as a WebAssembly module using Emscripten.
+# Build Lotus Core as a WebAssembly module using Emscripten.
 
 if ! command -v emcc &> /dev/null; then
     echo "Error: emcc not found. Please install and activate Emscripten (emsdk)."
@@ -18,9 +18,9 @@ emcc src/core/*.cpp \
      -Iinclude \
      -std=c++20 \
      -O3 \
-     -s EXPORTED_FUNCTIONS="['_lotus_engine_create', '_lotus_engine_destroy', '_lotus_engine_process_key', '_lotus_engine_process_key_js', '_lotus_engine_reset', '_lotus_engine_set_method', '_lotus_engine_set_tone_style', '_lotus_engine_set_free_w', '_lotus_engine_set_std_uo', '_lotus_engine_add_shortcut', '_lotus_engine_set_log_callback', '_lotus_engine_set_auto_restore', '_malloc', '_free']" \
+     -s EXPORTED_FUNCTIONS="['_lotus_core_create', '_lotus_core_destroy', '_lotus_core_process_key', '_lotus_core_process_key_js', '_lotus_core_reset', '_lotus_core_set_method', '_lotus_core_set_tone_style', '_lotus_core_set_free_w', '_lotus_core_set_std_uo', '_lotus_core_add_shortcut', '_lotus_core_set_log_callback', '_lotus_core_set_auto_restore', '_malloc', '_free']" \
      -s EXPORTED_RUNTIME_METHODS="['HEAPU8', 'getValue', 'setValue', 'ccall', 'cwrap', 'addFunction', 'UTF8ToString']" \
      -s ALLOW_TABLE_GROWTH=1 \
-     -o web/lotus_engine.js
+     -o web/lotus_core.js
 
 echo "Build successful! Output placed in web/ directory."

@@ -1,5 +1,5 @@
-#ifndef LOTUS_ENGINE_CAPI_H
-#define LOTUS_ENGINE_CAPI_H
+#ifndef LOTUS_CORE_CAPI_H
+#define LOTUS_CORE_CAPI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +11,7 @@ extern "C" {
 /**
  * @brief Opaque handle to a Vietnamese Engine instance.
  */
-typedef struct lotus_engine_t lotus_engine_t;
+typedef struct lotus_core_t lotus_core_t;
 
 /**
  * @brief Input methods.
@@ -75,73 +75,77 @@ typedef struct {
 /**
  * @brief Create a new engine instance.
  */
-lotus_engine_t* lotus_engine_create();
+lotus_core_t* lotus_core_create();
 
 /**
  * @brief Destroy an engine instance.
  */
-void lotus_engine_destroy(lotus_engine_t* engine);
+void lotus_core_destroy(lotus_core_t* engine);
 
 /**
  * @brief Process a key press and return a transformation result.
  */
-lotus_result_t lotus_engine_process_key(lotus_engine_t* engine, uint32_t key,
+lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key,
                                         lotus_modifiers_t mods);
 
 /**
  * @brief Reset engine state.
+ * 
+ * Implementers should call this function when the user's cursor moves non-linearly
+ * (e.g., via mouse click or non-standard navigation) to prevent the engine from 
+ * attempting to backspace into or modify text that is no longer at the active cursor position.
  */
-void lotus_engine_reset(lotus_engine_t* engine);
+void lotus_core_reset(lotus_core_t* engine);
 
 /**
  * @brief Configure the input method.
  */
-void lotus_engine_set_method(lotus_engine_t* engine, lotus_method_t method);
+void lotus_core_set_method(lotus_core_t* engine, lotus_method_t method);
 
 /**
  * @brief Configure the tone placement style.
  */
-void lotus_engine_set_tone_style(lotus_engine_t* engine, lotus_tone_style_t style);
+void lotus_core_set_tone_style(lotus_core_t* engine, lotus_tone_style_t style);
 
 /**
  * @brief Configure the Free-W option.
  */
-void lotus_engine_set_free_w(lotus_engine_t* engine, lotus_free_w_t option);
+void lotus_core_set_free_w(lotus_core_t* engine, lotus_free_w_t option);
 
 /**
  * @brief Configure the manual hook keys option.
  */
-void lotus_engine_set_std_uo(lotus_engine_t* engine, bool enabled);
+void lotus_core_set_std_uo(lotus_core_t* engine, bool enabled);
 
 /**
  * @brief Add a custom shortcut for string expansion.
  */
-void lotus_engine_add_shortcut(lotus_engine_t* engine, const char* trigger,
+void lotus_core_add_shortcut(lotus_core_t* engine, const char* trigger,
                                const char* replacement);
 
 /**
  * @brief Set the global logging callback.
  */
-void lotus_engine_set_log_callback(lotus_log_callback_t callback);
+void lotus_core_set_log_callback(lotus_log_callback_t callback);
 
 /**
  * @brief Enables or disables automatic English word restoration.
  */
-void lotus_engine_set_auto_restore(lotus_engine_t* engine, bool enabled);
+void lotus_core_set_auto_restore(lotus_core_t* engine, bool enabled);
 
 /**
  * @brief Enables or disables allowing non-standard initial consonants (z, w, j, f).
  */
-void lotus_engine_set_allow_non_standard_initials(lotus_engine_t* engine, bool enabled);
+void lotus_core_set_allow_non_standard_initials(lotus_core_t* engine, bool enabled);
 
 /**
  * @brief Export current tracing buffer to a JSON file.
  * @param filepath The output path.
  */
-void lotus_engine_export_tracing(const char* filepath);
+void lotus_core_export_tracing(const char* filepath);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // LOTUS_ENGINE_CAPI_H
+#endif  // LOTUS_CORE_CAPI_H

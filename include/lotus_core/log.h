@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
- * @brief Log levels for the Lotus Engine.
+ * @brief Log levels for the Lotus Core.
  */
 enum class LogLevel { DEBUG = 0, INFO = 1, WARN = 2, ERROR = 3 };
 
@@ -66,12 +66,12 @@ struct TraceScope {
     ~TraceScope();
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core
 
 // Internal macros for easily emitting logs
-#define LOTUS_TRACE_SCOPE(name) lotus_engine::TraceScope _lotus_trace_##__LINE__(name)
+#define LOTUS_TRACE_SCOPE(name) lotus_core::TraceScope _lotus_trace_##__LINE__(name)
 
-#define LOTUS_LOG_DEBUG(msg) lotus_engine::emit_log(lotus_engine::LogLevel::DEBUG, msg)
-#define LOTUS_LOG_INFO(msg) lotus_engine::emit_log(lotus_engine::LogLevel::INFO, msg)
-#define LOTUS_LOG_WARN(msg) lotus_engine::emit_log(lotus_engine::LogLevel::WARN, msg)
-#define LOTUS_LOG_ERROR(msg) lotus_engine::emit_log(lotus_engine::LogLevel::ERROR, msg)
+#define LOTUS_LOG_DEBUG(msg) lotus_core::emit_log(lotus_core::LogLevel::DEBUG, msg)
+#define LOTUS_LOG_INFO(msg) lotus_core::emit_log(lotus_core::LogLevel::INFO, msg)
+#define LOTUS_LOG_WARN(msg) lotus_core::emit_log(lotus_core::LogLevel::WARN, msg)
+#define LOTUS_LOG_ERROR(msg) lotus_core::emit_log(lotus_core::LogLevel::ERROR, msg)

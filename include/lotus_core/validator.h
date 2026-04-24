@@ -1,12 +1,12 @@
 #pragma once
 
-#include "lotus_engine/types.h"
+#include "lotus_core/types.h"
 
 #include <string>
 #include <string_view>
 #include <unordered_set>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Performs phonotactic validation of Vietnamese syllable components.
@@ -88,4 +88,4 @@ class Validator {
     static bool is_centering_diphthong_forbidding_coda(std::u32string_view v);
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

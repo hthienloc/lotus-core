@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-namespace lotus_engine {
+namespace lotus_core {
 
-#define LOTUS_ENGINE_VERSION "1.0.0"
+#define LOTUS_CORE_VERSION "1.0.0"
 
 /**
  * @brief Vietnamese input method types.
@@ -58,4 +58,4 @@ enum class BackspaceStyle : uint8_t {
     SURGICAL = 1   // Removes the last visual character but preserves diacritics (Modern standard)
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

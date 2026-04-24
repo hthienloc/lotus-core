@@ -6,15 +6,15 @@
  * (initial, glide, vowel nucleus, and final coda).
  */
 
-#include "lotus_engine/parser.h"
+#include "lotus_core/parser.h"
 
-#include "lotus_engine/constants.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/parser_components.h"
+#include "lotus_core/constants.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/parser_components.h"
 
 #include <algorithm>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 // ============================================================================
 // [ Parser Implementation ]
@@ -237,4 +237,4 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     }
 }
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

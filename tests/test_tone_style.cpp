@@ -4,13 +4,13 @@
  * @author Huỳnh Thiện Lộc
  */
 
-#include "lotus_engine/engine.h"
-#include "lotus_engine/unicode.h"
+#include "lotus_core/engine.h"
+#include "lotus_core/unicode.h"
 
 #include <cassert>
 #include <iostream>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 // ============================================================================
 // [ Test Cases ]

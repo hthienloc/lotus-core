@@ -1,6 +1,6 @@
-# 🗺️ Project Roadmap: Lotus Engine
+# 🗺️ Project Roadmap: Lotus Core
 
-> Lotus Engine is positioned as a high-performance, developer-centric core engine that bridges the gap between Bamboo's linguistic accuracy and GoNhanh's modern efficiency. This roadmap outlines the strategic evolution of the engine, structured into clearly defined Technical Phases.
+> Lotus Core is positioned as a high-performance, developer-centric core engine that bridges the gap between Bamboo's linguistic accuracy and GoNhanh's modern efficiency. This roadmap outlines the strategic evolution of the engine, structured into clearly defined Technical Phases.
 
 ---
 
@@ -12,7 +12,7 @@
 - [x] **Unicode & Integration Layer**
   - Guaranteed NFC output for cross-platform rendering stability.
   - Comprehensive handling of combining marks.
-  - Robust C-API (`liblotus_engine_core.so`) designed for seamless FFI integration (inspired by the stability of bamboo-core).
+  - Robust C-API (`liblotus_core_core.so`) designed for seamless FFI integration (inspired by the stability of bamboo-core).
 
 ## 🏃 Phase 2: High-Performance Processing Pipeline (Active)
 

@@ -3,18 +3,18 @@
  * @brief Tests for complex Vietnamese syllables and direct validator edge cases.
  */
 
-#include "lotus_engine/engine.h"
-#include "lotus_engine/log.h"
-#include "lotus_engine/parser.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/validator.h"
+#include "lotus_core/engine.h"
+#include "lotus_core/log.h"
+#include "lotus_core/parser.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/validator.h"
 
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 // ============================================================================
 // [ Test Utilities ]

@@ -3,15 +3,15 @@
  * @brief Complex phonology and linguistic rule tests.
  */
 
-#include "lotus_engine/parser.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/validator.h"
+#include "lotus_core/parser.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/validator.h"
 
 #include <cassert>
 #include <iostream>
 #include <vector>
 
-using namespace lotus_engine;
+using namespace lotus_core;
 
 // ============================================================================
 // [ Phonology Tests ]

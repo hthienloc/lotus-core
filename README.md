@@ -1,11 +1,11 @@
-# Lotus Engine 🪷
+# Lotus Core 🪷
 
-[![CI](https://github.com/hthienloc/lotus-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/hthienloc/lotus-engine/actions/workflows/ci.yml)
-[![Latency](https://img.shields.io/badge/avg%20latency-0.031%20ms-brightgreen)](https://github.com/hthienloc/lotus-engine)
+[![CI](https://github.com/hthienloc/lotus-core/actions/workflows/ci.yml/badge.svg)](https://github.com/hthienloc/lotus-core/actions/workflows/ci.yml)
+[![Latency](https://img.shields.io/badge/avg%20latency-0.031%20ms-brightgreen)](https://github.com/hthienloc/lotus-core)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 
-> **Lotus Engine** is a high-performance, zero-dependency, modular Vietnamese input processing core. Built with modern C++20, it focuses on phonological accuracy and strict linguistic correctness, embeddable in any project via a stable C-API.
+> **Lotus Core** is a high-performance, zero-dependency, modular Vietnamese input processing core. Built with modern C++20, it focuses on phonological accuracy and strict linguistic correctness, embeddable in any project via a stable C-API.
 
 ---
 
@@ -13,7 +13,7 @@
 
 **"Vietnamese input for the most demanding developer environments."**
 
-Lotus Engine envisions a future where Vietnamese developers don't have to compromise between raw performance, strict linguistic correctness, and modern development environments. We are building the ultimate embeddable processing core that handles everything from casual typing to edge-case phonotactics without breaking a sweat.
+Lotus Core envisions a future where Vietnamese developers don't have to compromise between raw performance, strict linguistic correctness, and modern development environments. We are building the ultimate embeddable processing core that handles everything from casual typing to edge-case phonotactics without breaking a sweat.
 
 **Official Logo Concept:** (Coming Soon) A stylized Lotus flower dynamically formed from modern keyboard keycaps, symbolizing the intersection of Vietnamese cultural identity and advanced software engineering.
 
@@ -30,15 +30,15 @@ Lotus Engine envisions a future where Vietnamese developers don't have to compro
 | 🎨 **Tone Style** | Old style (`hòa`) and New style (`hoà`) selectable at runtime |
 | 🔠 **NFC Output** | All output is Unicode NFC precomposed — eliminates phantom backspace bugs in Electron/Web apps |
 | ⚡ **< 0.1ms/key** | Measured average 0.031ms, peak 0.44ms under heavy stress tests |
-| 🔌 **C-API** | Stable `lotus_engine_t*` handle, log callbacks, no C++ ABI leakage |
+| 🔌 **C-API** | Stable `lotus_core_t*` handle, log callbacks, no C++ ABI leakage |
 
 ---
 
 ## 🔤 Smart Auto-Restore Comparison
 
-When typing English or mixed-language text, naive engines often mistakenly apply Vietnamese diacritics. Lotus Engine intelligently auto-restores to the original keystrokes, ensuring a seamless typing experience.
+When typing English or mixed-language text, naive engines often mistakenly apply Vietnamese diacritics. Lotus Core intelligently auto-restores to the original keystrokes, ensuring a seamless typing experience.
 
-| Word Typed | Naive Telex | Lotus Engine | Reason |
+| Word Typed | Naive Telex | Lotus Core | Reason |
 | :--- | :--- | :--- | :--- |
 | `status` | statú ❌ | **status** ✅ | Protected final 's' cluster |
 | `for` | fỏ ❌ | **for** ✅ | Invalid Vietnamese initial 'f' |
@@ -51,7 +51,7 @@ When typing English or mixed-language text, naive engines often mistakenly apply
 
 ## 🏗️ Architecture
 
-Lotus Engine implements a robust processing pipeline that prioritizes validation before transformation:
+Lotus Core implements a robust processing pipeline that prioritizes validation before transformation:
 
 1. **Engine Layer**: Orchestrates the input pipeline and manages the Composition Buffer.
 2. **Parser Layer**: Decomposes strings into Vietnamese phonological components (Initial, Glide, Nucleus, Final).
@@ -74,10 +74,10 @@ Lotus Engine implements a robust processing pipeline that prioritizes validation
 
 ### C-API Integration
 
-Link against `liblotus_engine_core.so` (or `.a`) and include `<lotus_engine/capi.h>`:
+Link against `liblotus_core_core.so` (or `.a`) and include `<lotus_core/capi.h>`:
 
 ```c
-#include <lotus_engine/capi.h>
+#include <lotus_core/capi.h>
 #include <stdio.h>
 
 void my_logger(lotus_log_level_t level, const char* msg) {
@@ -86,21 +86,21 @@ void my_logger(lotus_log_level_t level, const char* msg) {
 }
 
 int main(void) {
-    lotus_engine_set_log_callback(my_logger);
+    lotus_core_set_log_callback(my_logger);
 
-    lotus_engine_t* engine = lotus_engine_create();
+    lotus_core_t* engine = lotus_core_create();
     lotus_modifiers_t mods = { false, false }; // shift, caps_lock
 
     // Process a keystroke: 'a' + 'a' -> 'â'
-    lotus_engine_process_key(engine, 'a', mods);
-    lotus_result_t r = lotus_engine_process_key(engine, 'a', mods);
+    lotus_core_process_key(engine, 'a', mods);
+    lotus_result_t r = lotus_core_process_key(engine, 'a', mods);
 
     // r.backspace = number of chars to delete before inserting
     // r.count = number of new UTF-32 chars in r.chars buffer
     // r.action = 0 (pass-through) or 1 (transformation)
     printf("Backspace: %d, Insert: %d chars\n", r.backspace, r.count);
 
-    lotus_engine_destroy(engine);
+    lotus_core_destroy(engine);
     return 0;
 }
 ```
@@ -126,4 +126,4 @@ int main(void) {
 
 ## 📄 License
 
-GPL v3 © [hthienloc and contributors](https://github.com/hthienloc/lotus-engine)
+GPL v3 © [hthienloc and contributors](https://github.com/hthienloc/lotus-core)

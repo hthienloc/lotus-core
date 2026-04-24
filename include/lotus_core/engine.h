@@ -1,14 +1,14 @@
 #pragma once
 
-#include "lotus_engine/linguistics.h"
-#include "lotus_engine/types.h"
-#include "lotus_engine/shortcut_manager.h"
+#include "lotus_core/linguistics.h"
+#include "lotus_core/types.h"
+#include "lotus_core/shortcut_manager.h"
 
 #include <functional>
 #include <string>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief The core Vietnamese input method engine.
@@ -123,7 +123,7 @@ class Engine {
     bool handle_boundary(char32_t key, EngineResult& result);
     bool handle_shortcuts(char32_t key, EngineResult& result);
     bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
-    bool handle_navigation(char32_t key, EngineResult& result);
+    bool handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result);
     bool handle_modifier_escape(char32_t key, EngineResult& result);
     void apply_std_uo(char32_t& key);
     EngineResult apply_im_pipeline(char32_t key, std::string& raw_word);
@@ -153,4 +153,4 @@ class Engine {
     bool is_english_word(const std::string& word) const;
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

@@ -6,21 +6,21 @@
  * preventing false transformations on English words.
  */
 
-#include "lotus_engine/linguistics.h"
+#include "lotus_core/linguistics.h"
 
-#include "lotus_engine/constants.h"
-#include "lotus_engine/unicode.h"
-#include "lotus_engine/validator.h"
-#include "lotus_engine/parser.h"
+#include "lotus_core/constants.h"
+#include "lotus_core/unicode.h"
+#include "lotus_core/validator.h"
+#include "lotus_core/parser.h"
 
 #include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
-using namespace lotus_engine::constants;
+using namespace lotus_core::constants;
 
 // ============================================================================
 // [ Internal Data ]
@@ -256,4 +256,4 @@ bool Linguistics::has_impossible_final(const std::string& lower) {
     return false;
 }
 
-}  // namespace lotus_engine
+}  // namespace lotus_core

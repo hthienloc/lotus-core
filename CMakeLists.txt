@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(lotus_engine VERSION 1.0.0)
+project(lotus_core VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include)
 
 # Core Library (Static)
-add_library(lotus_engine_core STATIC
+add_library(lotus_core_core STATIC
     src/core/syllable.cpp
     src/core/validator.cpp
     src/core/parser/parser.cpp
@@ -23,10 +23,10 @@ add_library(lotus_engine_core STATIC
     src/core/log.cpp
     src/api/capi.cpp
 )
-set_target_properties(lotus_engine_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(lotus_core_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Core Library (Shared)
-add_library(lotus_engine_core_shared SHARED
+add_library(lotus_core_core_shared SHARED
     src/core/syllable.cpp
     src/core/validator.cpp
     src/core/parser/parser.cpp
@@ -41,11 +41,11 @@ add_library(lotus_engine_core_shared SHARED
     src/core/log.cpp
     src/api/capi.cpp
 )
-set_target_properties(lotus_engine_core_shared PROPERTIES OUTPUT_NAME lotus_engine_core)
+set_target_properties(lotus_core_core_shared PROPERTIES OUTPUT_NAME lotus_core_core)
 
 # Target Include Directories
-target_include_directories(lotus_engine_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
-target_include_directories(lotus_engine_core_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_include_directories(lotus_core_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_include_directories(lotus_core_core_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 
 # Test Executable
 add_executable(lotus_tests
@@ -63,7 +63,7 @@ add_executable(lotus_tests
     tests/test_edge_cases.cpp
     tests/test_features_stub.cpp
 )
-target_link_libraries(lotus_tests lotus_engine_core)
+target_link_libraries(lotus_tests lotus_core_core)
 
 # Helper to run tests
 add_custom_target(run_tests
@@ -74,15 +74,15 @@ add_custom_target(run_tests
 
 # TUI Demo
 add_executable(lotus_tui tests/tui_demo.cpp)
-target_link_libraries(lotus_tui lotus_engine_core)
+target_link_libraries(lotus_tui lotus_core_core)
 
 # Benchmark
 add_executable(lotus_bench tests/bench_engine.cpp)
-target_link_libraries(lotus_bench lotus_engine_core)
+target_link_libraries(lotus_bench lotus_core_core)
 
 # Install Targets
-install(TARGETS lotus_engine_core lotus_engine_core_shared
-    EXPORT lotus_engine-targets
+install(TARGETS lotus_core_core lotus_core_core_shared
+    EXPORT lotus_core-targets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
@@ -92,7 +92,7 @@ install(TARGETS lotus_engine_core lotus_engine_core_shared
 install(DIRECTORY include/ DESTINATION include)
 
 # Export CMake Config
-install(EXPORT lotus_engine-targets
-    FILE lotus_engine-config.cmake
-    DESTINATION lib/cmake/lotus_engine
+install(EXPORT lotus_core-targets
+    FILE lotus_core-config.cmake
+    DESTINATION lib/cmake/lotus_core
 )

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "lotus_engine/types.h"
+#include "lotus_core/types.h"
 
 #include <string>
 #include <vector>
 
-namespace lotus_engine {
+namespace lotus_core {
 
 /**
  * @brief Parses a UTF-32 encoded string into a structured @ref Syllable.
@@ -44,4 +44,4 @@ class SyllableParser {
     static std::string from_u32(const std::u32string& s);
 };
 
-}  // namespace lotus_engine
+}  // namespace lotus_core
