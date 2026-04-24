@@ -62,6 +62,11 @@ class Engine {
     /** @brief Returns whether the engine is currently at a sentence start. */
     bool get_at_sentence_start() const { return at_sentence_start; }
 
+    /** @brief Enables or disables non-standard initials (z, w, j, f). */
+    void set_allow_non_standard_initials(bool enabled) { this->allow_non_standard_initials = enabled; }
+    /** @brief Returns whether non-standard initials are allowed. */
+    bool get_allow_non_standard_initials() const { return allow_non_standard_initials; }
+
     /** @brief Sets the active macro expansion mode. */
     void set_macro_mode(MacroMode mode) { this->macro_mode = mode; }
     /** @brief Returns the current macro expansion mode. */
@@ -136,6 +141,7 @@ class Engine {
     bool double_space_to_period = false;          ///< Whether double-space converts to period.
     bool auto_capitalize = false;  ///< Whether auto-capitalize after sentences is enabled.
     MacroMode macro_mode = MacroMode::ADAPTIVE;   ///< The active macro expansion mode.
+    bool allow_non_standard_initials = false;     ///< Whether non-standard initials (z, w, j, f) are allowed.
 
     // Rule-based English detection using phonotactic linguistics.
     bool is_english_word(const std::string& word) const;

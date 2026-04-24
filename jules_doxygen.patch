@@ -1,0 +1,54 @@
+diff --git a/include/lotus_engine/smart_typing.h b/include/lotus_engine/smart_typing.h
+new file mode 100644
+index 0000000..9a48edb
+--- /dev/null
++++ b/include/lotus_engine/smart_typing.h
+@@ -0,0 +1,47 @@
++#ifndef LOTUS_ENGINE_SMART_TYPING_H
++#define LOTUS_ENGINE_SMART_TYPING_H
++
++#include <string>
++
++namespace lotus_engine {
++
++/**
++ * @class SmartTyping
++ * @brief Handles automated text formatting based on linguistic principles.
++ *
++ * The SmartTyping class implements features that assist the user by automatically
++ * applying standard typing conventions. Specifically, it implements "Smart Boundary"
++ * rules such as double-space period insertion and auto-capitalization.
++ *
++ * Linguistic Rationale:
++ * - **Double-Space Period (Smart Boundary):** In standard typing practices, pressing
++ *   the spacebar twice in quick succession is interpreted as a boundary between sentences.
++ *   Linguistically, a sentence boundary requires terminal punctuation (like a period)
++ *   followed by a space. Automating this process bridges the gap between rapid thought
++ *   transcription and formal orthographic rules, ensuring that stream-of-consciousness
++ *   typing is neatly segmented into grammatically distinct units.
++ * - **Auto-Capitalization after Sentence Markers:** Following terminal punctuation
++ *   (such as a period, exclamation mark, or question mark), standard orthography
++ *   mandates that the subsequent independent clause or sentence begins with a
++ *   capital letter. This serves as a vital visual and grammatical cue to the reader
++ *   that a new complete thought is commencing, improving readability and syntactic clarity.
++ */
++class SmartTyping {
++public:
++    /**
++     * @brief Processes the input text and applies smart typing rules.
++     *
++     * This method evaluates the current input string and applies the linguistic rules
++     * defined in the SmartTyping class. It detects patterns such as double spaces to
++     * insert a period, and identifies sentence boundaries to automatically capitalize
++     * the next alphabetic character.
++     *
++     * @param input The text string to be processed.
++     * @return A string representing the text after smart typing rules have been applied.
++     */
++    std::string handle(const std::string& input);
++};
++
++} // namespace lotus_engine
++
++#endif // LOTUS_ENGINE_SMART_TYPING_H
+

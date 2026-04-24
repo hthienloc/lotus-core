@@ -9,6 +9,16 @@
 
 ---
 
+## 👁️ Project Vision
+
+**"Vietnamese input for the most demanding developer environments."**
+
+Lotus Engine envisions a future where Vietnamese developers don't have to compromise between raw performance, strict linguistic correctness, and modern development environments. We are building the ultimate embeddable processing core that handles everything from casual typing to edge-case phonotactics without breaking a sweat.
+
+**Official Logo Concept:** (Coming Soon) A stylized Lotus flower dynamically formed from modern keyboard keycaps, symbolizing the intersection of Vietnamese cultural identity and advanced software engineering.
+
+---
+
 ## ✨ Core Features
 
 | Feature | Description |
