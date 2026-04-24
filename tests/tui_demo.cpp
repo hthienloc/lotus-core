@@ -166,6 +166,14 @@ char32_t read_key() {
                 return 0xE003;  // Right
             if (seq == "D")
                 return 0xE004;  // Left
+            if (seq == "H" || seq == "1~")
+                return 0xE005;  // Home
+            if (seq == "F" || seq == "4~")
+                return 0xE006;  // End
+            if (seq == "5~")
+                return 0xE007;  // PageUp
+            if (seq == "6~")
+                return 0xE008;  // PageDown
         }
         return 27;
     }
