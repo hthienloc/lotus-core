@@ -51,7 +51,7 @@ void test_tone_style_placement() {
     std::string out_old = unicode::to_utf8(out_u32_old);
     assert(out_old == "hòa");
 
-    std::cout << "  [PASS] Tone placement styles (Old vs. New)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Tone placement styles (Old vs. New)" << std::endl;
 }
 
 /**
@@ -78,5 +78,5 @@ void test_complex_diphthongs() {
     assert(type("huowu") == "hươu");
     assert(type("nguowif") == "người");
 
-    std::cout << "  [PASS] Complex diphthongs and triphthongs" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Complex diphthongs and triphthongs" << std::endl;
 }

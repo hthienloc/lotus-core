@@ -43,7 +43,7 @@ void test_rhymes_exhaustive() {
     assert(!Validator::is_valid(p.parse(U"kiê")));
     assert(!Validator::is_valid(p.parse(U"kian")));
 
-    std::cout << "  [PASS] Exhaustive rhyme validation" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Exhaustive rhyme validation" << std::endl;
 }
 
 /**
@@ -70,7 +70,7 @@ void test_syllable_parts() {
     assert(s3.vowel == U"yê");
     assert(s3.final_c == U"n");
 
-    std::cout << "  [PASS] Syllable component parsing" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Syllable component parsing" << std::endl;
 }
 
 /**
@@ -95,5 +95,5 @@ void test_orthography_rules() {
     assert(Validator::is_valid(p.parse(U"go")));
     assert(!Validator::is_valid(p.parse(U"gho")));
 
-    std::cout << "  [PASS] Orthographic rule validation" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Orthographic rule validation" << std::endl;
 }

@@ -71,7 +71,7 @@ void assert_typing_edge(Engine& engine, const std::string& keys, const std::stri
             std::cerr << "\n--- Debug Logs for Failed Test ---\n"
                       << local_logs << "----------------------------------\n";
         }
-        std::cerr << "[FAIL] Input: '" << keys << "'\n"
+        std::cerr << "\033[1;31m[FAIL]\033[0m Input: '" << keys << "'\n"
                   << "       Expected: '" << expected << "'\n"
                   << "       Actual:   '" << actual << "'\n";
         assert(false);
@@ -122,7 +122,7 @@ void test_validator_edge_cases() {
     assert(Validator::is_valid(p.parse(U"ua")));
     assert(!Validator::is_valid(p.parse(U"iang")));
 
-    std::cout << "  [PASS] Validator direct edge cases" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Validator direct edge cases" << std::endl;
 }
 
 // ============================================================================
@@ -156,7 +156,7 @@ void test_complex_syllables() {
     assert_typing_edge(engine, "nghieeng", "nghiêng");
     assert_typing_edge(engine, "huowu", "hươu");
 
-    std::cout << "  [PASS] Engine complex syllables" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Engine complex syllables" << std::endl;
 }
 
 /**

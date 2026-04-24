@@ -35,7 +35,7 @@ void assert_capi_typing(lotus_engine_t* engine, const std::string& input,
         res_u32.push_back(res.chars[i]);
     std::string got = unicode::to_utf8(res_u32);
     if (got != expected) {
-        printf("  [FAIL] C-API: typing '%s' expected '%s' got '%s'\n", input.c_str(),
+        printf("  \033[1;31m[FAIL]\033[0m C-API: typing '%s' expected '%s' got '%s'\n", input.c_str(),
                expected.c_str(), got.c_str());
         assert(false);
     }
@@ -65,5 +65,5 @@ void test_capi_integration() {
     assert_capi_typing(engine, "vie65t", "việt");
 
     lotus_engine_destroy(engine);
-    std::cout << "  [PASS] C-API integration suite" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m C-API integration suite" << std::endl;
 }

@@ -77,7 +77,7 @@ void assert_typing(Engine& engine, const std::string& keys, const std::string& e
             std::cerr << "\n--- Debug Logs for Failed Test ---\n"
                       << local_logs << "----------------------------------\n";
         }
-        std::cerr << "[FAIL] Input: '" << keys << "'\n"
+        std::cerr << "\033[1;31m[FAIL]\033[0m Input: '" << keys << "'\n"
                   << "       Expected: '" << expected << "'\n"
                   << "       Actual:   '" << actual << "'\n";
         assert(false);
@@ -96,7 +96,7 @@ void test_engine_telex_basic() {
     assert_typing(engine, "h", "h");
     assert_typing(engine, "ha", "ha");
     assert_typing(engine, "has", "há");
-    std::cout << "  [PASS] Basic Telex transformations" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Basic Telex transformations" << std::endl;
 }
 
 /**
@@ -109,7 +109,7 @@ void test_engine_telex_vowels() {
     assert_typing(engine, "oo", "ô");
     assert_typing(engine, "Vieejc", "Việc");
     assert_typing(engine, "Vieej", "Việ");
-    std::cout << "  [PASS] Telex vowel markers (â, ê, ô)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Telex vowel markers (â, ê, ô)" << std::endl;
 }
 
 /**
@@ -125,7 +125,7 @@ void test_engine_telex_hooks() {
     assert_typing(engine, "duongw", "dương");
     assert_typing(engine, "muaw", "mưa");
     assert_typing(engine, "what", "what");  // English stability
-    std::cout << "  [PASS] Telex hook markers (ư, ơ, ă)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Telex hook markers (ư, ơ, ă)" << std::endl;
 }
 
 /**
@@ -134,7 +134,7 @@ void test_engine_telex_hooks() {
 void test_engine_telex_stroke() {
     Engine engine;
     assert_typing(engine, "dd", "đ");
-    std::cout << "  [PASS] Telex stroke marker (đ)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Telex stroke marker (đ)" << std::endl;
 }
 
 // ============================================================================
@@ -164,7 +164,7 @@ void test_engine_flexible_telex() {
     assert_typing(engine, "viecje ", "việc ");
     assert_typing(engine, "dosd ", "đó ");
 
-    std::cout << "  [PASS] Flexible composition (late markers, floating 'd')" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Flexible composition (late markers, floating 'd')" << std::endl;
 }
 
 /**
@@ -180,7 +180,7 @@ void test_engine_telex_revert() {
     assert_typing(engine, "quass", "quas");
     assert_typing(engine, "dd", "đ");
     assert_typing(engine, "ddd", "dd");
-    std::cout << "  [PASS] Telex revert/escape logic" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Telex revert/escape logic" << std::endl;
 }
 
 /**
@@ -189,7 +189,7 @@ void test_engine_telex_revert() {
 void test_engine_telex_recovery() {
     Engine engine;
     assert_typing(engine, "hasz", "ha");
-    std::cout << "  [PASS] Tone canceling (z-recovery)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Tone canceling (z-recovery)" << std::endl;
 }
 
 // ============================================================================
@@ -221,7 +221,7 @@ void test_engine_production_features() {
     assert_typing(engine, "jump ", "jump ");
     assert_typing(engine, "win ", "win ");
 
-    std::cout << "  [PASS] Workflow features (Recovery, English Restoration)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Workflow features (Recovery, English Restoration)" << std::endl;
 }
 
 /**
@@ -236,7 +236,7 @@ void test_engine_shortcuts() {
     assert_typing(engine, "Vn ", "Việt Nam ");
     assert_typing(engine, "VN ", "VIỆT NAM ");
 
-    std::cout << "  [PASS] Text expansion shortcuts" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Text expansion shortcuts" << std::endl;
 }
 
 /**
@@ -266,7 +266,7 @@ void test_engine_smart_typing() {
     std::string result = unicode::to_utf8(screen);
     assert(result == "Abc. E");
 
-    std::cout << "  [PASS] Smart typing (Auto-Caps, Double-Space)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Smart typing (Auto-Caps, Double-Space)" << std::endl;
 }
 
 /**
@@ -308,7 +308,7 @@ void test_engine_punctuation_backspace() {
         screen.push_back(res2.chars[i]);
     assert(unicode::to_utf8(screen) == "th");
 
-    std::cout << "  [PASS] Punctuation backspace handling" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Punctuation backspace handling" << std::endl;
 }
 
 // ============================================================================
@@ -349,7 +349,7 @@ void test_engine_reproduction_user() {
     assert_typing(engine, "exit", "exit");
     assert_typing(engine, "taxi", "taxi");
 
-    std::cout << "  [PASS] User reproduction case" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m User reproduction case" << std::endl;
 }
 void test_engine_backspace_chaining() {
     Engine engine;
@@ -361,7 +361,7 @@ void test_engine_backspace_chaining() {
     assert_typing(engine, "huowngf\b", "hườn");
     assert_typing(engine, "tuyeens\b", "tuyế");
     assert_typing(engine, "dduowngf\b", "đườn");
-    std::cout << "  [PASS] Interactive backspace chaining" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Interactive backspace chaining" << std::endl;
 }
 
 /**
@@ -376,7 +376,7 @@ void test_engine_linguistic_regression() {
     assert_typing(engine, "gia", "gia");
     assert_typing(engine, "giar", "giả");
     assert_typing(engine, "quaf", "quà");
-    std::cout << "  [PASS] Linguistic regression suite" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Linguistic regression suite" << std::endl;
 }
 
 /**
@@ -392,7 +392,7 @@ void test_engine_stuck_word_bug() {
     assert(unicode::to_utf8(screen) == "cho tôi");
     type_into(engine, screen, "s");
     assert(unicode::to_utf8(screen) == "cho tối");
-    std::cout << "  [PASS] Stuck word boundary bug regression" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Stuck word boundary bug regression" << std::endl;
 }
 
 /**
@@ -409,7 +409,7 @@ void test_engine_rebuild_state() {
     screen = unicode::to_utf32("xin");
     type_into(engine, screen, "a");
     assert(unicode::to_utf8(screen) == "xina");
-    std::cout << "  [PASS] State reconstruction (rebuild_from_text)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m State reconstruction (rebuild_from_text)" << std::endl;
 }
 
 /**
@@ -425,7 +425,7 @@ void test_engine_telex_free_w() {
     assert_typing(engine, "tw", "tư");
     engine.set_free_w(FreeWOption::OFF);
     assert_typing(engine, "w", "w");
-    std::cout << "  [PASS] Standalone 'w' key behavior" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Standalone 'w' key behavior" << std::endl;
 }
 
 /**
@@ -438,7 +438,7 @@ void test_engine_manual_hook_keys() {
     assert_typing(engine, "]", "ơ");
     assert_typing(engine, "{", "Ư");
     assert_typing(engine, "}", "Ơ");
-    std::cout << "  [PASS] Manual hook keys (brackets)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Manual hook keys (brackets)" << std::endl;
 }
 
 /**
@@ -460,7 +460,7 @@ void test_engine_khuyru_regression() {
     assert_typing(engine, "khuru", "khủu");
     assert_typing(engine, "khuryu", "khuỷu");
 
-    std::cout << "  [PASS] 'khuỷu' regression (khuyru)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m 'khuỷu' regression (khuyru)" << std::endl;
 }
 
 /**
@@ -479,7 +479,7 @@ void test_engine_telex_escapes() {
     assert_typing(engine, "curx", "cũ");
     assert_typing(engine, "huowngff", "hươngf");
 
-    std::cout << "  [PASS] Telex tone escapes (mixxi, hasss)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Telex tone escapes (mixxi, hasss)" << std::endl;
 }
 
 /**
@@ -498,7 +498,7 @@ void test_engine_english_gating() {
     assert_typing(engine, "cs", "cs");
     assert_typing(engine, "ngs", "ngs");
 
-    std::cout << "  [PASS] Invalid Initial Gate (English protection)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Invalid Initial Gate (English protection)" << std::endl;
 }
 
 void test_engine_expect_bug() {
@@ -508,5 +508,5 @@ void test_engine_expect_bug() {
     assert_typing(engine, "context", "context");
     assert_typing(engine, "text", "text");
     assert_typing(engine, "ngheexnh", "nghễnh");
-    std::cout << "  [PASS] 'expect' auto-restoration bug" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m 'expect' auto-restoration bug" << std::endl;
 }

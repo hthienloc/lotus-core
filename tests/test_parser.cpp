@@ -30,7 +30,7 @@ void test_parser_basic() {
     assert(s2.glide.has_value() && s2.glide.value() == 'o');
     assert(s2.vowel == U"a");
 
-    std::cout << "  [PASS] Basic syllable parsing" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Basic syllable parsing" << std::endl;
 }
 
 /**
@@ -47,5 +47,5 @@ void test_parser_special() {
     assert(s2.initial == U"gi");
     assert(s2.vowel == U"ai");
 
-    std::cout << "  [PASS] Special syllable cases (qu, gi)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Special syllable cases (qu, gi)" << std::endl;
 }

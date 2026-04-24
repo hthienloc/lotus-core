@@ -30,17 +30,22 @@ void test_validator_basic() {
 
     // Invalid consonant
     s.initial = U"z";
-    assert(!Validator::is_valid(s, &reason));
-    // std::cout << "    Diagnostics [z]: " << reason << std::endl;
+    bool r_z = Validator::is_valid(s, &reason);
+    if (r_z != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [z]: " << reason << std::endl;
+    }
+    assert(r_z == false);
 
     // Invalid vowel pattern
     s.initial = U"h";
     s.vowel = U"io";  // In Vietnamese "io" is not a standard vowel pattern alone
-    if (!Validator::is_valid(s, &reason)) {
-        std::cout << "    Diagnostics [" << unicode::to_utf8(s.vowel) << "]: " << reason << std::endl;
+    bool r_io = Validator::is_valid(s, &reason);
+    if (r_io != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [" << unicode::to_utf8(s.vowel) << "]: " << reason << std::endl;
     }
+    assert(r_io == false);
 
-    std::cout << "  [PASS] Basic validator checks" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Basic validator checks" << std::endl;
 }
 
 /**
@@ -53,37 +58,64 @@ void test_validator_complex() {
     // Complex cases
     assert(Validator::is_valid(p.parse(U"ca")));
     assert(Validator::is_valid(p.parse(U"ke")));
-    if (!Validator::is_valid(p.parse(U"ce"), &reason)) 
-        std::cout << "    Diagnostics [ce]: " << reason << std::endl;
-    if (!Validator::is_valid(p.parse(U"ka"), &reason))
-        std::cout << "    Diagnostics [ka]: " << reason << std::endl;
+    bool r_ce = Validator::is_valid(p.parse(U"ce"), &reason);
+    if (r_ce != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [ce]: " << reason << std::endl;
+    }
+    assert(r_ce == false);
+    bool r_ka = Validator::is_valid(p.parse(U"ka"), &reason);
+    if (r_ka != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [ka]: " << reason << std::endl;
+    }
+    assert(r_ka == false);
     
     // Spelling rules: g/gh
     assert(Validator::is_valid(p.parse(U"ga")));
     assert(Validator::is_valid(p.parse(U"ghe")));
-    if (!Validator::is_valid(p.parse(U"ge"), &reason))
-        std::cout << "    Diagnostics [ge]: " << reason << std::endl;
-    if (!Validator::is_valid(p.parse(U"gha"), &reason))
-        std::cout << "    Diagnostics [gha]: " << reason << std::endl;
+    bool r_ge = Validator::is_valid(p.parse(U"ge"), &reason);
+    if (r_ge != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [ge]: " << reason << std::endl;
+    }
+    assert(r_ge == false);
+    bool r_gha = Validator::is_valid(p.parse(U"gha"), &reason);
+    if (r_gha != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [gha]: " << reason << std::endl;
+    }
+    assert(r_gha == false);
 
     // Spelling rules: ng/ngh
     assert(Validator::is_valid(p.parse(U"nga")));
     assert(Validator::is_valid(p.parse(U"nghe")));
-    if (!Validator::is_valid(p.parse(U"nge"), &reason))
-        std::cout << "    Diagnostics [nge]: " << reason << std::endl;
-    if (!Validator::is_valid(p.parse(U"ngha"), &reason))
-        std::cout << "    Diagnostics [ngha]: " << reason << std::endl;
+    bool r_nge = Validator::is_valid(p.parse(U"nge"), &reason);
+    if (r_nge != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [nge]: " << reason << std::endl;
+    }
+    assert(r_nge == false);
+    bool r_ngha = Validator::is_valid(p.parse(U"ngha"), &reason);
+    if (r_ngha != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [ngha]: " << reason << std::endl;
+    }
+    assert(r_ngha == false);
 
     // Rule 6: Final consonant constraints
     assert(Validator::is_valid(p.parse(U"anh")));
     assert(Validator::is_valid(p.parse(U"êch")));
     assert(Validator::is_valid(p.parse(U"inh")));
-    if (!Validator::is_valid(p.parse(U"ech"), &reason))
-        std::cout << "    Diagnostics [ech]: " << reason << std::endl;
-    if (!Validator::is_valid(p.parse(U"och"), &reason))
-        std::cout << "    Diagnostics [och]: " << reason << std::endl;
-    if (!Validator::is_valid(p.parse(U"eng"), &reason))
-        std::cout << "    Diagnostics [eng]: " << reason << std::endl;
+    bool r_ech = Validator::is_valid(p.parse(U"ech"), &reason);
+    if (r_ech != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [ech]: " << reason << std::endl;
+    }
+    assert(r_ech == false);
+    bool r_och = Validator::is_valid(p.parse(U"och"), &reason);
+    if (r_och != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [och]: " << reason << std::endl;
+    }
+    assert(r_och == false);
+    bool r_eng = Validator::is_valid(p.parse(U"eng"), &reason);
+    if (r_eng != false) {
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [eng]: " << reason << std::endl;
+    }
+    assert(r_eng == false);
 
-    std::cout << "  [PASS] Complex spelling rules" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Complex spelling rules" << std::endl;
 }

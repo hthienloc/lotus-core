@@ -52,7 +52,7 @@ void test_engine_vni_basic() {
     assert(type_vni(engine, "a3") == "ả");
     assert(type_vni(engine, "a4") == "ã");
     assert(type_vni(engine, "a5") == "ạ");
-    std::cout << "  [PASS] Basic VNI tones" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Basic VNI tones" << std::endl;
 }
 
 /**
@@ -67,7 +67,7 @@ void test_engine_vni_vowels() {
     assert(type_vni(engine, "o7") == "\xC6\xA1");  // ơ
     assert(type_vni(engine, "a8") == "\xC4\x83");  // ă
     assert(type_vni(engine, "d9") == "\xC4\x91");  // đ
-    std::cout << "  [PASS] VNI vowel markers and stroke" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m VNI vowel markers and stroke" << std::endl;
 }
 
 /**
@@ -79,5 +79,5 @@ void test_engine_vni_combined() {
     assert(type_vni(engine, "o72") == "ờ");           // ơ + huyền
     assert(type_vni(engine, "duong795") == "đượng");  // đ + ư + ơ + nặng + ng
     assert(type_vni(engine, "Vie65c") == "Việc");
-    std::cout << "  [PASS] Combined VNI transformations" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Combined VNI transformations" << std::endl;
 }

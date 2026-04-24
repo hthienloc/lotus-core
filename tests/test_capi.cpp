@@ -50,7 +50,7 @@ void test_capi_basic() {
     assert(res.chars[1] == 0x00E1);
 
     lotus_engine_destroy(engine);
-    printf("  [PASS] C-API basic operations\n");
+    printf("  \033[1;32m[PASS]\033[0m C-API basic operations\n");
 }
 
 /**
@@ -80,7 +80,7 @@ void test_capi_tone_style() {
     assert(res.chars[2] == 'a');
 
     lotus_engine_destroy(engine);
-    printf("  [PASS] C-API tone style configuration\n");
+    printf("  \033[1;32m[PASS]\033[0m C-API tone style configuration\n");
 }
 
 /**

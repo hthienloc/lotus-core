@@ -85,7 +85,7 @@ int main() {
     std::cout << "Running Vietnamese Engine Tests..." << std::endl;
 
     // --- Core ---
-    std::cout << "\n[ Core Tests ]\n";
+    std::cout << "\n\033[1;34m[ Core Tests ]\033[0m\n";
     test_syllable_to_string_basic();
     test_syllable_is_empty();
     test_vowel_reordering();
@@ -100,7 +100,7 @@ int main() {
     test_complex_diphthongs();
 
     // --- Engine ---
-    std::cout << "\n[ Engine Tests ]\n";
+    std::cout << "\n\033[1;34m[ Engine Tests ]\033[0m\n";
     test_engine_telex_basic();
     test_engine_expect_bug();
     test_engine_telex_vowels();
@@ -128,18 +128,18 @@ int main() {
     test_engine_reproduction_user();
 
     // --- C-API ---
-    std::cout << "\n[ C-API Tests ]\n";
+    std::cout << "\n\033[1;34m[ C-API Tests ]\033[0m\n";
     test_capi_run_all();
     test_capi_integration();
 
     // --- Edge Cases ---
-    std::cout << "\n[ Edge Case Tests ]\n";
+    std::cout << "\n\033[1;34m[ Edge Case Tests ]\033[0m\n";
     test_edge_cases_run();
 
     // --- Features ---
-    std::cout << "\n[ Feature Tests ]\n";
+    std::cout << "\n\033[1;34m[ Feature Tests ]\033[0m\n";
     test_features();
 
-    std::cout << "\nAll tests PASSED!" << std::endl;
+    std::cout << "\n\033[1;32mAll tests PASSED!\033[0m" << std::endl;
     return 0;
 }

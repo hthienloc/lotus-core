@@ -23,7 +23,7 @@ void test_syllable_to_string_basic() {
     s.initial = U"h";
     s.vowel = U"a";
     assert(s.to_string() == "ha");
-    std::cout << "  [PASS] Syllable basic to_string" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Syllable basic to_string" << std::endl;
 }
 
 /**
@@ -34,7 +34,7 @@ void test_syllable_is_empty() {
     assert(s.is_empty());
     s.initial = U"b";
     assert(!s.is_empty());
-    std::cout << "  [PASS] Syllable is_empty check" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Syllable is_empty check" << std::endl;
 }
 
 /**
@@ -74,5 +74,5 @@ void test_vowel_reordering() {
     assert(s6.glide.has_value() && s6.glide.value() == 'o');
     assert(s6.vowel == U"aI");
 
-    std::cout << "  [PASS] Syllable vowel reordering (Bamboo-style)" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Syllable vowel reordering (Bamboo-style)" << std::endl;
 }
