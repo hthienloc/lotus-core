@@ -123,8 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return; 
         }
 
-        e.preventDefault();
-
         let keyChar = 0;
         if (e.key === 'Backspace') {
             keyChar = 8;
@@ -140,54 +138,60 @@ document.addEventListener("DOMContentLoaded", () => {
         // Call JS wrapper function
         Module._lotus_engine_process_key_js(engine, keyChar, isShift, isCaps, resultPtr);
 
+        // Memory Dump & Verification
+        let hexDump = [];
+        for (let i = 0; i < 132; i++) {
+            hexDump.push(Module.HEAPU8[resultPtr + i].toString(16).padStart(2, '0'));
+        }
+        uiLog('debug', "Memory Dump (132 bytes): " + hexDump.join(' '));
+
         // Read struct fields
         const action = Module.HEAPU8[resultPtr + 0];
         const backspaceCount = Module.HEAPU8[resultPtr + 1];
         const insertCount = Module.HEAPU8[resultPtr + 2];
         
-        // Manual pass-through implementation since preventDefault() is called
+        // Pass-through implementation
         if (action === 0 && backspaceCount === 0 && insertCount === 0) {
-             const start = editor.selectionStart;
-             const end = editor.selectionEnd;
-             
-             if (keyChar === 8) { // Backspace
-                 if (start === end && start > 0) {
-                     editor.value = editor.value.substring(0, start - 1) + editor.value.substring(end);
-                     editor.selectionStart = editor.selectionEnd = start - 1;
-                 } else if (start !== end) {
-                     editor.value = editor.value.substring(0, start) + editor.value.substring(end);
-                     editor.selectionStart = editor.selectionEnd = start;
-                 }
-             } else { // Normal character pass-through (e.g. Space, Enter, letters)
-                 const charToInsert = (keyChar === 10) ? "\n" : e.key;
-                 editor.value = editor.value.substring(0, start) + charToInsert + editor.value.substring(end);
-                 editor.selectionStart = editor.selectionEnd = start + charToInsert.length;
-             }
+             // Let the browser handle standard typing, spaces, backspaces, and cursor moving naturally
              return;
         }
 
-        // Standard Engine Transformation
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-
-        // Apply backspaces
-        let newValue = editor.value.substring(0, start - backspaceCount) + editor.value.substring(end);
-        let newCursorPos = start - backspaceCount;
+        e.preventDefault();
 
         // Build string to insert
         let insertStr = "";
         for (let i = 0; i < insertCount; i++) {
             // Correct the HEAPU32 access for word-indexed array. The char array starts at resultPtr + 4.
             const charCode = Module.HEAPU32[(resultPtr >> 2) + 1 + i];
-            insertStr += String.fromCodePoint(charCode);
+            if (charCode !== 0) {
+                insertStr += String.fromCodePoint(charCode);
+            }
         }
 
-        // Insert new string
-        newValue = newValue.substring(0, newCursorPos) + insertStr + newValue.substring(newCursorPos);
-        newCursorPos += insertStr.length;
+        // Try native commands
+        editor.focus();
+        if (backspaceCount > 0) {
+            const start = editor.selectionStart;
+            // Native deletion by expanding selection
+            editor.setSelectionRange(start - backspaceCount, start);
+            let deleted = document.execCommand('delete', false, null);
+            if (!deleted) {
+                // Fallback
+                const currentEnd = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start - backspaceCount) + editor.value.substring(currentEnd);
+                editor.selectionStart = editor.selectionEnd = start - backspaceCount;
+            }
+        }
 
-        // Update DOM
-        editor.value = newValue;
-        editor.selectionStart = editor.selectionEnd = newCursorPos;
+        if (insertStr.length > 0) {
+            let inserted = document.execCommand('insertText', false, insertStr);
+            if (!inserted) {
+                // Fallback
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + insertStr + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + insertStr.length;
+            }
+        }
     });
 });
