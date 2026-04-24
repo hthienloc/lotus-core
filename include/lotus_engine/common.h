@@ -50,4 +50,12 @@ enum class MacroMode : uint8_t {
     ADAPTIVE = 3  // Match case-insensitively, return transformed case.
 };
 
+/**
+ * @brief Backspace behavior styles.
+ */
+enum class BackspaceStyle : uint8_t {
+    KEYSTROKE = 0, // Removes exactly one raw keystroke (Legacy standard)
+    SURGICAL = 1   // Removes the last visual character but preserves diacritics (Modern standard)
+};
+
 }  // namespace lotus_engine

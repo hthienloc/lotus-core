@@ -72,6 +72,11 @@ class Engine {
     /** @brief Returns the current macro expansion mode. */
     MacroMode get_macro_mode() const { return macro_mode; }
 
+    /** @brief Sets the active backspace style. */
+    void set_backspace_style(BackspaceStyle style) { this->backspace_style = style; }
+    /** @brief Returns the current backspace style. */
+    BackspaceStyle get_backspace_style() const { return backspace_style; }
+
     /**
      * @brief Processes a single keypress and returns the required UI action.
      * @param key The UTF-32 codepoint of the pressed key.
@@ -142,6 +147,7 @@ class Engine {
     bool auto_capitalize = false;  ///< Whether auto-capitalize after sentences is enabled.
     MacroMode macro_mode = MacroMode::ADAPTIVE;   ///< The active macro expansion mode.
     bool allow_non_standard_initials = false;     ///< Whether non-standard initials (z, w, j, f) are allowed.
+    BackspaceStyle backspace_style = BackspaceStyle::SURGICAL; ///< The active backspace style.
 
     // Rule-based English detection using phonotactic linguistics.
     bool is_english_word(const std::string& word) const;

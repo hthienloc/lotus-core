@@ -355,6 +355,21 @@ void test_engine_reproduction_user() {
 }
 void test_engine_backspace_chaining() {
     Engine engine;
+    engine.set_backspace_style(BackspaceStyle::KEYSTROKE);
+    assert_typing(engine, "ha cho \b", "ha cho");
+    assert_typing(engine, "ha cho \b\b\b\b", "ha ");
+    assert_typing(engine, "ha cho \b\b\b\b\b", "ha");
+    assert_typing(engine, "duw\b", "du");
+    assert_typing(engine, "tuas\b", "tua");
+    assert_typing(engine, "huowngf\b", "hương");
+    assert_typing(engine, "tuyeens\b", "tuyên");
+    assert_typing(engine, "dduowngf\b", "đương");
+    std::cout << "  \033[1;32m[PASS]\033[0m Interactive backspace chaining (Keystroke)" << std::endl;
+}
+
+void test_engine_surgical_backspace() {
+    Engine engine;
+    engine.set_backspace_style(BackspaceStyle::SURGICAL); // explicitly ensure it's surgical
     assert_typing(engine, "ha cho \b", "ha cho");
     assert_typing(engine, "ha cho \b\b\b\b", "ha ");
     assert_typing(engine, "ha cho \b\b\b\b\b", "ha");
@@ -363,7 +378,7 @@ void test_engine_backspace_chaining() {
     assert_typing(engine, "huowngf\b", "hườn");
     assert_typing(engine, "tuyeens\b", "tuyế");
     assert_typing(engine, "dduowngf\b", "đườn");
-    std::cout << "  \033[1;32m[PASS]\033[0m Interactive backspace chaining" << std::endl;
+    std::cout << "  \033[1;32m[PASS]\033[0m Interactive backspace chaining (Surgical)" << std::endl;
 }
 
 /**

@@ -47,6 +47,7 @@ void test_engine_telex_revert();
 void test_engine_shortcuts();
 void test_engine_production_features();
 void test_engine_backspace_chaining();
+void test_engine_surgical_backspace();
 void test_engine_vni_basic();
 void test_engine_vni_vowels();
 void test_engine_vni_combined();
@@ -111,6 +112,7 @@ int main() {
     test_engine_shortcuts();
     test_engine_production_features();
     test_engine_backspace_chaining();
+    test_engine_surgical_backspace();
     test_engine_vni_basic();
     test_engine_vni_vowels();
     test_engine_vni_combined();

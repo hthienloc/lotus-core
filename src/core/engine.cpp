@@ -393,7 +393,12 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
     if (!buffer.empty()) {
         std::string word = unicode::to_utf8(last_committed_text);
         Syllable s = SyllableParser::parse(unicode::to_utf32(word));
-        if (Validator::is_valid(s)) {
+        
+        bool is_english_fallback = auto_restore && is_english_word(unicode::to_utf8(buffer));
+
+        if (backspace_style == BackspaceStyle::KEYSTROKE || is_english_fallback) {
+            buffer.pop_back();
+        } else if (Validator::is_valid(s)) {
             s.remove_last_char();
             std::vector<char32_t> keys = s.to_keys(method);
             buffer.clear();
