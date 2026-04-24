@@ -138,17 +138,26 @@ document.addEventListener("DOMContentLoaded", () => {
         // Call JS wrapper function
         Module._lotus_engine_process_key_js(engine, keyChar, isShift, isCaps, resultPtr);
 
+        // Fallback robust memory read for headless tests
+        const heap8 = Module.HEAPU8 || window.HEAPU8;
+        const heap32 = Module.HEAPU32 || window.HEAPU32;
+
+        if (!heap8 || !heap32) {
+             console.error("WASM HEAP arrays missing. Module not fully loaded.");
+             return;
+        }
+
         // Memory Dump & Verification
         let hexDump = [];
         for (let i = 0; i < 132; i++) {
-            hexDump.push(Module.HEAPU8[resultPtr + i].toString(16).padStart(2, '0'));
+            hexDump.push(heap8[resultPtr + i].toString(16).padStart(2, '0'));
         }
         uiLog('debug', "Memory Dump (132 bytes): " + hexDump.join(' '));
 
         // Read struct fields
-        const action = Module.HEAPU8[resultPtr + 0];
-        const backspaceCount = Module.HEAPU8[resultPtr + 1];
-        const insertCount = Module.HEAPU8[resultPtr + 2];
+        const action = heap8[resultPtr + 0];
+        const backspaceCount = heap8[resultPtr + 1];
+        const insertCount = heap8[resultPtr + 2];
         
         // Pass-through implementation
         if (action === 0 && backspaceCount === 0 && insertCount === 0) {
@@ -162,36 +171,31 @@ document.addEventListener("DOMContentLoaded", () => {
         let insertStr = "";
         for (let i = 0; i < insertCount; i++) {
             // Correct the HEAPU32 access for word-indexed array. The char array starts at resultPtr + 4.
-            const charCode = Module.HEAPU32[(resultPtr >> 2) + 1 + i];
+            const charCode = heap32[(resultPtr >> 2) + 1 + i];
             if (charCode !== 0) {
                 insertStr += String.fromCodePoint(charCode);
             }
         }
 
-        // Try native commands
+        // Apply text updates using robust DOM manipulation
         editor.focus();
-        if (backspaceCount > 0) {
-            const start = editor.selectionStart;
-            // Native deletion by expanding selection
-            editor.setSelectionRange(start - backspaceCount, start);
-            let deleted = document.execCommand('delete', false, null);
-            if (!deleted) {
-                // Fallback
-                const currentEnd = editor.selectionEnd;
-                editor.value = editor.value.substring(0, start - backspaceCount) + editor.value.substring(currentEnd);
-                editor.selectionStart = editor.selectionEnd = start - backspaceCount;
-            }
-        }
-
-        if (insertStr.length > 0) {
-            let inserted = document.execCommand('insertText', false, insertStr);
-            if (!inserted) {
-                // Fallback
-                const start = editor.selectionStart;
-                const end = editor.selectionEnd;
-                editor.value = editor.value.substring(0, start) + insertStr + editor.value.substring(end);
-                editor.selectionStart = editor.selectionEnd = start + insertStr.length;
-            }
-        }
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        
+        // Calculate the positions
+        const deleteStart = Math.max(0, start - backspaceCount);
+        
+        // Build the new value:
+        // 1. Prefix: Everything before the start of the deletion range
+        // 2. New string to insert
+        // 3. Suffix: Everything after the current selection end
+        const prefix = editor.value.substring(0, deleteStart);
+        const suffix = editor.value.substring(end);
+        
+        editor.value = prefix + insertStr + suffix;
+        
+        // Update the cursor position
+        const newCursorPos = deleteStart + insertStr.length;
+        editor.setSelectionRange(newCursorPos, newCursorPos);
     });
 });
