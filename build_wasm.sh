@@ -19,7 +19,7 @@ emcc src/core/*.cpp \
      -std=c++20 \
      -O3 \
      -s EXPORTED_FUNCTIONS="['_lotus_engine_create', '_lotus_engine_destroy', '_lotus_engine_process_key', '_lotus_engine_process_key_js', '_lotus_engine_reset', '_lotus_engine_set_method', '_lotus_engine_set_tone_style', '_lotus_engine_set_free_w', '_lotus_engine_set_std_uo', '_lotus_engine_add_shortcut', '_lotus_engine_set_log_callback', '_lotus_engine_set_auto_restore', '_malloc', '_free']" \
-     -s EXPORTED_RUNTIME_METHODS="['ccall', 'cwrap', 'addFunction', 'UTF8ToString']" \
+     -s EXPORTED_RUNTIME_METHODS="['HEAPU8', 'getValue', 'setValue', 'ccall', 'cwrap', 'addFunction', 'UTF8ToString']" \
      -s ALLOW_TABLE_GROWTH=1 \
      -o web/lotus_engine.js
 

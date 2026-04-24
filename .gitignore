@@ -68,3 +68,4 @@ _install/
 dist/
 *.tar.gz
 *.zip
+node_modules/
