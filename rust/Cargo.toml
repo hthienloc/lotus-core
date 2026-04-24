@@ -1,0 +1,10 @@
+[package]
+name = "lotus-engine"
+version = "1.0.0"
+edition = "2021"
+authors = ["Huỳnh Thiện Lộc"]
+description = "A safe Rust wrapper for the Lotus Engine Vietnamese Input Method Core."
+license = "MIT"
+
+[dependencies]
+libc = "0.2"
