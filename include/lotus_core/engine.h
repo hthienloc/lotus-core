@@ -4,6 +4,7 @@
 #include "lotus_core/types.h"
 #include "lotus_core/shortcut_manager.h"
 #include "lotus_core/context_tracker.h"
+#include "lotus_core/input_dispatcher.h"
 
 #include <functional>
 #include <string>

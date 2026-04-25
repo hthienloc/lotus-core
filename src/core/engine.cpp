@@ -144,27 +144,42 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     handle_hook_key_shortcuts(key);
 
     EngineResult res{};
+    InputCategory category = InputDispatcher::categorize(key, mods);
 
-    if (handle_navigation(key, mods, res))
-        return res;
-    if (handle_backspace(key, mods, res))
-        return res;
-    if (handle_smart_typing(key, mods, res) && res.action != EngineAction::PASS)
-        return res;
+    switch (category) {
+        case InputCategory::NAVIGATION:
+            handle_navigation(key, mods, res);
+            return res;
 
-    if (key != 0 && state.buffer.empty()) {
-        state.last_committed_text.clear();
+        case InputCategory::BACKSPACE:
+            handle_backspace(key, mods, res);
+            return res;
+
+        case InputCategory::BOUNDARY:
+            if (handle_smart_typing(key, mods, res) && res.action != EngineAction::PASS)
+                return res;
+            if (key != 0 && state.buffer.empty()) {
+                state.last_committed_text.clear();
+            }
+            if (handle_boundary(key, res))
+                return res;
+            break;
+
+        case InputCategory::CHARACTER:
+            if (handle_smart_typing(key, mods, res) && res.action != EngineAction::PASS)
+                return res;
+            if (key != 0 && state.buffer.empty()) {
+                state.last_committed_text.clear();
+            }
+            if (handle_manual_tone_escape(key, res))
+                return res;
+            if (key != 0) {
+                state.buffer.push_back(key);
+                context_tracker.set_at_sentence_start(false);
+            }
+            break;
     }
 
-    if (handle_boundary(key, res))
-        return res;
-    if (handle_manual_tone_escape(key, res))
-        return res;
-
-    if (key != 0) {
-        state.buffer.push_back(key);
-        context_tracker.set_at_sentence_start(false);
-    }
 
     std::string raw_word = unicode::to_utf8(state.buffer);
     return transform_buffer(key, raw_word);
@@ -375,7 +390,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
 
     std::u32string recovered = recovered_opt.value();
     char32_t rc = recovered[0];
-    bool is_boundary = (recovered.size() == 1 && ContextTracker::is_word_boundary(rc));
+    bool is_boundary = (recovered.size() == 1 && InputDispatcher::is_word_boundary(rc));
 
     if (is_boundary) {
         // If we reclaimed a boundary, we just set it as the active state
@@ -408,7 +423,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
  * @return True if the key was a boundary and was handled.
  */
 bool Engine::handle_boundary(char32_t key, EngineResult& result) {
-    if (!ContextTracker::is_word_boundary(key))
+    if (!InputDispatcher::is_word_boundary(key))
         return false;
 
     std::string raw_word = unicode::to_utf8(state.buffer);

@@ -18,6 +18,7 @@ add_library(lotus_core_core STATIC
     src/core/parser/coda_parser.cpp
     src/core/engine.cpp
     src/core/context_tracker.cpp
+    src/core/input_dispatcher.cpp
     src/features/shortcut_manager.cpp
     src/features/smart_typing.cpp
     src/linguistics/linguistics.cpp
@@ -37,6 +38,7 @@ add_library(lotus_core_core_shared SHARED
     src/core/parser/coda_parser.cpp
     src/core/engine.cpp
     src/core/context_tracker.cpp
+    src/core/input_dispatcher.cpp
     src/features/shortcut_manager.cpp
     src/features/smart_typing.cpp
     src/linguistics/linguistics.cpp
