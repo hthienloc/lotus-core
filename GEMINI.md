@@ -11,6 +11,7 @@ This file defines the foundational constraints and operational standards for the
 ### 1. Architectural Integrity (READ THIS FIRST)
 
 - **Simplicity Over Performance**: Prioritize clean, readable, and maintainable code over micro-optimizations. Only optimize logic after empirical evidence (via `bench`) suggests a bottleneck.
+- **Avoid Over-engineering**: Every new architectural component (Graphs, Matrices, complex Pipelines) must demonstrate that it either makes the code more intuitive or significantly more concise. A solution that increases performance by 20% but doubles code complexity will be rejected.
 - **Modularity is Non-Negotiable**: Keep the engine decomposed. The `Engine::process_key` function must remain a high-level orchestrator. New features (e.g., new smart typing rules) must be added as private helper methods, not directly into the main loop.
 - **Table-Driven Logic**: Vietnamese character transformations (casing, tones, NFC) MUST use the data-driven lookup tables in `include/lotus_core/unicode.h`. Avoid re-introducing long `switch` statements or manual if-else chains for character mapping.
 - **Rule-Based Validation**: Linguistic rules in `Validator::is_valid` must be encapsulated in semantic helper methods (e.g., `check_front_vowel_affinity`).

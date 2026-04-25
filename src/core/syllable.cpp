@@ -38,7 +38,7 @@ std::string Syllable::to_string(ToneStyle style) const {
     if (is_empty())
         return "";
 
-    std::u32string res = initial;
+    std::u32string res = initial.to_u32string();
 
     if (tone != Tone::NONE) {
         bool tone_placed = false;
@@ -49,7 +49,7 @@ std::string Syllable::to_string(ToneStyle style) const {
             if (style == ToneStyle::OLD && (g == 'o' || g == 'u')) {
                 res += glide.value();
                 res += TONE_MARKS_U32[static_cast<int>(tone)];
-                res += vowel;
+                res += vowel.to_u32string();
                 tone_placed = true;
             }
         }
@@ -91,10 +91,10 @@ std::string Syllable::to_string(ToneStyle style) const {
     } else {
         if (glide.has_value())
             res += glide.value();
-        res += vowel;
+        res += vowel.to_u32string();
     }
 
-    res += final_c;
+    res += final_c.to_u32string();
     return unicode::normalize_nfc(unicode::to_utf8(res));
 }
 
@@ -111,7 +111,7 @@ void Syllable::remove_last_char() {
         vowel.pop_back();
         if (vowel.empty()) {
             if (glide.has_value()) {
-                vowel = {glide.value()};
+                vowel.push_back(glide.value());
                 glide = std::nullopt;
             } else {
                 tone = Tone::NONE;

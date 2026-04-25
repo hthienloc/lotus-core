@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (V3.3 Final)
+// @name         Jules Session & Message Copier (V3.4 Manual Refresh)
 // @namespace    http://tampermonkey.net/
-// @version      3.3
-// @description  Full bi-directional bridge with Regex ID extraction, Cache-Busting, and Strict Comment Preservation.
+// @version      3.4
+// @description  Full bi-directional bridge with Manual Refresh button and robust state management.
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
@@ -15,11 +15,9 @@
  * 
  * 1. SYNC (Jules -> Gemini): Transfers Jules message content to local relay.
  * 2. PROPOSAL (Gemini -> Jules): Polls for replies targeting this specific Session ID.
- * 3. APPROVAL: User confirms delivery of Gemini's reply to Jules via UI panel.
- * 4. SECURITY (CSP): Pure DOM construction (createElement) to bypass Google's strict CSP.
- * 5. CACHE BUSTING: Polling requests include a timestamp to ensure fresh data.
- * 6. URL RESILIENCE: Regex extraction ensuring correct Session ID in all sub-pages.
- * 7. STATE MANAGEMENT: Message fingerprinting prevents handled proposals from reappearing.
+ * 3. MANUAL REFRESH: A button to immediately trigger polling without waiting for the interval.
+ * 4. APPROVAL: User confirms delivery of Gemini's reply to Jules via UI panel.
+ * 5. SECURITY (CSP): Pure DOM construction (createElement) to bypass strict CSP.
  */
 
 (function() {
@@ -38,7 +36,7 @@
     const SESSION_ID = extractSessionID();
     let handledMessages = new Set();
 
-    console.log(`%c[Lotus Bridge V3.3] Active for Session: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V3.4] Manual Refresh Active for: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
 
     function getMessageFingerprint(msg) {
         try {
@@ -53,7 +51,7 @@
     }
 
     /**
-     * Polling mechanism to receive instructions from Gemini.
+     * Polling mechanism with Cache Buster
      */
     function poll() {
         if (!SESSION_ID) return;
@@ -86,9 +84,6 @@
         });
     }
 
-    /**
-     * Displays the proposal panel.
-     */
     function injectProposalUI(message, fingerprint) {
         if (document.getElementById('gemini-safe-panel')) return;
 
@@ -132,16 +127,15 @@
                 chat.textContent = message;
                 chat.dispatchEvent(new Event('input', { bubbles: true }));
                 setTimeout(() => {
-                    const btn = document.querySelector('button[type="submit"]') || 
+                    const sendBtnReal = document.querySelector('button[type="submit"]') || 
                                      document.querySelector('button[aria-label*="Send"]');
-                    if (btn) btn.click();
+                    if (sendBtnReal) sendBtnReal.click();
                 }, 100);
             }
             handledMessages.add(fingerprint);
             panel.remove();
             clearOutboxOnServer();
         };
-        btnGroup.appendChild(sendBtn);
 
         const rejectBtn = document.createElement('button');
         rejectBtn.textContent = '❌ REJECT';
@@ -154,8 +148,9 @@
             panel.remove();
             clearOutboxOnServer();
         };
-        btnGroup.appendChild(rejectBtn);
 
+        btnGroup.appendChild(sendBtn);
+        btnGroup.appendChild(rejectBtn);
         panel.appendChild(btnGroup);
         document.body.appendChild(panel);
     }
@@ -168,33 +163,59 @@
         });
     }
 
-    function injectSyncButton(container, textGetter) {
+    /**
+     * Injects both SYNC and MANUAL REFRESH buttons.
+     */
+    function injectActionButtons(container, textGetter) {
         if (container.getAttribute('data-gemini-injected') === 'true') return;
-        const btn = document.createElement('button');
-        btn.textContent = '🚀 SYNC TO GEMINI';
-        Object.assign(btn.style, {
-            display: 'block', marginTop: '8px', padding: '6px 12px',
-            background: '#1a73e8', color: 'white', border: 'none', borderRadius: '4px',
-            fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
+        
+        const btnGroup = document.createElement('div');
+        Object.assign(btnGroup.style, { display: 'flex', gap: '8px', marginTop: '8px' });
+
+        // 1. SYNC TO GEMINI
+        const syncBtn = document.createElement('button');
+        syncBtn.textContent = '🚀 SYNC TO GEMINI';
+        Object.assign(syncBtn.style, {
+            padding: '6px 12px', background: '#1a73e8', color: 'white', border: 'none', 
+            borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
         });
-        btn.onclick = () => {
+        syncBtn.onclick = () => {
             GM_xmlhttpRequest({
-                method: "POST",
-                url: RELAY_URL,
+                method: "POST", url: RELAY_URL,
                 data: JSON.stringify({ url: window.location.href, message: textGetter() }),
                 headers: { "Content-Type": "application/json" }
             });
-            btn.textContent = '✅ SYNCED';
-            setTimeout(() => btn.textContent = '🚀 SYNC TO GEMINI', 2000);
+            syncBtn.textContent = '✅ SYNCED';
+            setTimeout(() => syncBtn.textContent = '🚀 SYNC TO GEMINI', 2000);
         };
-        container.appendChild(btn);
+
+        // 2. MANUAL REFRESH (Force Poll)
+        const refreshBtn = document.createElement('button');
+        refreshBtn.textContent = '🔄 FORCE REFRESH';
+        Object.assign(refreshBtn.style, {
+            padding: '6px 12px', background: '#f1f3f4', color: '#3c4043', border: '1px solid #ddd', 
+            borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
+        });
+        refreshBtn.onclick = () => {
+            poll(); // Immediate poll
+            refreshBtn.textContent = '⚡ CHECKING...';
+            refreshBtn.style.background = '#e8f0fe';
+            setTimeout(() => {
+                refreshBtn.textContent = '🔄 FORCE REFRESH';
+                refreshBtn.style.background = '#f1f3f4';
+            }, 1000);
+        };
+
+        btnGroup.appendChild(syncBtn);
+        btnGroup.appendChild(refreshBtn);
+        container.appendChild(btnGroup);
         container.setAttribute('data-gemini-injected', 'true');
     }
 
     function scanMessages() {
         document.querySelectorAll('swebot-agent-chat-bubble .message-container').forEach(container => {
             const content = container.querySelector('swebot-markdown-viewer') || container;
-            injectSyncButton(container, () => content.innerText);
+            injectActionButtons(container, () => content.innerText);
         });
     }
 

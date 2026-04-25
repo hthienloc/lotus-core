@@ -2,12 +2,81 @@
 
 #include "lotus_core/common.h"
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace lotus_core {
+
+/**
+ * @brief A fixed-size zero-allocation string for hot-loop operations.
+ */
+class StaticString {
+public:
+    static constexpr size_t MAX_LEN = 16;
+    
+    StaticString() : len(0) {}
+    
+    StaticString(std::u32string_view view) : len(0) {
+        for (char32_t c : view) {
+            if (len < MAX_LEN) data[len++] = c;
+        }
+    }
+
+    void push_back(char32_t c) {
+        if (len < MAX_LEN) data[len++] = c;
+    }
+    
+    void pop_back() {
+        if (len > 0) len--;
+    }
+    
+    void clear() {
+        len = 0;
+    }
+    
+    bool empty() const {
+        return len == 0;
+    }
+    
+    size_t size() const {
+        return len;
+    }
+    
+    char32_t& operator[](size_t pos) { return data[pos]; }
+    const char32_t& operator[](size_t pos) const { return data[pos]; }
+    
+    char32_t front() const { return data[0]; }
+    char32_t back() const { return data[len - 1]; }
+    
+    auto begin() { return data.begin(); }
+    auto end() { return data.begin() + len; }
+    auto begin() const { return data.begin(); }
+    auto end() const { return data.begin() + len; }
+    
+    std::u32string_view view() const {
+        return std::u32string_view(data.data(), len);
+    }
+    
+    std::u32string to_u32string() const {
+        return std::u32string(data.data(), len);
+    }
+    
+    bool operator==(const StaticString& other) const {
+        return view() == other.view();
+    }
+    
+    bool operator==(std::u32string_view other) const {
+        return view() == other;
+    }
+
+private:
+    std::array<char32_t, MAX_LEN> data;
+    size_t len;
+};
 
 /**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
@@ -20,10 +89,10 @@ namespace lotus_core {
  * - T: Tone (Dấu thanh)
  */
 struct Syllable {
-    std::u32string initial;         ///< Initial Consonant (e.g., b, ch, ngh)
+    StaticString initial;         ///< Initial Consonant (e.g., b, ch, ngh)
     std::optional<char32_t> glide;  ///< Glide (e.g., o, u)
-    std::u32string vowel;           ///< Vowel Nucleus (e.g., a, ă, ê, iê)
-    std::u32string final_c;         ///< Final Coda (e.g., n, ng, ch, i, y)
+    StaticString vowel;           ///< Vowel Nucleus (e.g., a, ă, ê, iê)
+    StaticString final_c;         ///< Final Coda (e.g., n, ng, ch, i, y)
     Tone tone = Tone::NONE;         ///< Tone mark
 
     /**

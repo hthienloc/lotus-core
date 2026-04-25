@@ -26,21 +26,22 @@ Lotus Core is a high-performance, developer-centric core engine designed for max
   - Goal: Maintain < 0.01ms latency by eliminating heap churn.
 - [ ] **Linguistic Diagnostic System**
   - Implement detailed diagnostic codes in `EngineResult` to explain validation failures.
-- [ ] **Floating Tone Implementation**
-  - Adopt Bamboo's dependency-based tone placement logic to automatically reposition diacritics when syllable structure changes.
+- [x] **Modern Web UI**
+  - Professional 2-column sidebar layout for the web demo.
 
-## Phase 3: Intelligence and State Management (Upcoming)
+## Phase 3: Semantic State and Logic Refinement (Upcoming)
 
 - [ ] **Semantic CharState Model**
-  - Explore the `CharState` pattern (NexusKey) to represent characters as `{base, modifier, tone}` instead of raw Unicode for simpler backspacing.
-- [ ] **Streamlined 4-Stage Pipeline**
-  - Consolidate the transformation stages into a `Stroke -> Vowel -> Mark -> Cleanup` model for maximum efficiency.
+  - Explore representing characters as `{base, modifier, tone}` instead of raw Unicode to simplify backspacing and diacritic management.
+  - Goal: Make the code more intuitive by working with linguistic units directly.
+- [ ] **Smart Tone Repositioning**
+  - Implement a dedicated helper to automatically move the tone to the correct nucleus as the syllable grows, ensuring Bamboo-level precision with simple string logic.
 - [ ] **Developer-First Auto-Restore Logic**
   - Tailor English detection heuristics for developer-specific environments.
-- [ ] **Surrounding Text API**
-  - Deepen integration for robust state reconstruction using Context Anchors.
 
-## Phase 4: Ecosystem and Long-Term Research (Future)
+## Phase 4: Ecosystem and Long-Term Stability (Future)
 
 - [ ] **Opaque Handle C-API**
-  - Standardize on an ID-based handle system for engine instances to improve FFI stability across Rust, Python, and WASM.
+  - Standardize on an ID-based handle system for engine instances to improve FFI stability.
+- [ ] **Property-Based Verification**
+  - Implement automated verification using millions of generated keystroke combinations to ensure 100% linguistic correctness.
