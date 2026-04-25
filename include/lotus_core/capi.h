@@ -36,6 +36,24 @@ typedef enum {
 } lotus_free_w_t;
 
 /**
+ * @brief Professional macro expansion modes for shortcuts.
+ */
+typedef enum {
+    LOTUS_MACRO_OFF = 0,
+    LOTUS_MACRO_EXACT = 1,
+    LOTUS_MACRO_FIXED = 2,
+    LOTUS_MACRO_ADAPTIVE = 3
+} lotus_macro_mode_t;
+
+/**
+ * @brief Backspace behavior styles.
+ */
+typedef enum {
+    LOTUS_BACKSPACE_KEYSTROKE = 0,
+    LOTUS_BACKSPACE_SURGICAL = 1
+} lotus_backspace_style_t;
+
+/**
  * @brief Log levels for internal diagnostic messages.
  */
 typedef enum {
@@ -137,6 +155,26 @@ void lotus_core_set_auto_restore(lotus_core_t* engine, bool enabled);
  * @brief Enables or disables allowing non-standard initial consonants (z, w, j, f).
  */
 void lotus_core_set_allow_non_standard_initials(lotus_core_t* engine, bool enabled);
+
+/**
+ * @brief Enables or disables double-space to period conversion.
+ */
+void lotus_core_set_double_space_to_period(lotus_core_t* engine, bool enabled);
+
+/**
+ * @brief Enables or disables auto-capitalization after sentences.
+ */
+void lotus_core_set_auto_capitalize(lotus_core_t* engine, bool enabled);
+
+/**
+ * @brief Configures the macro expansion mode.
+ */
+void lotus_core_set_macro_mode(lotus_core_t* engine, lotus_macro_mode_t mode);
+
+/**
+ * @brief Configures the backspace style.
+ */
+void lotus_core_set_backspace_style(lotus_core_t* engine, lotus_backspace_style_t style);
 
 /**
  * @brief Export current tracing buffer to a JSON file.

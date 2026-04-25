@@ -84,6 +84,22 @@ void lotus_core_set_allow_non_standard_initials(lotus_core_t* engine, bool enabl
     if (engine) engine->core.set_allow_non_standard_initials(enabled);
 }
 
+void lotus_core_set_double_space_to_period(lotus_core_t* engine, bool enabled) {
+    if (engine) engine->core.set_double_space_to_period(enabled);
+}
+
+void lotus_core_set_auto_capitalize(lotus_core_t* engine, bool enabled) {
+    if (engine) engine->core.set_auto_capitalize(enabled);
+}
+
+void lotus_core_set_macro_mode(lotus_core_t* engine, lotus_macro_mode_t mode) {
+    if (engine) engine->core.set_macro_mode(static_cast<MacroMode>(mode));
+}
+
+void lotus_core_set_backspace_style(lotus_core_t* engine, lotus_backspace_style_t style) {
+    if (engine) engine->core.set_backspace_style(static_cast<BackspaceStyle>(style));
+}
+
 void lotus_core_export_tracing(const char* filepath) {
     if (filepath) {
         export_tracing(filepath);

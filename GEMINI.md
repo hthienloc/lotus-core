@@ -40,7 +40,7 @@ This file defines the foundational constraints and operational standards for the
 
 1. **Research & Scoping**: Analyze the codebase and reproduce bugs in `tui_demo.cpp` or a new test file. Define a clear, surgical task for Jules.
 2. **Delegation**: Hand over the implementation to **Jules** using the `mcp_julesServer_start_new_jules_task` tool. Provide detailed linguistic and technical constraints in the task description.
-3. **Passive Monitoring**: Wait for Jules to finish. Do not poll continuously. Wait for a signal (user notification or completed session state).
+3. **Passive Monitoring**: Check the status of active tasks using `jules remote list --session`. Avoid continuous manual polling; wait for significant progress or an agent's signal.
 4. **Rigorous Review & Pull**: Once Jules is done, pull the code using `jules remote pull --session <id> --apply`.
     - **Structural Changes**: If Jules moved files or renamed the project, use `jules teleport <id>` for a clean sync.
     - **Conflict Resolution**: If a patch fails due to local changes, prioritize reverting local commits, applying Jules' patch, and then re-applying local features to maintain "Structure first, Features later" logic.
