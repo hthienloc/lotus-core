@@ -13,95 +13,117 @@
             <p>High-performance, zero-dependency Vietnamese input processing core.</p>
         </header>
 
-        <main>
-            <div class="settings">
-                <div class="setting-group">
-                    <label>Method:</label>
-                    <select id="method-select">
-                        <option value="0">Telex</option>
-                        <option value="1">VNI</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>Tone Style:</label>
-                    <select id="tone-style-select">
-                        <option value="1">New (hoà)</option>
-                        <option value="0">Old (hòa)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>Free-W (Telex):</label>
-                    <select id="free-w-select">
-                        <option value="1">Non-Start (w -> ư)</option>
-                        <option value="0">Off (w -> w)</option>
-                        <option value="2">Always (w -> ư)</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="std-uo-checkbox">
-                        [ , ] Hooks
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="auto-restore-checkbox" checked>
-                        Auto-Restore
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="double-space-checkbox">
-                        Double-Space to Period
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="auto-capitalize-checkbox">
-                        Auto-Capitalize
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="non-standard-initials-checkbox">
-                        Allow Non-Standard Initials (z, w, j, f)
-                    </label>
-                </div>
-                <div class="setting-group">
-                    <label>Macro Mode:</label>
-                    <select id="macro-mode-select">
-                        <option value="0">OFF</option>
-                        <option value="1">EXACT</option>
-                        <option value="2">FIXED</option>
-                        <option value="3" selected>ADAPTIVE</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>Backspace Style:</label>
-                    <select id="backspace-style-select">
-                        <option value="0">REVERT (Keystroke)</option>
-                        <option value="1" selected>SURGICAL</option>
-                    </select>
-                </div>
-                <div class="setting-group">
-                    <label>
-                        <input type="checkbox" id="show-debug-checkbox">
-                        Show Debug Logs
-                    </label>
-                </div>
-                <div class="setting-group">
+        <main class="layout-main">
+            <!--! @brief Sidebar for configuration settings -->
+            <aside class="sidebar">
+                <!--! @brief Primary Settings Section -->
+                <section class="settings-section">
+                    <h2>Primary Settings</h2>
+                    <div class="setting-group">
+                        <label>Method:</label>
+                        <select id="method-select">
+                            <option value="0">Telex</option>
+                            <option value="1">VNI</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Tone Style:</label>
+                        <select id="tone-style-select">
+                            <option value="1">New (hoà)</option>
+                            <option value="0">Old (hòa)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Free-W (Telex):</label>
+                        <select id="free-w-select">
+                            <option value="1">Non-Start (w -> ư)</option>
+                            <option value="0">Off (w -> w)</option>
+                            <option value="2">Always (w -> ư)</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!--! @brief Smart Features Section -->
+                <section class="settings-section">
+                    <h2>Smart Features</h2>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="auto-capitalize-checkbox">
+                            Auto-Capitalize
+                        </label>
+                    </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="double-space-checkbox">
+                            Double-Space to Period
+                        </label>
+                    </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="auto-restore-checkbox" checked>
+                            Auto-Restore
+                        </label>
+                    </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="non-standard-initials-checkbox">
+                            Allow Non-Standard Initials (z, w, j, f)
+                        </label>
+                    </div>
+                </section>
+
+                <!--! @brief Advanced Settings Section -->
+                <section class="settings-section">
+                    <h2>Advanced</h2>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="std-uo-checkbox">
+                            [ , ] Hooks
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>Macro Mode:</label>
+                        <select id="macro-mode-select">
+                            <option value="0">OFF</option>
+                            <option value="1">EXACT</option>
+                            <option value="2">FIXED</option>
+                            <option value="3" selected>ADAPTIVE</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Backspace Style:</label>
+                        <select id="backspace-style-select">
+                            <option value="0">REVERT (Keystroke)</option>
+                            <option value="1" selected>SURGICAL</option>
+                        </select>
+                    </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="show-debug-checkbox">
+                            Show Debug Logs
+                        </label>
+                    </div>
+                </section>
+
+                <!--! @brief Reset Button Area -->
+                <div class="reset-area">
                     <button id="reset-btn">Reset Engine</button>
                 </div>
-            </div>
+            </aside>
 
-            <div class="editor-container">
-                <textarea id="editor" placeholder="Type here to test Vietnamese composition... (e.g. t r u o n g f)"></textarea>
-            </div>
+            <!--! @brief Main Content Area -->
+            <section class="main-content">
+                <!--! @brief Editor Container -->
+                <div class="editor-container">
+                    <textarea id="editor" placeholder="Type here to test Vietnamese composition... (e.g. t r u o n g f)"></textarea>
+                </div>
 
-            <div class="log-container">
-                <h3>Under the hood (Engine Logs)</h3>
-                <div id="log-output" class="log-output"></div>
-            </div>
+                <!--! @brief Engine Log Output Area -->
+                <div class="log-container">
+                    <h3>Under the hood (Engine Logs)</h3>
+                    <div id="log-output" class="log-output"></div>
+                </div>
+            </section>
         </main>
 
         <footer>
