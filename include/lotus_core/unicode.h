@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <string_view>
 #include <vector>
 
 #include "lotus_core/phonology_data.h"
@@ -19,8 +20,9 @@ namespace unicode {
 /**
  * @brief Convert a UTF-8 string to a UTF-32 vector.
  */
-inline std::u32string to_utf32(const std::string& utf8) {
+inline std::u32string to_utf32(std::string_view utf8) {
     std::u32string u32;
+    u32.reserve(utf8.size());
     for (size_t i = 0; i < utf8.size(); ++i) {
         unsigned char c = static_cast<unsigned char>(utf8[i]);
         char32_t val = 0;
@@ -67,10 +69,26 @@ inline std::string to_utf8(char32_t cp) {
     return utf8;
 }
 
-inline std::string to_utf8(const std::u32string& u32) {
+inline std::string to_utf8(std::u32string_view u32) {
     std::string res;
-    for (auto cp : u32)
-        res += to_utf8(cp);
+    res.reserve(u32.size() * 3); // Conservative estimate
+    for (auto cp : u32) {
+        if (cp < 0x80) {
+            res += static_cast<char>(cp);
+        } else if (cp < 0x800) {
+            res += static_cast<char>(0xC0 | (cp >> 6));
+            res += static_cast<char>(0x80 | (cp & 0x3F));
+        } else if (cp < 0x10000) {
+            res += static_cast<char>(0xE0 | (cp >> 12));
+            res += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            res += static_cast<char>(0x80 | (cp & 0x3F));
+        } else {
+            res += static_cast<char>(0xF0 | (cp >> 18));
+            res += static_cast<char>(0x80 | ((cp >> 12) & 0x3F));
+            res += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+            res += static_cast<char>(0x80 | (cp & 0x3F));
+        }
+    }
     return res;
 }
 
@@ -91,15 +109,15 @@ inline char32_t to_upper(char32_t cp) {
     return it != phonology::UPPER_MAP.end() ? it->second : cp;
 }
 
-inline std::string to_lower(const std::string& input) {
+inline std::string to_lower(std::string_view input) {
     std::u32string u32 = to_utf32(input);
     for (auto& cp : u32)
         cp = to_lower(cp);
     return to_utf8(u32);
 }
 
-inline std::u32string to_lower(const std::u32string& input) {
-    std::u32string res = input;
+inline std::u32string to_lower(std::u32string_view input) {
+    std::u32string res(input);
     for (auto& cp : res)
         cp = to_lower(cp);
     return res;
@@ -114,7 +132,7 @@ inline bool is_alpha(char32_t cp) {
     return phonology::LOWER_MAP.count(cp) > 0 || phonology::UPPER_MAP.count(cp) > 0;
 }
 
-inline std::string to_upper(const std::string& input) {
+inline std::string to_upper(std::string_view input) {
     std::u32string u32 = to_utf32(input);
     for (auto& cp : u32)
         cp = to_upper(cp);
@@ -124,8 +142,22 @@ inline std::string to_upper(const std::string& input) {
 /**
  * @brief Returns the visual width of a UTF-8 string (number of codepoints).
  */
-inline size_t display_width(const std::string& utf8) {
-    return to_utf32(utf8).size();
+inline size_t display_width(std::string_view utf8) {
+    size_t count = 0;
+    for (size_t i = 0; i < utf8.size(); ) {
+        unsigned char c = static_cast<unsigned char>(utf8[i]);
+        if (c < 0x80) {
+            i += 1;
+        } else if (c < 0xE0) {
+            i += 2;
+        } else if (c < 0xF0) {
+            i += 3;
+        } else {
+            i += 4;
+        }
+        count++;
+    }
+    return count;
 }
 
 /**
@@ -147,7 +179,7 @@ inline Tone get_tone(char32_t cp) {
 /**
  * @brief Normalize Vietnamese text to NFC (Precomposed) form.
  */
-inline std::u32string normalize_nfc(const std::u32string& u32) {
+inline std::u32string normalize_nfc(std::u32string_view u32) {
     std::u32string res;
     res.reserve(u32.size());
 
@@ -170,7 +202,7 @@ inline std::u32string normalize_nfc(const std::u32string& u32) {
     return res;
 }
 
-inline std::string normalize_nfc(const std::string& input) {
+inline std::string normalize_nfc(std::string_view input) {
     return to_utf8(normalize_nfc(to_utf32(input)));
 }
 

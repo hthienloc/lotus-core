@@ -29,7 +29,10 @@ bool g_has_log_callback = false;
 
 static LogCallback g_log_callback = nullptr;
 static std::mutex g_log_mutex;
+constexpr size_t MAX_TRACE_EVENTS = 10000;
 static std::vector<TraceEvent> g_trace_buffer;
+static size_t g_trace_head = 0;
+static bool g_trace_buffer_full = false;
 
 // ============================================================================
 // [ Logging & Tracing Implementation ]
@@ -69,9 +72,14 @@ void emit_log(LogLevel level, const std::string& message, const std::string& sta
     std::lock_guard<std::mutex> lock(g_log_mutex);
     
     // Store in buffer for tracing export
-    g_trace_buffer.push_back({level, stage, time_us, message});
-    if (g_trace_buffer.size() > 10000) { // Limit buffer size
-        g_trace_buffer.erase(g_trace_buffer.begin());
+    if (g_trace_buffer.empty()) {
+        g_trace_buffer.resize(MAX_TRACE_EVENTS);
+    }
+    
+    g_trace_buffer[g_trace_head] = {level, stage, time_us, message};
+    g_trace_head = (g_trace_head + 1) % MAX_TRACE_EVENTS;
+    if (g_trace_head == 0) {
+        g_trace_buffer_full = true;
     }
 
     if (g_log_callback) {
@@ -85,14 +93,17 @@ void export_tracing(const std::string& filepath) {
     if (!file.is_open()) return;
 
     file << "[\n";
-    for (size_t i = 0; i < g_trace_buffer.size(); ++i) {
-        const auto& ev = g_trace_buffer[i];
+    
+    size_t count = g_trace_buffer_full ? MAX_TRACE_EVENTS : g_trace_head;
+    for (size_t i = 0; i < count; ++i) {
+        size_t idx = g_trace_buffer_full ? (g_trace_head + i) % MAX_TRACE_EVENTS : i;
+        const auto& ev = g_trace_buffer[idx];
         file << "  {\n";
         file << "    \"level\": " << static_cast<int>(ev.level) << ",\n";
         file << "    \"stage\": \"" << ev.stage << "\",\n";
         file << "    \"duration_us\": " << std::fixed << std::setprecision(3) << ev.time_us << ",\n";
         file << "    \"message\": \"" << ev.message << "\"\n";
-        file << "  }" << (i == g_trace_buffer.size() - 1 ? "" : ",") << "\n";
+        file << "  }" << (i == count - 1 ? "" : ",") << "\n";
     }
     file << "]\n";
 }
