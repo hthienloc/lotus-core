@@ -235,7 +235,20 @@ void print_status(const Engine& engine) {
               << std::endl;
     std::cout << "\33[K" << "\33[1;36m[F5] \33[0mDouble-Space: "
               << (engine.get_double_space_to_period() ? "ON" : "OFF") << " | "
-              << "\33[1;36m[F6] \33[0mAuto-Caps: " << (engine.get_auto_capitalize() ? "ON" : "OFF")
+              << "\33[1;36m[F6] \33[0mAuto-Caps: " << (engine.get_auto_capitalize() ? "ON" : "OFF") << " | "
+              << "\33[1;36m[F7] \33[0mAuto-Restore: " << (engine.get_auto_restore() ? "ON" : "OFF") << " | "
+              << "\33[1;36m[F8] \33[0mInitials(z,w,j,f): " << (engine.get_allow_non_standard_initials() ? "ON" : "OFF")
+              << std::endl;
+              
+    std::cout << "\33[K" << "\33[1;36m[F9] \33[0mMacro Mode: ";
+    switch (engine.get_macro_mode()) {
+        case MacroMode::OFF: std::cout << "OFF"; break;
+        case MacroMode::EXACT: std::cout << "EXACT"; break;
+        case MacroMode::FIXED: std::cout << "FIXED"; break;
+        case MacroMode::ADAPTIVE: std::cout << "ADAPTIVE"; break;
+    }
+    std::cout << " | \33[1;36m[F10] \33[0mBackspace Style: "
+              << (engine.get_backspace_style() == BackspaceStyle::SURGICAL ? "SURGICAL" : "REVERT")
               << std::endl;
 }
 
@@ -314,6 +327,42 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
             if (key == 0xF004) {  // F4
                 engine.set_std_uo(!engine.get_std_uo());
                 debug_log << "[CONFIG] StdUO changed to: " << (engine.get_std_uo() ? "ON" : "OFF")
+                          << std::endl;
+                continue;
+            }
+            if (key == 0xF005) {  // F5
+                engine.set_double_space_to_period(!engine.get_double_space_to_period());
+                debug_log << "[CONFIG] Double-Space changed to: " << (engine.get_double_space_to_period() ? "ON" : "OFF")
+                          << std::endl;
+                continue;
+            }
+            if (key == 0xF006) {  // F6
+                engine.set_auto_capitalize(!engine.get_auto_capitalize());
+                debug_log << "[CONFIG] Auto-Caps changed to: " << (engine.get_auto_capitalize() ? "ON" : "OFF")
+                          << std::endl;
+                continue;
+            }
+            if (key == 0xF007) {  // F7
+                engine.set_auto_restore(!engine.get_auto_restore());
+                debug_log << "[CONFIG] Auto-Restore changed to: " << (engine.get_auto_restore() ? "ON" : "OFF")
+                          << std::endl;
+                continue;
+            }
+            if (key == 0xF008) {  // F8
+                engine.set_allow_non_standard_initials(!engine.get_allow_non_standard_initials());
+                debug_log << "[CONFIG] Initials(z,w,j,f) changed to: " << (engine.get_allow_non_standard_initials() ? "ON" : "OFF")
+                          << std::endl;
+                continue;
+            }
+            if (key == 0xF009) {  // F9
+                int next = ((int)engine.get_macro_mode() + 1) % 4;
+                engine.set_macro_mode((MacroMode)next);
+                debug_log << "[CONFIG] Macro Mode changed to: " << (int)engine.get_macro_mode() << std::endl;
+                continue;
+            }
+            if (key == 0xF00A) {  // F10
+                engine.set_backspace_style(engine.get_backspace_style() == BackspaceStyle::SURGICAL ? BackspaceStyle::KEYSTROKE : BackspaceStyle::SURGICAL);
+                debug_log << "[CONFIG] Backspace Style changed to: " << (engine.get_backspace_style() == BackspaceStyle::SURGICAL ? "SURGICAL" : "REVERT")
                           << std::endl;
                 continue;
             }
