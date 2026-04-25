@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (V2.7 Smart State)
+// @name         Jules Session & Message Copier (V2.9 Production)
 // @namespace    http://tampermonkey.net/
-// @version      2.7
-// @description  Prevents duplicate popups using local message fingerprinting
+// @version      2.9
+// @description  A robust, bi-directional bridge between Jules and Gemini Orchestrator with CSP compliance and state management.
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
@@ -10,28 +10,58 @@
 // @connect      localhost
 // ==/UserScript==
 
+/**
+ * ARCHITECTURE OVERVIEW:
+ * 
+ * 1. SYNC (Jules -> Gemini): User clicks "SYNC TO GEMINI" on a Jules message. 
+ *    The script sends the message content and session URL to a local Relay Server.
+ * 
+ * 2. PROPOSAL (Gemini -> Jules): The script polls the local Relay Server for any pending 
+ *    replies from Gemini meant for this specific Session ID.
+ * 
+ * 3. APPROVAL (User Intervention): If a reply is found, a high-visibility UI panel 
+ *    is shown. The user must click "CONFIRM & SEND" to actually deliver the message 
+ *    to Jules, maintaining human-in-the-loop safety.
+ * 
+ * 4. SECURITY (CSP/Trusted Types): The UI is built using surgical DOM methods (createElement) 
+ *    to bypass Google's strict Content Security Policy which blocks innerHTML.
+ */
+
 (function() {
     'use strict';
 
+    // Local Relay Server Configuration
     const RELAY_URL = 'http://localhost:8080';
     const SESSION_ID = window.location.href.split('/').pop();
     
-    // Ghi nhớ các tin nhắn đã xử lý để không hiện lại
+    // In-memory set to prevent showing the same proposal multiple times in one session
     let handledMessages = new Set();
 
-    console.log(`%c[Lotus Bridge V2.7] Smart State Active`, 'color: #7c4dff; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V2.9] Production Mode Active for Session: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
 
+    /**
+     * Generates a simple fingerprint to uniquely identify a message string.
+     * Used to track which proposals have already been handled.
+     */
+    function getMessageFingerprint(msg) {
+        try {
+            return btoa(unescape(encodeURIComponent(msg))).slice(0, 32);
+        } catch (e) {
+            return msg.slice(0, 32);
+        }
+    }
+
+    /**
+     * Attempts to locate the chat input area in Jules' UI.
+     * Supports both standard textareas and contenteditable divs.
+     */
     function getChatInput() {
         return document.querySelector('textarea') || document.querySelector('[contenteditable="true"]');
     }
 
     /**
-     * Creates a unique ID for a message to track it
+     * Periodically polls the local relay server for messages from Gemini.
      */
-    function getMessageFingerprint(msg) {
-        return btoa(unescape(encodeURIComponent(msg))).slice(0, 32);
-    }
-
     function poll() {
         GM_xmlhttpRequest({
             method: "GET",
@@ -39,49 +69,64 @@
             onload: function(res) {
                 try {
                     const data = JSON.parse(res.responseText);
-                    if (data.target_session_id === SESSION_ID && data.status === 'pending') {
-                        const fingerprint = getMessageFingerprint(data.message);
-                        
-                        // CHỈ hiện nếu tin nhắn này chưa từng được xử lý
-                        if (!handledMessages.has(fingerprint)) {
-                            injectSafeUI(data.message, fingerprint);
+                    
+                    // If outbox is empty or not meant for us, clear local state and UI
+                    if (!data || !data.message || data.status !== 'pending') {
+                        if (handledMessages.size > 0) {
+                            handledMessages.clear();
                         }
-                    } else {
-                        // Nếu server báo không còn tin nhắn pending, xóa UI nếu đang hiện
                         const existing = document.getElementById('gemini-safe-panel');
-                        if (existing && data.status !== 'pending') existing.remove();
+                        if (existing) existing.remove();
+                        return;
                     }
-                } catch (e) {}
+
+                    // Check if this proposal matches our specific Jules session
+                    if (data.target_session_id === SESSION_ID) {
+                        const fingerprint = getMessageFingerprint(data.message);
+                        if (!handledMessages.has(fingerprint)) {
+                            injectProposalUI(data.message, fingerprint);
+                        }
+                    }
+                } catch (e) {
+                    // Fail silently for network issues/relay down
+                }
             }
         });
     }
 
-    function injectSafeUI(message, fingerprint) {
+    /**
+     * Builds and displays a safe, CSP-compliant UI for Gemini's proposed reply.
+     */
+    function injectProposalUI(message, fingerprint) {
         if (document.getElementById('gemini-safe-panel')) return;
 
+        // Container Panel
         const panel = document.createElement('div');
         panel.id = 'gemini-safe-panel';
         Object.assign(panel.style, {
             position: 'fixed', bottom: '120px', left: '50%', transform: 'translateX(-50%)',
-            width: '450px', padding: '20px', background: '#ffffff', border: '4px solid #34a853',
+            width: '450px', padding: '20px', background: '#ffffff', border: '4px solid #3d5afe',
             borderRadius: '16px', zIndex: '2147483647', boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
             fontFamily: 'sans-serif'
         });
 
+        // Header
         const title = document.createElement('div');
         title.textContent = '🤖 GEMINI PROPOSED REPLY';
-        Object.assign(title.style, { fontWeight: 'bold', color: '#1b5e20', marginBottom: '12px', fontSize: '14px' });
+        Object.assign(title.style, { fontWeight: 'bold', color: '#1a237e', marginBottom: '12px', fontSize: '14px' });
         panel.appendChild(title);
 
+        // Message Content Area
         const msgBox = document.createElement('div');
         msgBox.textContent = message;
         Object.assign(msgBox.style, {
             fontSize: '13px', color: '#333', textAlign: 'left', maxHeight: '150px',
-            overflowY: 'auto', background: '#f1f8e9', padding: '12px', borderRadius: '8px',
-            border: '1px solid #c5e1a5', whiteSpace: 'pre-wrap', marginBottom: '15px', lineHeight: '1.5'
+            overflowY: 'auto', background: '#f5f5f5', padding: '12px', borderRadius: '8px',
+            border: '1px solid #ddd', whiteSpace: 'pre-wrap', marginBottom: '15px', lineHeight: '1.5'
         });
         panel.appendChild(msgBox);
 
+        // Buttons
         const btnGroup = document.createElement('div');
         Object.assign(btnGroup.style, { display: 'flex', gap: '10px' });
 
@@ -95,17 +140,19 @@
         sendBtn.onclick = () => {
             const chat = getChatInput();
             if (chat) {
+                // Simulate human input to trigger Jules/Angular listeners
                 chat.value = message;
                 chat.textContent = message;
                 chat.dispatchEvent(new Event('input', { bubbles: true }));
                 setTimeout(() => {
-                    const btn = document.querySelector('button[type="submit"]') || document.querySelector('button[aria-label*="Send"]');
-                    if (btn) btn.click();
+                    const sendBtnReal = document.querySelector('button[type="submit"]') || 
+                                     document.querySelector('button[aria-label*="Send"]');
+                    if (sendBtnReal) sendBtnReal.click();
                 }, 100);
             }
-            handledMessages.add(fingerprint); // Đánh dấu đã xử lý
+            handledMessages.add(fingerprint);
             panel.remove();
-            clearOutbox();
+            clearOutboxOnServer();
         };
 
         const rejectBtn = document.createElement('button');
@@ -115,9 +162,9 @@
             border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
         });
         rejectBtn.onclick = () => {
-            handledMessages.add(fingerprint); // Đánh dấu đã xử lý
+            handledMessages.add(fingerprint);
             panel.remove();
-            clearOutbox();
+            clearOutboxOnServer();
         };
 
         btnGroup.appendChild(sendBtn);
@@ -126,7 +173,10 @@
         document.body.appendChild(panel);
     }
 
-    function clearOutbox() {
+    /**
+     * Commands the local relay server to empty the outbox.
+     */
+    function clearOutboxOnServer() {
         GM_xmlhttpRequest({
             method: "POST",
             url: RELAY_URL,
@@ -134,8 +184,12 @@
         });
     }
 
-    function injectSync(c, getter) {
-        if (c.getAttribute('data-gemini-injected')) return;
+    /**
+     * Injects the "SYNC TO GEMINI" button into individual Jules message bubbles.
+     */
+    function injectSyncButton(container, textGetter) {
+        if (container.getAttribute('data-gemini-injected') === 'true') return;
+        
         const btn = document.createElement('button');
         btn.textContent = '🚀 SYNC TO GEMINI';
         Object.assign(btn.style, {
@@ -143,25 +197,35 @@
             background: '#1a73e8', color: 'white', border: 'none', borderRadius: '4px',
             fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
         });
+        
         btn.onclick = () => {
             GM_xmlhttpRequest({
-                method: "POST", url: RELAY_URL,
-                data: JSON.stringify({ url: window.location.href, message: getter() }),
+                method: "POST",
+                url: RELAY_URL,
+                data: JSON.stringify({ url: window.location.href, message: textGetter() }),
                 headers: { "Content-Type": "application/json" }
             });
             btn.textContent = '✅ SYNCED';
             setTimeout(() => btn.textContent = '🚀 SYNC TO GEMINI', 2000);
         };
-        c.appendChild(btn);
-        c.setAttribute('data-gemini-injected', 'true');
+        
+        container.appendChild(btn);
+        container.setAttribute('data-gemini-injected', 'true');
     }
 
-    setInterval(() => {
-        document.querySelectorAll('swebot-agent-chat-bubble .message-container').forEach(c => {
-            const content = c.querySelector('swebot-markdown-viewer') || c;
-            injectSync(c, () => content.innerText);
+    /**
+     * Scans the DOM for message bubbles to inject sync buttons.
+     */
+    function scanMessages() {
+        document.querySelectorAll('swebot-agent-chat-bubble .message-container').forEach(container => {
+            const content = container.querySelector('swebot-markdown-viewer') || container;
+            injectSyncButton(container, () => content.innerText);
         });
-    }, 1000);
+    }
 
+    // High-frequency scan for sync buttons
+    setInterval(scanMessages, 1000);
+    
+    // Lower-frequency poll for Gemini replies
     setInterval(poll, 3000);
 })();
