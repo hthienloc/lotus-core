@@ -1,6 +1,7 @@
 #include "lotus_core/parser_components.h"
 #include "lotus_core/constants.h"
 #include "lotus_core/unicode.h"
+#include "lotus_core/phonology_data.h"
 
 #include <algorithm>
 
@@ -26,7 +27,7 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
         char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
         std::u32string lower_init = unicode::to_lower(s.initial);
         
-        for (const auto& rule : unicode::GLIDE_RULES) {
+        for (const auto& rule : phonology::GLIDE_RULES) {
             if (rule.glide_char == first_char) {
                 if (rule.initial_context.empty() || lower_init == rule.initial_context) {
                     if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {

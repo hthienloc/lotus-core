@@ -2,6 +2,7 @@
 #include "lotus_core/parser.h"
 #include "lotus_core/unicode.h"
 #include "lotus_core/validator.h"
+#include "lotus_core/phonology_data.h"
 
 namespace lotus_core {
 
@@ -21,7 +22,7 @@ size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow
     std::u32string lower_init = unicode::to_lower(s.initial);
 
     // Apply context-sensitive overrides (e.g. 'gi' vs 'g', 'qu' vs 'q')
-    for (const auto& rule : unicode::INITIAL_OVERRIDE_RULES) {
+    for (const auto& rule : phonology::INITIAL_OVERRIDE_RULES) {
         if (lower_init == rule.initial) {
             bool condition_met = false;
             if (rule.requires_no_vowel_at_index) {

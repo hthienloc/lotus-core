@@ -11,6 +11,7 @@
 #include "lotus_core/constants.h"
 #include "lotus_core/unicode.h"
 #include "lotus_core/parser_components.h"
+#include "lotus_core/phonology_data.h"
 
 #include <algorithm>
 
@@ -29,7 +30,7 @@ bool SyllableParser::is_vowel(char32_t c) {
     char32_t low = unicode::to_lower(c);
     char32_t stripped = unicode::strip_tone(low);
     // Standard Vietnamese vowels (and their toned versions)
-    return unicode::BASE_VOWELS.find(stripped) != std::u32string_view::npos ||
+    return phonology::BASE_VOWELS.find(stripped) != std::u32string_view::npos ||
            (c >= 0x0300 && c <= 0x036F);  // Combining Marks
 }
 
@@ -118,7 +119,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
         std::u32string lower_init = unicode::to_lower(s.initial);
         
         valid = false;
-        for (const auto& rule : unicode::GLIDE_RULES) {
+        for (const auto& rule : phonology::GLIDE_RULES) {
             if (rule.glide_char == g) {
                 if (rule.initial_context.empty() || lower_init == rule.initial_context) {
                     if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
@@ -221,7 +222,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
                 char32_t next_char = n[0];
                 bool glide_ok = false;
                 std::u32string lower_init = unicode::to_lower(s.initial);
-                for (const auto& rule : unicode::GLIDE_RULES) {
+                for (const auto& rule : phonology::GLIDE_RULES) {
                     if (rule.glide_char == g) {
                         if (rule.initial_context.empty() || lower_init == rule.initial_context) {
                             if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
