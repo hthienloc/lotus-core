@@ -40,11 +40,17 @@ This file defines the foundational constraints and operational standards for the
 1. **Research & Scoping**: Analyze the codebase and reproduce bugs in `tui_demo.cpp` or a new test file. Define a clear, surgical task for Jules.
 2. **Delegation**: Hand over the implementation to **Jules** using the `mcp_julesServer_start_new_jules_task` tool. Provide detailed linguistic and technical constraints in the task description.
 3. **Passive Monitoring**: Wait for Jules to finish. Do not poll continuously. Wait for a signal (user notification or completed session state).
-4. **Rigorous Review**: Once Jules is done, pull the code and perform a meticulous review using `git diff`. 
-    - **Checklist**: Linguistic correctness, modularity, Doxygen standards, and **STRICT comment preservation**.
-5. **Validation**: Execute `./dev.sh` to ensure zero regressions. Benchmarking (`./dev.sh bench`) is optional but recommended for core logic changes.
+4. **Rigorous Review & Pull**: Once Jules is done, pull the code using `jules remote pull --session <id> --apply`.
+    - **Structural Changes**: If Jules moved files or renamed the project, use `jules teleport <id>` for a clean sync.
+    - **Conflict Resolution**: If a patch fails due to local changes, prioritize reverting local commits, applying Jules' patch, and then re-applying local features to maintain "Structure first, Features later" logic.
+    - **Checklist**: Linguistic correctness, modularity, Doxygen standards, **STRICT comment preservation**, and **STRICT debug logic preservation** (e.g., `LOTUS_LOG_DEBUG`, ASCII tables in demo).
+5. **Validation**: 
+    - Execute `./dev.sh` to ensure zero regressions in core logic.
+    - **Mandatory TUI Check**: Run `./dev.sh tui` to manually verify interactive behaviors (navigation, cursor movement, etc.).
+    - Benchmarking (`./dev.sh bench`) is optional but recommended for core logic changes.
 6. **Finalization**: Perform the final commit and push if all criteria are met. Any discrepancies found during review should be sent back to Jules as a follow-up task.
-- **Debug Log**: When using `tui_demo`, use `LOTUSDEBUG=1` to see the aligned ASCII table log. Maintain the fixed-width formatting using `unicode::display_width`.
+
+- **Debug Log**: When using `tui_demo`, use `LOTUSDEBUG=1` to see the aligned ASCII table log. Maintain the fixed-width formatting using `unicode::display_width`. Never strip debug-only code or logging statements during surgical edits.
 
 ## Key Files
 
