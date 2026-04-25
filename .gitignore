@@ -2,6 +2,7 @@
 # Build artifacts
 # ========================
 build/
+*.orig
 cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
