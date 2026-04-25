@@ -2,7 +2,11 @@
 # Build artifacts
 # ========================
 build/
+.jules/
 *.orig
+*.csv
+*.patch
+*.txt
 cmake-build-*/
 CMakeFiles/
 CMakeCache.txt
