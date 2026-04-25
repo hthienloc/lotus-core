@@ -145,72 +145,52 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     
     if (valid) return;
 
-    // Zero-allocation, case-preserving reordering
-    char32_t buf[MAX_SYLLABLE_PART_LENGTH];
-    size_t len = 0;
+    std::u32string combined;
     if (s.glide.has_value()) {
         char32_t raw_g = s.glide.value();
         Tone t = unicode::get_tone(raw_g);
         if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
-        buf[len++] = unicode::strip_tone(raw_g);
+        combined += unicode::strip_tone(raw_g);
     }
     for (char32_t raw_v : s.vowel) {
-        if (len < MAX_SYLLABLE_PART_LENGTH) {
-            Tone t = unicode::get_tone(raw_v);
-            if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
-            buf[len++] = unicode::strip_tone(raw_v);
-        }
+        Tone t = unicode::get_tone(raw_v);
+        if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
+        combined += unicode::strip_tone(raw_v);
     }
-    
-    if (len < 2) return;
 
-    char32_t base_buf[MAX_SYLLABLE_PART_LENGTH];
-    char32_t sorted_base[MAX_SYLLABLE_PART_LENGTH];
-    for (size_t i = 0; i < len; ++i) {
-        base_buf[i] = unicode::to_lower(buf[i]);
-        sorted_base[i] = base_buf[i];
+    if (combined.length() < 2) return;
+
+    std::u32string base_combined;
+    for (char32_t c : combined) {
+        base_combined += unicode::to_lower(c);
     }
-    std::sort(sorted_base, sorted_base + len);
 
-    auto is_permutation = [&](std::u32string_view test_seq) {
-        if (test_seq.length() != len) return false;
-        char32_t test_sorted[MAX_SYLLABLE_PART_LENGTH];
-        for (size_t i = 0; i < len; ++i) test_sorted[i] = test_seq[i];
-        std::sort(test_sorted, test_sorted + len);
-        for (size_t i = 0; i < len; ++i) {
-            if (test_sorted[i] != sorted_base[i]) return false;
-        }
-        return true;
-    };
-
-    auto apply_match = [&](std::u32string_view test_seq, bool has_glide) {
-        char32_t output[MAX_SYLLABLE_PART_LENGTH];
-        bool used[MAX_SYLLABLE_PART_LENGTH] = {false};
-        for (size_t i = 0; i < len; ++i) {
-            char32_t target_base = test_seq[i];
-            for (size_t j = 0; j < len; ++j) {
-                if (!used[j] && base_buf[j] == target_base) {
-                    used[j] = true;
-                    output[i] = buf[j];
+    auto apply_match = [&](std::u32string_view target_seq, bool has_glide) {
+        std::u32string result;
+        std::vector<bool> used(combined.length(), false);
+        for (char32_t target_c : target_seq) {
+            for (size_t i = 0; i < base_combined.length(); ++i) {
+                if (!used[i] && base_combined[i] == target_c) {
+                    used[i] = true;
+                    result += combined[i];
                     break;
                 }
             }
         }
-        
+
         if (has_glide) {
-            s.glide = output[0];
-            s.vowel.clear();
-            for (size_t i = 1; i < len; ++i) s.vowel += output[i];
+            s.glide = result[0];
+            s.vowel = result.substr(1);
         } else {
             s.glide = std::nullopt;
-            s.vowel.clear();
-            for (size_t i = 0; i < len; ++i) s.vowel += output[i];
+            s.vowel = result;
         }
     };
 
     // 1. Check no glide
     for (std::u32string_view n : VALID_NUCLEI_U32) {
-        if (is_permutation(n)) {
+        if (n.length() == base_combined.length() &&
+            std::is_permutation(n.begin(), n.end(), base_combined.begin())) {
             apply_match(n, false);
             return;
         }
@@ -222,31 +202,28 @@ void SyllableParser::reorder_vowels(Syllable& s) {
         char32_t g = g_str[0];
 
         for (std::u32string_view n : VALID_NUCLEI_U32) {
-            if (n.empty()) continue;
-            if (1 + n.length() != len) continue;
+            if (n.empty() || (1 + n.length() != base_combined.length())) continue;
 
-            char32_t combo[MAX_SYLLABLE_PART_LENGTH];
-            combo[0] = g;
-            for (size_t i = 0; i < n.length(); ++i) combo[i+1] = n[i];
-            std::u32string_view combo_view(combo, len);
+            std::u32string combo;
+            combo += g;
+            combo += n;
 
-            if (is_permutation(combo_view)) {
+            if (std::is_permutation(combo.begin(), combo.end(), base_combined.begin())) {
                 char32_t next_char = n[0];
                 bool glide_ok = false;
                 std::u32string lower_init = unicode::to_lower(s.initial);
+                
                 for (const auto& rule : phonology::GLIDE_RULES) {
-                    if (rule.glide_char == g) {
-                        if (rule.initial_context.empty() || lower_init == rule.initial_context) {
-                            if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
-                                glide_ok = true;
-                                break;
-                            }
-                        }
+                    if (rule.glide_char == g &&
+                        (rule.initial_context.empty() || lower_init == rule.initial_context) &&
+                        rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
+                        glide_ok = true;
+                        break;
                     }
                 }
 
                 if (glide_ok) {
-                    apply_match(combo_view, true);
+                    apply_match(combo, true);
                     return;
                 }
             }

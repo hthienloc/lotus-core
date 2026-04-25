@@ -149,6 +149,8 @@ class Engine {
     void handle_hook_key_shortcuts(char32_t& key);
     EngineResult transform_buffer(char32_t key, std::string& raw_word);
     bool reclaim_from_history(InputMethod method);
+    bool is_word_boundary(char32_t c) const;
+    void commit_syllable_to_history(char32_t boundary_key);
 
     EngineResult build_result(const std::u32string& final_u32);
 

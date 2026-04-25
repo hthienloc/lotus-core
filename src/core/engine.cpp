@@ -39,6 +39,15 @@ static bool is_sentence_ending(char32_t c) {
     return c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r';
 }
 
+/**
+ * @brief Checks if a character is a general word boundary.
+ * @param c UTF-32 character.
+ * @return True if it acts as a boundary.
+ */
+bool Engine::is_word_boundary(char32_t c) const {
+    return c == ' ' || c == '\r' || c == '\n' || (c < 128 && (ispunct((int)c) || c == '\t'));
+}
+
 // ============================================================================
 // [ EngineResult Implementation ]
 // ============================================================================
@@ -109,31 +118,15 @@ void Engine::rebuild_from_text(const std::string& text) {
 
     std::u32string full_text = unicode::to_utf32(text);
     if (!full_text.empty()) {
-        char32_t last_c = full_text.back();
-        if (is_sentence_ending(last_c))
-            state.at_sentence_start = true;
-        else if (last_c != ' ' && last_c != '\t')
-            state.at_sentence_start = false;
-        else {
-            for (int i = (int)full_text.size() - 1; i >= 0; --i) {
-                if (is_sentence_ending(full_text[i])) {
-                    state.at_sentence_start = true;
-                    break;
-                }
-                if (full_text[i] != ' ' && full_text[i] != '\t') {
-                    state.at_sentence_start = false;
-                    break;
-                }
-            }
-        }
+        auto it = std::find_if(full_text.rbegin(), full_text.rend(),
+                               [](char32_t c) { return c != ' ' && c != '\t'; });
+        state.at_sentence_start = (it != full_text.rend() && is_sentence_ending(*it));
     }
 
     std::vector<std::string> words;
     std::string current_word;
-    for (char32_t c : unicode::to_utf32(text)) {
-        bool is_boundary =
-            (c == ' ' || c == '\r' || c == '\n' || (c < 128 && (ispunct((int)c) || c == '\t')));
-        if (is_boundary) {
+    for (char32_t c : full_text) {
+        if (is_word_boundary(c)) {
             if (!current_word.empty()) {
                 words.push_back(current_word);
                 current_word.clear();
@@ -158,13 +151,7 @@ void Engine::rebuild_from_text(const std::string& text) {
         std::u32string w32 = unicode::to_utf32(w);
         if (!w32.empty()) {
             char32_t last_c = w32.back();
-            bool is_boundary = (last_c == ' ' || last_c == '\r' || last_c == '\n' ||
-                                (last_c < 128 && (ispunct((int)last_c) || last_c == '\t')));
-            if (is_boundary) {
-                state.last_boundary_key = last_c;
-            } else {
-                state.last_boundary_key = 0;
-            }
+            state.last_boundary_key = is_word_boundary(last_c) ? last_c : 0;
         }
     }
 
@@ -189,6 +176,31 @@ void Engine::rebuild_from_text(const std::string& text) {
             state.last_boundary_key = 0;
         }
     }
+}
+
+/**
+ * @brief Commits the current syllable buffer to history, followed by the boundary key.
+ * @param boundary_key The boundary character that triggered the commit.
+ */
+void Engine::commit_syllable_to_history(char32_t boundary_key) {
+    if (!state.buffer.empty()) {
+        std::string current_str = unicode::to_utf8(state.buffer);
+        Tone tone_state = Tone::NONE;
+        bool consumed = false;
+
+        if (config.method == InputMethod::TELEX) {
+            apply_telex_rules(current_str, 0, consumed, tone_state);
+        } else {
+            apply_vni_rules(current_str, 0, consumed, tone_state);
+        }
+
+        current_str = unicode::normalize_nfc(current_str);
+        Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
+        if (tone_state != Tone::NONE)
+            s.tone = tone_state;
+        state.word_history.push(unicode::to_utf32(s.to_string(config.tone_style)));
+    }
+    state.word_history.push({boundary_key});
 }
 
 /**
@@ -343,13 +355,8 @@ void Engine::handle_hook_key_shortcuts(char32_t& key) {
  */
 bool Engine::handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result) {
     (void)result;
-    bool is_nav_key = key == KEY_UP || key == KEY_DOWN ||
-                      key == KEY_LEFT || key == KEY_RIGHT ||
-                      key == KEY_HOME || key == KEY_END ||
-                      key == KEY_PAGE_UP || key == KEY_PAGE_DOWN ||
-                      key == KEY_TAB || key == KEY_ESC;
-                      
-    bool is_ctrl_nav = mods.ctrl && (key == KEY_LEFT || key == KEY_RIGHT || key == KEY_HOME || key == KEY_END);
+    bool is_nav_key = std::find(NAV_KEYS.begin(), NAV_KEYS.end(), key) != NAV_KEYS.end();
+    bool is_ctrl_nav = mods.ctrl && std::find(CTRL_NAV_KEYS.begin(), CTRL_NAV_KEYS.end(), key) != CTRL_NAV_KEYS.end();
 
     if (is_nav_key || is_ctrl_nav) {
         clear_all();
@@ -442,8 +449,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
         return false;
 
     char32_t rc = recovered[0];
-    bool is_boundary = (recovered.size() == 1 && (rc == ' ' || rc == '\t' || rc == '\r' ||
-                                                  rc == '\n' || (rc < 128 && ispunct((int)rc))));
+    bool is_boundary = (recovered.size() == 1 && is_word_boundary(rc));
 
     if (is_boundary) {
         // If we reclaimed a boundary, we just set it as the active state
@@ -476,9 +482,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
  * @return True if the key was a boundary and was handled.
  */
 bool Engine::handle_boundary(char32_t key, EngineResult& result) {
-    bool is_boundary = (key == ' ' || key == '\r' || key == '\n' ||
-                        (key < 128 && (ispunct((int)key) || key == '\t')));
-    if (!is_boundary)
+    if (!is_word_boundary(key))
         return false;
 
     std::string raw_word = unicode::to_utf8(state.buffer);
@@ -495,34 +499,12 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     // Check if the boundary is a non-word breaking symbol that should clear context.
     // Standard sentence punctuation like .,!?;: and quotes/brackets might be safe to keep in history
     // but math symbols and special characters like @, #, $, +, = etc. should invalidate history.
-    bool is_safe_boundary = (key == ' ' || key == '\r' || key == '\n' || key == '\t' ||
-                             key == '.' || key == ',' || key == '!' || key == '?' ||
-                             key == ';' || key == ':' || key == '"' || key == '\'' ||
-                             key == '(' || key == ')' || key == '[' || key == ']' ||
-                             key == '{' || key == '}' || key == '-' || key == '_');
+    bool is_safe_boundary = SAFE_BOUNDARY_KEYS.find(key) != std::u32string_view::npos;
 
     if (!is_safe_boundary) {
         state.word_history.clear();
     } else {
-        // Push the transformed word and THEN the boundary to history for exact sync
-        if (!state.buffer.empty()) {
-            std::string current_str = unicode::to_utf8(state.buffer);
-            Tone tone_state = Tone::NONE;
-            bool consumed = false;
-
-            if (config.method == InputMethod::TELEX) {
-                apply_telex_rules(current_str, 0, consumed, tone_state);
-            } else {
-                apply_vni_rules(current_str, 0, consumed, tone_state);
-            }
-
-            current_str = unicode::normalize_nfc(current_str);
-            Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
-            if (tone_state != Tone::NONE)
-                s.tone = tone_state;
-            state.word_history.push(unicode::to_utf32(s.to_string(config.tone_style)));
-        }
-        state.word_history.push({key});
+        commit_syllable_to_history(key);
     }
 
     if (handle_shortcuts(key, result))

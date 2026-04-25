@@ -91,6 +91,15 @@ constexpr char32_t KEY_BACKSPACE = 8;
 constexpr char32_t KEY_CTRL_W = 23;
 constexpr char32_t KEY_DELETE = 127;
 
+constexpr std::array<char32_t, 10> NAV_KEYS = {
+    KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_HOME, KEY_END, KEY_PAGE_UP, KEY_PAGE_DOWN, KEY_TAB, KEY_ESC
+};
+constexpr std::array<char32_t, 4> CTRL_NAV_KEYS = {
+    KEY_LEFT, KEY_RIGHT, KEY_HOME, KEY_END
+};
+
+constexpr std::u32string_view SAFE_BOUNDARY_KEYS = U" \r\n\t.,!?;:\"'()[]{}-_";
+
 // Function keys
 constexpr char32_t KEY_F1 = 0xF001;
 constexpr char32_t KEY_F2 = 0xF002;
