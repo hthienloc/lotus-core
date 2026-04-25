@@ -1,86 +1,125 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (Direct Link Edition)
+// @name         Jules Session & Message Copier (V2.0 Bi-directional)
 // @namespace    http://tampermonkey.net/
-// @version      1.9
-// @description  Automated bridge with Local Relay Server
+// @version      2.0
+// @description  Full bi-directional bridge with Session ID filtering
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
-// @grant        GM_xmlhttpRequest
-// @connect      localhost
+// @grant        none
 // ==/UserScript==
 
 (function() {
     'use strict';
 
     const RELAY_URL = 'http://localhost:8080';
+    const SESSION_ID = window.location.href.split('/').pop();
 
-    console.log('%c[Lotus Bridge] Version 1.9 Active (Direct Link)', 'color: #34a853; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V2] Active for Session: ${SESSION_ID}`, 'color: #4285f4; font-weight: bold; font-size: 14px;');
 
-    function sendToRelay(data) {
-        fetch(RELAY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: json.stringify(data)
-        })
-        .then(response => console.log('[Lotus Bridge] Message delivered to local relay.'))
-        .catch(error => console.error('[Lotus Bridge] Relay error:', error));
+    function getChatInput() {
+        return document.querySelector('textarea') || document.querySelector('[contenteditable="true"]');
     }
 
-    function createCopyButton(container, textGetter) {
+    /**
+     * Polling Gemini for replies meant for THIS session
+     */
+    async function pollForReplies() {
+        try {
+            const res = await fetch(RELAY_URL);
+            const data = await res.json();
+
+            if (data.target_session_id === SESSION_ID && data.status === 'pending') {
+                console.log('[Lotus Bridge] New reply received from Gemini!');
+                injectApprovalUI(data.message);
+            }
+        } catch (e) {
+            // Relay might be down, ignore
+        }
+    }
+
+    function injectApprovalUI(message) {
+        if (document.getElementById('gemini-approval-panel')) return;
+
+        const panel = document.createElement('div');
+        panel.id = 'gemini-approval-panel';
+        Object.assign(panel.style, {
+            position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+            width: '400px', padding: '15px', background: '#fff9c4', border: '3px solid #fbc02d',
+            borderRadius: '12px', zIndex: '200000', boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            fontFamily: 'sans-serif', textAlign: 'center'
+        });
+
+        panel.innerHTML = `
+            <div style="font-weight:bold; color:#f57f17; margin-bottom:10px;">🤖 GEMINI PROPOSED A REPLY</div>
+            <div style="font-size:12px; background:white; padding:10px; border-radius:4px; text-align:left; max-height:150px; overflow-y:auto; border:1px solid #ddd;">
+                ${message.replace(/\n/g, '<br>')}
+            </div>
+            <div style="margin-top:15px; display:flex; gap:10px; justify-content:center;">
+                <button id="gemini-approve-btn" style="padding:8px 20px; background:#2e7d32; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">✅ CONFIRM & SEND</button>
+                <button id="gemini-reject-btn" style="padding:8px 20px; background:#c62828; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">❌ REJECT</button>
+            </div>
+        `;
+
+        document.body.appendChild(panel);
+
+        document.getElementById('gemini-approve-btn').onclick = () => {
+            const chat = getChatInput();
+            if (chat) {
+                chat.value = message;
+                chat.textContent = message;
+                chat.dispatchEvent(new Event('input', { bubbles: true }));
+                
+                const sendBtn = document.querySelector('button[type="submit"]') || 
+                                 document.querySelector('button[aria-label*="Send"]');
+                if (sendBtn) sendBtn.click();
+            }
+            panel.remove();
+            markReplyAsDone();
+        };
+
+        document.getElementById('gemini-reject-btn').onclick = () => {
+            panel.remove();
+            markReplyAsDone();
+        };
+    }
+
+    async function markReplyAsDone() {
+        // Tell local relay to clear/mark as done
+        await fetch(RELAY_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'clear_outbox' })
+        });
+    }
+
+    // Reuse the SYNC button from V1.9
+    function createSyncButton(container, textGetter) {
         if (container.getAttribute('data-gemini-injected') === 'true') return;
-        
         const btn = document.createElement('button');
         btn.textContent = '🚀 SYNC TO GEMINI';
         Object.assign(btn.style, {
-            display: 'block', marginTop: '10px', padding: '8px 16px',
-            background: '#4285f4', color: 'white', border: 'none', borderRadius: '8px',
-            fontSize: '12px', fontWeight: 'bold', cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            display: 'block', marginTop: '10px', padding: '6px 12px',
+            background: '#1a73e8', color: 'white', border: 'none', borderRadius: '4px',
+            fontSize: '11px', fontWeight: 'bold', cursor: 'pointer'
         });
-
-        btn.onclick = () => {
-            const payload = {
-                url: window.location.href,
-                message: textGetter(),
-                timestamp: new Date().toISOString()
-            };
-
-            // 1. Copy to clipboard (as fallback)
-            const textArea = document.createElement("textarea");
-            textArea.value = `Session URL: ${payload.url}\n\nMessage:\n${payload.message}`;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-
-            // 2. Send to Local Relay
-            fetch(RELAY_URL, {
-                method: 'POST',
-                mode: 'no-cors', // To avoid preflight issues in some browsers
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
+        btn.onclick = async () => {
+            const payload = { url: window.location.href, message: textGetter() };
+            await fetch(RELAY_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             btn.textContent = '⚡ SYNCED!';
-            btn.style.background = '#34a853';
-            setTimeout(() => {
-                btn.textContent = '🚀 SYNC TO GEMINI';
-                btn.style.background = '#4285f4';
-            }, 2000);
+            setTimeout(() => btn.textContent = '🚀 SYNC TO GEMINI', 2000);
         };
-
         container.appendChild(btn);
         container.setAttribute('data-gemini-injected', 'true');
     }
 
     function scan() {
-        const containers = document.querySelectorAll('swebot-agent-chat-bubble .message-container');
-        containers.forEach(container => {
-            const content = container.querySelector('swebot-markdown-viewer') || container;
-            createCopyButton(container, () => content.innerText);
+        document.querySelectorAll('swebot-agent-chat-bubble .message-container').forEach(c => {
+            const content = c.querySelector('swebot-markdown-viewer') || c;
+            createSyncButton(c, () => content.innerText);
         });
     }
 
     setInterval(scan, 1000);
+    setInterval(pollForReplies, 3000); // Poll for replies every 3 seconds
 })();
