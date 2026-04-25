@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (V2.9 Production)
+// @name         Jules Session & Message Copier (V3.1 Production)
 // @namespace    http://tampermonkey.net/
-// @version      2.9
-// @description  A robust, bi-directional bridge between Jules and Gemini Orchestrator with CSP compliance and state management.
+// @version      3.1
+// @description  A robust, bi-directional bridge with cache-busting, CSP compliance, and strict state management.
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
@@ -25,6 +25,9 @@
  * 
  * 4. SECURITY (CSP/Trusted Types): The UI is built using surgical DOM methods (createElement) 
  *    to bypass Google's strict Content Security Policy which blocks innerHTML.
+ * 
+ * 5. CACHE BUSTING: Polling requests include a timestamp parameter to prevent browser 
+ *    caching of local relay responses.
  */
 
 (function() {
@@ -37,7 +40,7 @@
     // In-memory set to prevent showing the same proposal multiple times in one session
     let handledMessages = new Set();
 
-    console.log(`%c[Lotus Bridge V2.9] Production Mode Active for Session: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V3.1] Production Cache-Buster Active for: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
 
     /**
      * Generates a simple fingerprint to uniquely identify a message string.
@@ -61,18 +64,23 @@
 
     /**
      * Periodically polls the local relay server for messages from Gemini.
+     * Uses cache-busting timestamp to ensure fresh data.
      */
     function poll() {
+        const cacheBusterUrl = `${RELAY_URL}?t=${Date.now()}`;
+
         GM_xmlhttpRequest({
             method: "GET",
-            url: RELAY_URL,
+            url: cacheBusterUrl,
+            timeout: 2000,
             onload: function(res) {
                 try {
                     const data = JSON.parse(res.responseText);
                     
-                    // If outbox is empty or not meant for us, clear local state and UI
+                    // Logic Cleanup: If server outbox is empty, reset local memory
                     if (!data || !data.message || data.status !== 'pending') {
                         if (handledMessages.size > 0) {
+                            console.log('[Lotus Bridge] Server cleared. Resetting local state.');
                             handledMessages.clear();
                         }
                         const existing = document.getElementById('gemini-safe-panel');
@@ -106,13 +114,13 @@
         Object.assign(panel.style, {
             position: 'fixed', bottom: '120px', left: '50%', transform: 'translateX(-50%)',
             width: '450px', padding: '20px', background: '#ffffff', border: '4px solid #3d5afe',
-            borderRadius: '16px', zIndex: '2147483647', boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
+            borderRadius: '16px', zIndex: '2147483647', boxShadow: '0 10px 40px rgba(61,90,254,0.3)',
             fontFamily: 'sans-serif'
         });
 
         // Header
         const title = document.createElement('div');
-        title.textContent = '🤖 GEMINI PROPOSED REPLY';
+        title.textContent = '⚡ GEMINI PROPOSED REPLY';
         Object.assign(title.style, { fontWeight: 'bold', color: '#1a237e', marginBottom: '12px', fontSize: '14px' });
         panel.appendChild(title);
 
