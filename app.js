@@ -8,6 +8,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const freeWSelect = document.getElementById('free-w-select');
     const stdUoCheckbox = document.getElementById('std-uo-checkbox');
     const autoRestoreCheckbox = document.getElementById('auto-restore-checkbox');
+    const doubleSpaceCheckbox = document.getElementById('double-space-checkbox');
+    const autoCapitalizeCheckbox = document.getElementById('auto-capitalize-checkbox');
+    const nonStandardInitialsCheckbox = document.getElementById('non-standard-initials-checkbox');
+    const macroModeSelect = document.getElementById('macro-mode-select');
+    const backspaceStyleSelect = document.getElementById('backspace-style-select');
     const showDebugCheckbox = document.getElementById('show-debug-checkbox');
     const resetBtn = document.getElementById('reset-btn');
 
@@ -84,6 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
         Module._lotus_core_set_free_w(engine, parseInt(freeWSelect.value));
         Module._lotus_core_set_std_uo(engine, stdUoCheckbox.checked ? 1 : 0);
         Module._lotus_core_set_auto_restore(engine, autoRestoreCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_double_space_to_period(engine, doubleSpaceCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_auto_capitalize(engine, autoCapitalizeCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_allow_non_standard_initials(engine, nonStandardInitialsCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_macro_mode(engine, parseInt(macroModeSelect.value));
+        Module._lotus_core_set_backspace_style(engine, parseInt(backspaceStyleSelect.value));
         uiLog('info', 'Engine configuration updated.');
         editor.focus();
     }
@@ -93,6 +103,11 @@ document.addEventListener("DOMContentLoaded", () => {
     freeWSelect.addEventListener('change', updateConfig);
     stdUoCheckbox.addEventListener('change', updateConfig);
     autoRestoreCheckbox.addEventListener('change', updateConfig);
+    doubleSpaceCheckbox.addEventListener('change', updateConfig);
+    autoCapitalizeCheckbox.addEventListener('change', updateConfig);
+    nonStandardInitialsCheckbox.addEventListener('change', updateConfig);
+    macroModeSelect.addEventListener('change', updateConfig);
+    backspaceStyleSelect.addEventListener('change', updateConfig);
 
     resetBtn.addEventListener('click', () => {
         if (engine) {
