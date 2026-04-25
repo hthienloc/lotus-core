@@ -13,10 +13,9 @@
 #include <algorithm>
 
 using namespace lotus_core;
+using namespace constants;
 
 namespace lotus_core {
-
-using namespace constants;
 
 // ============================================================================
 // [ Validator Implementation ]
@@ -196,27 +195,27 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
 }
 
 bool Validator::is_front_vowel(char32_t c) {
-    return std::find(constants::FRONT_VOWELS.begin(), constants::FRONT_VOWELS.end(), c) != constants::FRONT_VOWELS.end();
+    return std::find(FRONT_VOWELS.begin(), FRONT_VOWELS.end(), c) != FRONT_VOWELS.end();
 }
 
 bool Validator::is_front_vowel_strict(char32_t c) {
-    return std::find(constants::FRONT_VOWELS_STRICT.begin(), constants::FRONT_VOWELS_STRICT.end(), c) != constants::FRONT_VOWELS_STRICT.end();
+    return std::find(FRONT_VOWELS_STRICT.begin(), FRONT_VOWELS_STRICT.end(), c) != FRONT_VOWELS_STRICT.end();
 }
 
 bool Validator::is_e_vowel(char32_t c) {
-    return std::find(constants::E_VOWELS.begin(), constants::E_VOWELS.end(), c) != constants::E_VOWELS.end();
+    return std::find(E_VOWELS.begin(), E_VOWELS.end(), c) != E_VOWELS.end();
 }
 
 bool Validator::is_valid_ch_nh_nucleus(char32_t c) {
-    return std::find(constants::CH_NH_NUCLEI.begin(), constants::CH_NH_NUCLEI.end(), c) != constants::CH_NH_NUCLEI.end();
+    return std::find(CH_NH_NUCLEI.begin(), CH_NH_NUCLEI.end(), c) != CH_NH_NUCLEI.end();
 }
 
 bool Validator::is_centering_diphthong_requiring_coda(std::u32string_view v) {
-    return std::find(constants::CENTERING_DIPHTHONGS_REQ_CODA.begin(), constants::CENTERING_DIPHTHONGS_REQ_CODA.end(), v) != constants::CENTERING_DIPHTHONGS_REQ_CODA.end();
+    return std::find(CENTERING_DIPHTHONGS_REQ_CODA.begin(), CENTERING_DIPHTHONGS_REQ_CODA.end(), v) != CENTERING_DIPHTHONGS_REQ_CODA.end();
 }
 
 bool Validator::is_centering_diphthong_forbidding_coda(std::u32string_view v) {
-    return std::find(constants::CENTERING_DIPHTHONGS_NO_CODA.begin(), constants::CENTERING_DIPHTHONGS_NO_CODA.end(), v) != constants::CENTERING_DIPHTHONGS_NO_CODA.end();
+    return std::find(CENTERING_DIPHTHONGS_NO_CODA.begin(), CENTERING_DIPHTHONGS_NO_CODA.end(), v) != CENTERING_DIPHTHONGS_NO_CODA.end();
 }
 
 /**

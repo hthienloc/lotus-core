@@ -22,6 +22,8 @@
 
 using namespace lotus_core;
 
+using namespace constants;
+
 namespace lotus_core {
 
 // ============================================================================
@@ -341,13 +343,13 @@ void Engine::apply_std_uo(char32_t& key) {
  */
 bool Engine::handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result) {
     (void)result;
-    bool is_nav_key = key == constants::KEY_UP || key == constants::KEY_DOWN ||
-                      key == constants::KEY_LEFT || key == constants::KEY_RIGHT ||
-                      key == constants::KEY_HOME || key == constants::KEY_END ||
-                      key == constants::KEY_PAGE_UP || key == constants::KEY_PAGE_DOWN ||
-                      key == constants::KEY_TAB || key == constants::KEY_ESC;
+    bool is_nav_key = key == KEY_UP || key == KEY_DOWN ||
+                      key == KEY_LEFT || key == KEY_RIGHT ||
+                      key == KEY_HOME || key == KEY_END ||
+                      key == KEY_PAGE_UP || key == KEY_PAGE_DOWN ||
+                      key == KEY_TAB || key == KEY_ESC;
                       
-    bool is_ctrl_nav = mods.ctrl && (key == constants::KEY_LEFT || key == constants::KEY_RIGHT || key == constants::KEY_HOME || key == constants::KEY_END);
+    bool is_ctrl_nav = mods.ctrl && (key == KEY_LEFT || key == KEY_RIGHT || key == KEY_HOME || key == KEY_END);
 
     if (is_nav_key || is_ctrl_nav) {
         clear_all();
@@ -363,7 +365,7 @@ bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
     if (key != 0 && key == state.last_modifier_key && !state.buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
         bool revertible =
-            (constants::TELEX_MARKERS.find(static_cast<char>(lk)) != std::string_view::npos);
+            (TELEX_MARKERS.find(static_cast<char>(lk)) != std::string_view::npos);
         if (revertible) {
             state.buffer.push_back(key);
             state.last_modifier_key = 0;
@@ -385,13 +387,13 @@ bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
  * If the state.buffer is not empty, it attempts to reconstruct the previous syllable state.
  * If the state.buffer is empty, it attempts to recover the last committed word from history.
  *
- * @param key The key pressed (constants::KEY_BACKSPACE or constants::KEY_DELETE).
+ * @param key The key pressed (KEY_BACKSPACE or KEY_DELETE).
  * @param mods Keyboard modifiers.
  * @param result OUT: The engine result to populate.
  * @return True if the key was a backspace and was handled.
  */
 bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result) {
-    if (key != constants::KEY_BACKSPACE && key != constants::KEY_DELETE)
+    if (key != KEY_BACKSPACE && key != KEY_DELETE)
         return false;
     if (!state.buffer.empty()) {
         std::string word = unicode::to_utf8(state.last_committed_text);

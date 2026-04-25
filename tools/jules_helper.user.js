@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (V2.6 Fixed)
+// @name         Jules Session & Message Copier (V2.7 Smart State)
 // @namespace    http://tampermonkey.net/
-// @version      2.6
-// @description  CSP-Compliant UI with syntax fixes for Violentmonkey
+// @version      2.7
+// @description  Prevents duplicate popups using local message fingerprinting
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
@@ -15,8 +15,22 @@
 
     const RELAY_URL = 'http://localhost:8080';
     const SESSION_ID = window.location.href.split('/').pop();
+    
+    // Ghi nhớ các tin nhắn đã xử lý để không hiện lại
+    let handledMessages = new Set();
 
-    console.log(`%c[Lotus Bridge V2.6] Syntax Fixed Mode`, 'color: #00e5ff; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V2.7] Smart State Active`, 'color: #7c4dff; font-weight: bold;');
+
+    function getChatInput() {
+        return document.querySelector('textarea') || document.querySelector('[contenteditable="true"]');
+    }
+
+    /**
+     * Creates a unique ID for a message to track it
+     */
+    function getMessageFingerprint(msg) {
+        return btoa(unescape(encodeURIComponent(msg))).slice(0, 32);
+    }
 
     function poll() {
         GM_xmlhttpRequest({
@@ -26,14 +40,23 @@
                 try {
                     const data = JSON.parse(res.responseText);
                     if (data.target_session_id === SESSION_ID && data.status === 'pending') {
-                        injectSafeUI(data.message);
+                        const fingerprint = getMessageFingerprint(data.message);
+                        
+                        // CHỈ hiện nếu tin nhắn này chưa từng được xử lý
+                        if (!handledMessages.has(fingerprint)) {
+                            injectSafeUI(data.message, fingerprint);
+                        }
+                    } else {
+                        // Nếu server báo không còn tin nhắn pending, xóa UI nếu đang hiện
+                        const existing = document.getElementById('gemini-safe-panel');
+                        if (existing && data.status !== 'pending') existing.remove();
                     }
                 } catch (e) {}
             }
         });
     }
 
-    function injectSafeUI(message) {
+    function injectSafeUI(message, fingerprint) {
         if (document.getElementById('gemini-safe-panel')) return;
 
         const panel = document.createElement('div');
@@ -52,7 +75,6 @@
 
         const msgBox = document.createElement('div');
         msgBox.textContent = message;
-        // Dùng whiteSpace thay vì white-space để tránh SyntaxError
         Object.assign(msgBox.style, {
             fontSize: '13px', color: '#333', textAlign: 'left', maxHeight: '150px',
             overflowY: 'auto', background: '#f1f8e9', padding: '12px', borderRadius: '8px',
@@ -71,7 +93,7 @@
         });
         
         sendBtn.onclick = () => {
-            const chat = document.querySelector('textarea') || document.querySelector('[contenteditable="true"]');
+            const chat = getChatInput();
             if (chat) {
                 chat.value = message;
                 chat.textContent = message;
@@ -81,10 +103,10 @@
                     if (btn) btn.click();
                 }, 100);
             }
+            handledMessages.add(fingerprint); // Đánh dấu đã xử lý
             panel.remove();
-            GM_xmlhttpRequest({ method: "POST", url: RELAY_URL, data: JSON.stringify({ action: 'clear_outbox' }) });
+            clearOutbox();
         };
-        btnGroup.appendChild(sendBtn);
 
         const rejectBtn = document.createElement('button');
         rejectBtn.textContent = '❌ REJECT';
@@ -93,13 +115,23 @@
             border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
         });
         rejectBtn.onclick = () => {
+            handledMessages.add(fingerprint); // Đánh dấu đã xử lý
             panel.remove();
-            GM_xmlhttpRequest({ method: "POST", url: RELAY_URL, data: JSON.stringify({ action: 'clear_outbox' }) });
+            clearOutbox();
         };
-        btnGroup.appendChild(rejectBtn);
 
+        btnGroup.appendChild(sendBtn);
+        btnGroup.appendChild(rejectBtn);
         panel.appendChild(btnGroup);
         document.body.appendChild(panel);
+    }
+
+    function clearOutbox() {
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: RELAY_URL,
+            data: JSON.stringify({ action: 'clear_outbox' })
+        });
     }
 
     function injectSync(c, getter) {

@@ -1,9 +1,15 @@
+/**
+ * @file style.css
+ * @brief Stylesheet for the Lotus Core Web Demo
+ */
+
 :root {
     --bg-color: #f8f9fa;
     --text-color: #212529;
     --border-color: #dee2e6;
     --primary-color: #d63384; /* Lotus pink */
     --editor-bg: #ffffff;
+    --sidebar-bg: #f1f3f5;
     --log-bg: #1e1e1e;
     --log-text: #00ff00;
 }
@@ -18,7 +24,7 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -38,55 +44,126 @@ header p {
     margin-top: 0;
 }
 
-.settings {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    background-color: var(--editor-bg);
-    padding: 15px;
+/**
+ * @brief Main Layout Configuration
+ * Implements a 2-column layout using CSS Grid
+ */
+.layout-main {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 25px;
+    align-items: start;
+}
+
+/**
+ * @brief Sidebar Styles
+ */
+.sidebar {
+    background-color: var(--sidebar-bg);
+    padding: 20px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    margin-bottom: 20px;
-    align-items: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.settings-section {
+    margin-bottom: 25px;
+}
+
+.settings-section h2 {
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #6c757d;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+    margin-top: 0;
+    margin-bottom: 15px;
 }
 
 .setting-group {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    margin-bottom: 15px;
     gap: 5px;
 }
 
-select, button {
-    padding: 5px 10px;
+.setting-group label {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.setting-group.checkbox-group {
+    flex-direction: row;
+    align-items: center;
+}
+
+.setting-group.checkbox-group label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+select {
+    padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     background-color: #fff;
     cursor: pointer;
+    width: 100%;
+    font-size: 14px;
+}
+
+.reset-area {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
 }
 
 button {
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
     background-color: #e9ecef;
+    cursor: pointer;
+    width: 100%;
+    font-weight: 600;
+    color: #495057;
+    transition: background-color 0.2s;
 }
 
 button:hover {
     background-color: #dee2e6;
 }
 
+/**
+ * @brief Main Content Styles
+ */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
 .editor-container {
-    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
 }
 
 #editor {
     width: 100%;
-    height: 200px;
-    padding: 15px;
+    height: 400px;
+    padding: 20px;
     font-size: 18px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     resize: vertical;
     box-sizing: border-box;
-    font-family: inherit;
+    font-family: "Courier New", Courier, monospace;
     line-height: 1.5;
+    background-color: var(--editor-bg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 #editor:focus {
@@ -99,11 +176,12 @@ button:hover {
     background-color: var(--log-bg);
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .log-container h3 {
     margin: 0;
-    padding: 10px 15px;
+    padding: 12px 15px;
     background-color: #2d2d2d;
     color: #fff;
     font-size: 14px;
@@ -111,7 +189,7 @@ button:hover {
 }
 
 .log-output {
-    height: 250px;
+    height: 300px;
     overflow-y: auto;
     padding: 15px;
     font-family: "Courier New", Courier, monospace;
@@ -129,4 +207,11 @@ footer {
     margin-top: 40px;
     color: #6c757d;
     font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .layout-main {
+        grid-template-columns: 1fr;
+    }
 }

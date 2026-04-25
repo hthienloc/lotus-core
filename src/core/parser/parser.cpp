@@ -18,6 +18,8 @@
 
 using namespace lotus_core;
 
+using namespace constants;
+
 namespace lotus_core {
 
 // ============================================================================
@@ -120,7 +122,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
 
     bool valid = true;
     if (!s.vowel.empty()) {
-        valid = std::find(constants::VALID_NUCLEI_U32.begin(), constants::VALID_NUCLEI_U32.end(), s.vowel) != constants::VALID_NUCLEI_U32.end();
+        valid = std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), s.vowel) != VALID_NUCLEI_U32.end();
     }
     
     if (valid && s.glide.has_value()) {
@@ -144,7 +146,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     if (valid) return;
 
     // Zero-allocation, case-preserving reordering
-    char32_t buf[constants::MAX_SYLLABLE_PART_LENGTH];
+    char32_t buf[MAX_SYLLABLE_PART_LENGTH];
     size_t len = 0;
     if (s.glide.has_value()) {
         char32_t raw_g = s.glide.value();
@@ -153,7 +155,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
         buf[len++] = unicode::strip_tone(raw_g);
     }
     for (char32_t raw_v : s.vowel) {
-        if (len < constants::MAX_SYLLABLE_PART_LENGTH) {
+        if (len < MAX_SYLLABLE_PART_LENGTH) {
             Tone t = unicode::get_tone(raw_v);
             if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
             buf[len++] = unicode::strip_tone(raw_v);
@@ -162,8 +164,8 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     
     if (len < 2) return;
 
-    char32_t base_buf[constants::MAX_SYLLABLE_PART_LENGTH];
-    char32_t sorted_base[constants::MAX_SYLLABLE_PART_LENGTH];
+    char32_t base_buf[MAX_SYLLABLE_PART_LENGTH];
+    char32_t sorted_base[MAX_SYLLABLE_PART_LENGTH];
     for (size_t i = 0; i < len; ++i) {
         base_buf[i] = unicode::to_lower(buf[i]);
         sorted_base[i] = base_buf[i];
@@ -172,7 +174,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
 
     auto is_permutation = [&](std::u32string_view test_seq) {
         if (test_seq.length() != len) return false;
-        char32_t test_sorted[constants::MAX_SYLLABLE_PART_LENGTH];
+        char32_t test_sorted[MAX_SYLLABLE_PART_LENGTH];
         for (size_t i = 0; i < len; ++i) test_sorted[i] = test_seq[i];
         std::sort(test_sorted, test_sorted + len);
         for (size_t i = 0; i < len; ++i) {
@@ -182,8 +184,8 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     };
 
     auto apply_match = [&](std::u32string_view test_seq, bool has_glide) {
-        char32_t output[constants::MAX_SYLLABLE_PART_LENGTH];
-        bool used[constants::MAX_SYLLABLE_PART_LENGTH] = {false};
+        char32_t output[MAX_SYLLABLE_PART_LENGTH];
+        bool used[MAX_SYLLABLE_PART_LENGTH] = {false};
         for (size_t i = 0; i < len; ++i) {
             char32_t target_base = test_seq[i];
             for (size_t j = 0; j < len; ++j) {
@@ -207,7 +209,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     };
 
     // 1. Check no glide
-    for (std::u32string_view n : constants::VALID_NUCLEI_U32) {
+    for (std::u32string_view n : VALID_NUCLEI_U32) {
         if (is_permutation(n)) {
             apply_match(n, false);
             return;
@@ -215,15 +217,15 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     }
 
     // 2. Check with glide
-    for (std::u32string_view g_str : constants::VALID_GLIDES_U32) {
+    for (std::u32string_view g_str : VALID_GLIDES_U32) {
         if (g_str.empty()) continue;
         char32_t g = g_str[0];
 
-        for (std::u32string_view n : constants::VALID_NUCLEI_U32) {
+        for (std::u32string_view n : VALID_NUCLEI_U32) {
             if (n.empty()) continue;
             if (1 + n.length() != len) continue;
 
-            char32_t combo[constants::MAX_SYLLABLE_PART_LENGTH];
+            char32_t combo[MAX_SYLLABLE_PART_LENGTH];
             combo[0] = g;
             for (size_t i = 0; i < n.length(); ++i) combo[i+1] = n[i];
             std::u32string_view combo_view(combo, len);

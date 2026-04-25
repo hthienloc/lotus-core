@@ -12,6 +12,8 @@
 
 using namespace lotus_core;
 
+using namespace constants;
+
 // ============================================================================
 // [ Test Utilities ]
 // ============================================================================
@@ -30,7 +32,7 @@ void type_into(Engine& engine, std::u32string& screen, const std::string& keys,
 
         // Simulate frontend backspace behavior (e.g., when the engine doesn't explicitly
         // handle a raw backspace keypress but the user expects the editor to delete).
-        if (res.backspace == 0 && (c == constants::KEY_BACKSPACE || c == constants::KEY_DELETE)) {
+        if (res.backspace == 0 && (c == KEY_BACKSPACE || c == KEY_DELETE)) {
             if (!screen.empty())
                 screen.pop_back();
         } else {
@@ -211,7 +213,7 @@ void test_engine_production_features() {
     {
         std::u32string screen;
         type_into(engine, screen, "hello ");
-        auto res = engine.process_key(constants::KEY_BACKSPACE, mods);  // Backspace
+        auto res = engine.process_key(KEY_BACKSPACE, mods);  // Backspace
         assert(res.action == EngineAction::TRANSFORM);
         assert(res.backspace == 1);
         assert(res.count == 0);
@@ -285,7 +287,7 @@ void test_engine_punctuation_backspace() {
     assert(unicode::to_utf8(screen) == "thử. ");
 
     // Backspace: deletes ' '
-    auto res0 = engine.process_key(constants::KEY_DELETE, mods);
+    auto res0 = engine.process_key(KEY_DELETE, mods);
     for (int i = 0; i < res0.backspace; i++)
         if (!screen.empty())
             screen.pop_back();
@@ -294,7 +296,7 @@ void test_engine_punctuation_backspace() {
     assert(unicode::to_utf8(screen) == "thử.");
 
     // Backspace: deletes '.'
-    auto res1 = engine.process_key(constants::KEY_DELETE, mods);
+    auto res1 = engine.process_key(KEY_DELETE, mods);
     for (int i = 0; i < res1.backspace; i++)
         if (!screen.empty())
             screen.pop_back();
@@ -303,7 +305,7 @@ void test_engine_punctuation_backspace() {
     assert(unicode::to_utf8(screen) == "thử");
 
     // Backspace again: deletes 'ử' -> "thư"
-    auto res2 = engine.process_key(constants::KEY_DELETE, mods);
+    auto res2 = engine.process_key(KEY_DELETE, mods);
     for (int i = 0; i < res2.backspace; i++)
         if (!screen.empty())
             screen.pop_back();
@@ -327,7 +329,7 @@ void test_engine_reproduction_user() {
     assert(unicode::to_utf8(screen) == "thử. ");
 
     // BS1: delete space
-    auto res1 = engine.process_key(constants::KEY_DELETE, mods);
+    auto res1 = engine.process_key(KEY_DELETE, mods);
     for (int i = 0; i < res1.backspace; i++)
         if (!screen.empty())
             screen.pop_back();
@@ -336,7 +338,7 @@ void test_engine_reproduction_user() {
     assert(unicode::to_utf8(screen) == "thử.");
 
     // BS2: delete dot
-    auto res2 = engine.process_key(constants::KEY_DELETE, mods);
+    auto res2 = engine.process_key(KEY_DELETE, mods);
     for (int i = 0; i < res2.backspace; i++)
         if (!screen.empty())
             screen.pop_back();

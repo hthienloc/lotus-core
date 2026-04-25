@@ -15,6 +15,8 @@
 
 using namespace lotus_core;
 
+using namespace constants;
+
 /**
  * @struct LatencyStats
  * @brief Container for performance metrics collected during a benchmark scenario.
@@ -69,7 +71,7 @@ class BenchmarkSuite {
             for (char c : s.keys) {
                 char32_t key = static_cast<unsigned char>(c);
                 if (c == '\b')
-                    key = constants::KEY_BACKSPACE;  // ASCII Backspace
+                    key = KEY_BACKSPACE;  // ASCII Backspace
 
                 auto start = std::chrono::high_resolution_clock::now();
                 engine.process_key(key, {});

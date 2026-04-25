@@ -17,6 +17,8 @@
 
 using namespace lotus_core;
 
+using namespace constants;
+
 // ============================================================================
 // [ Test Utilities ]
 // ============================================================================
@@ -29,7 +31,7 @@ void type_into_edge(Engine& engine, std::u32string& screen, const std::string& k
     for (unsigned char c : keys) {
         auto res = engine.process_key(static_cast<char32_t>(c), mods);
 
-        if (res.backspace == 0 && (c == constants::KEY_BACKSPACE || c == constants::KEY_DELETE)) {
+        if (res.backspace == 0 && (c == KEY_BACKSPACE || c == KEY_DELETE)) {
             if (!screen.empty())
                 screen.pop_back();
         } else {
