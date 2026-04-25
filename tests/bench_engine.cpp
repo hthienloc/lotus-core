@@ -69,7 +69,7 @@ class BenchmarkSuite {
             for (char c : s.keys) {
                 char32_t key = static_cast<unsigned char>(c);
                 if (c == '\b')
-                    key = lotus_core::constants::KEY_BACKSPACE;  // ASCII Backspace
+                    key = constants::KEY_BACKSPACE;  // ASCII Backspace
 
                 auto start = std::chrono::high_resolution_clock::now();
                 engine.process_key(key, {});

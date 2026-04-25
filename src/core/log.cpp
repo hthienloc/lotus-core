@@ -11,6 +11,8 @@
 #include <fstream>
 #include <iomanip>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 struct TraceEvent {

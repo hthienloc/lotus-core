@@ -2,6 +2,8 @@
 #include "lotus_core/log.h"
 #include <string>
 
+using namespace lotus_core;
+
 extern "C" {
 
 /**
@@ -12,7 +14,7 @@ void lotus_core_process_key_js(lotus_core_t* engine, uint32_t key, bool shift, b
     if (!engine || !result_ptr) return;
     
     // Log the incoming values to verify integrity
-    lotus_core::emit_log(lotus_core::LogLevel::DEBUG, 
+    emit_log(LogLevel::DEBUG, 
         std::string("[WASM CAPI] Received key: ") + std::to_string(key) + 
         " shift: " + std::to_string(shift) + 
         " caps_lock: " + std::to_string(caps_lock));

@@ -2,6 +2,8 @@
 #include "lotus_core/smart_typing.h"
 #include <gtest/gtest.h>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 namespace testing {
 

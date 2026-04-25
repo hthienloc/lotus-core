@@ -18,9 +18,11 @@
 #include <string_view>
 #include <vector>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
-using namespace lotus_core::constants;
+using namespace constants;
 
 // ============================================================================
 // [ Internal Data ]

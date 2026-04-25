@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cctype>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 void ShortcutManager::add_shortcut(const std::string& trigger, const std::string& replacement) {

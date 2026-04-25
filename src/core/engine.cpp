@@ -20,6 +20,8 @@
 #include <cctype>
 #include <cstring>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 // ============================================================================
@@ -252,7 +254,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         apply_vni_modifiers(current_str, key, key_consumed, tone_state);
     }
 
-    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "After IM: " + current_str +
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "After IM: " + current_str +
                     " (Tone: " + std::to_string(static_cast<int>(tone_state)) +
                     ", Consumed: " + (key_consumed ? "Y" : "N") + ")"));
 
@@ -264,7 +266,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     if (tone_state != Tone::NONE)
         s.tone = tone_state;
 
-    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Parsed: " + s.to_string(config.tone_style)));
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Parsed: " + s.to_string(config.tone_style)));
 
     // THE GATE (Post-IM): Initial Consonant Validation
     // This is the first line of defense against English words.
@@ -288,7 +290,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
 
     // If the transformation resulted in an invalid prefix, favor the raw English input.
     if (config.auto_restore && !has_valid_initial && !key_consumed) {
-        LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
+        LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
         return make_transformation_result(state.buffer);
     }
 
@@ -298,11 +300,11 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     bool is_valid_vn = Validator::is_valid(s, nullptr, config.allow_non_standard_initials);
     bool is_eng = Linguistics::is_likely_english(raw_word);
 
-    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") +
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Gates: ValidVN=" + std::string(is_valid_vn ? "Y" : "N") +
                     ", LikelyEng=" + std::string(is_eng ? "Y" : "N")));
 
     if (config.auto_restore && is_eng && (!is_valid_vn || (!key_consumed && key != 'z' && key != 'Z'))) {
-        LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Restore: English word logic"));
+        LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: English word logic"));
         return make_transformation_result(state.buffer);
     }
 
@@ -314,7 +316,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     // This ensures `config.auto_restore` restores exactly what was typed and allows 
     // `Linguistics::is_likely_english` to accurately evaluate the original key sequence.
 
-    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Final: " + final_v_word));
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Final: " + final_v_word));
     return make_transformation_result(unicode::to_utf32(final_v_word));
 }
 
@@ -457,7 +459,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
         std::vector<char32_t> keys = s.to_keys(method);
         state.buffer.assign(keys.begin(), keys.end());
         state.last_committed_text = recovered;
-        LOTUS_LOG_DEBUG(lotus_core::format_log_message("BACKSPACE", "Reclaimed word: '" + unicode::to_utf8(recovered) + "'"));
+        LOTUS_LOG_DEBUG(format_log_message("BACKSPACE", "Reclaimed word: '" + unicode::to_utf8(recovered) + "'"));
     }
     return true;
 }
@@ -927,7 +929,7 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
     for (int i = 0; i < result.count; i++)
         result.chars[i] = final_u32[i];
 
-    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PIPELINE", "Result: BS=" + std::to_string((int)result.backspace) +
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Result: BS=" + std::to_string((int)result.backspace) +
                     ", Count=" + std::to_string((int)result.count) + ", PrevText='" +
                     unicode::to_utf8(state.last_committed_text) + "'"));
 

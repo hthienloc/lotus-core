@@ -2,6 +2,8 @@
 #include "lotus_core/parser.h"
 #include "lotus_core/unicode.h"
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 /**

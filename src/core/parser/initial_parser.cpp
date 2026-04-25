@@ -4,6 +4,8 @@
 #include "lotus_core/validator.h"
 #include "lotus_core/phonology_data.h"
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 /**

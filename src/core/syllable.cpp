@@ -8,6 +8,8 @@
 
 #include <map>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 // ============================================================================

@@ -12,9 +12,11 @@
 
 #include <algorithm>
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
-using namespace lotus_core::constants;
+using namespace constants;
 
 // ============================================================================
 // [ Validator Implementation ]

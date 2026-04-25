@@ -1,5 +1,7 @@
 #include "lotus_core/parser_components.h"
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 /**

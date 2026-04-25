@@ -1,6 +1,8 @@
 #include "lotus_core/smart_typing.h"
 #include "lotus_core/unicode.h"
 
+using namespace lotus_core;
+
 namespace lotus_core {
 
 bool SmartTyping::handle(char32_t& key, bool double_space_to_period, bool auto_capitalize, char32_t last_boundary_key, bool at_sentence_start, const std::u32string& buffer, EngineResult& result, std::u32string& last_committed_text) {
