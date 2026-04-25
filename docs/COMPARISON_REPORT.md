@@ -1,54 +1,53 @@
-# ⚖️ Lotus Core: A Comparative Analysis
+# Technical Comparison Report: Vietnamese IM Engines
 
-> Lotus Core represents the next generation of Vietnamese input processing, designed specifically to address the architectural and functional limitations of existing solutions like Bamboo and GoNhanh. This report outlines how Lotus Core synergizes the strengths of both engines while establishing a new standard for high-performance, developer-centric input processing.
+This report analyzes core architectural insights from three leading Vietnamese input method engines to guide the evolution of **Lotus Core**.
 
 ---
 
-## 🏗️ 1. Architectural Foundation & Modularity
+## 1. Bamboo Core (LotusInputMethod)
+**Strength:** Linguistic Accuracy and ABI Stability.
 
-### The Status Quo
-- **Bamboo Core**: While offering exceptional linguistic accuracy and nuanced features (such as complex vowel reordering and precise tone placement), Bamboo's architecture can be somewhat monolithic, making it harder to embed in constrained environments or decouple from its specific runtime assumptions.
-- **GoNhanh**: Achieves incredible speed through a highly optimized 4-stage pipeline, but sacrifices some linguistic edge cases and modular extensibility to maintain its performance profile.
+### Key Insights:
+- **Transformation Graph:** Instead of simple string replacement, Bamboo treats every keystroke as a node in a graph. Diacritics and tones are linked as dependencies to base characters.
+- **Floating Tone Hook:** Implements a `refreshLastToneTarget` mechanism. When a syllable structure changes (e.g., `hòa` + `n` -> `hoàn`), the tone automatically repositions itself based on phonetic rules.
+- **Opaque Handle C-API:** Uses ID-based handles (uintptr) for engine instances. This ensures absolute memory safety and stability for high-level bindings (Rust, Python, WASM).
 
-### The Lotus Core Advantage
-Lotus Core is built from the ground up using **modern C++20**, prioritizing zero-dependency modularity. 
-- **Decoupled Architecture**: The engine separates phonology, validation, and transformation into distinct, easily testable layers.
-- **Stable C-API**: By adopting a robust C-API (inspired by bamboo-core but modernized), Lotus guarantees no C++ ABI leakage. This makes integrating Lotus into Fcitx5, custom CLI tools, or mobile runtimes incredibly straightforward and safe.
-- **Embeddability**: The lightweight, stateless design ensures Lotus can run anywhere, from heavy desktop environments to resource-constrained embedded systems.
+**Actionable for Lotus Core:**
+- [ ] Implement a dependency-based tone placement system.
+- [ ] Transition C-API to an Opaque Handle pattern for better FFI safety.
 
-## ⚡ 2. Performance & Efficiency
+---
 
-### The Status Quo
-- **GoNhanh**: Sets the benchmark for ultra-low latency design.
-- **Bamboo Core**: Can sometimes struggle with high-frequency keystroke processing in complex surrounding-text scenarios due to state management overhead.
+## 2. NexusKey
+**Strength:** Modern C++ Engineering and System Integration.
 
-### The Lotus Core Advantage
-Lotus Core targets the performance benchmarks set by GoNhanh while preserving the accuracy of Bamboo.
-- **Microsecond Latency**: Lotus is engineered for an average processing latency of < 0.05ms.
-- **Zero-Allocation Hot Paths**: Utilizing C++20 features (like `std::span` and `constexpr` tables where applicable), Lotus ensures that the critical path (`process_key`) requires zero dynamic memory allocations, eliminating garbage collection or heap overhead during active typing.
-- **Optimized Pipeline**: Transitioning to a streamlined 4-stage pipeline (Stroke, Vowel, Mark, Cleanup) dramatically reduces cycle counts per keystroke compared to traditional 7/8-stage models.
+### Key Insights:
+- **CharState Pattern:** Stores input as a `vector<CharState>` where each state explicitly holds `{base, modifier, tone, case}`. Unicode rendering only happens at the final stage.
+- **Lock-Free Configuration:** Uses C++20 `std::atomic_ref` and shared memory for non-blocking configuration sync between the engine and the UI process.
+- **Context Anchors:** Allows the engine to accept external "context hints" from platform-specific APIs (like Windows TSF), improving auto-capitalization accuracy.
 
-## 🧠 3. Developer-Centric Intelligence
+**Actionable for Lotus Core:**
+- [ ] Explore the `CharState` model to simplify backspacing and tone relocation logic.
+- [ ] Use atomic state flags for thread-safe configuration management.
 
-### The Status Quo
-- **Bamboo & GoNhanh**: Both engines struggle when users rapidly switch between typing Vietnamese and code/English (e.g., in developer tools like VS Code, VIM, or Claude Code). Naive English whitelists are often insufficient and bloat memory.
+---
 
-### The Lotus Core Advantage
-Lotus Core introduces **Developer-First Auto-Restore Logic**.
-- **Phonotactic Detection over Whitelists**: Instead of relying solely on massive dictionaries, Lotus uses strict Vietnamese phonological rules (validating Initial, Glide, Nucleus, Final) to instantly detect non-Vietnamese patterns.
-- **Raw Keystroke Preservation**: The engine maintains a raw composition buffer, allowing it to instantly auto-restore to the exact typed characters (e.g., `status`, `what`, code syntax) without dropping state or requiring the user to manually disable the IME.
+## 3. GoNhanh
+**Strength:** Extreme Performance and Minimalism.
 
-## 🎯 4. Linguistic Precision
+### Key Insights:
+- **4-Stage Pipeline:** Uses a streamlined model: `Stroke -> Vowel -> Mark -> Cleanup`. This reduces the computational cycles per keystroke significantly.
+- **Zero-Allocation Hot Loop:** Utilizes fixed-size stack-allocated arrays for all intermediate processing, avoiding heap churn entirely.
+- **Aggressive Inlining:** Heavily relies on `inline` linguistic primitives and data-driven static tables.
 
-### The Status Quo
-- **Bamboo Core**: The gold standard for precise tone placement (Old vs. New style) and complex vowel clusters.
-- **GoNhanh**: Sometimes simplifies these rules for speed.
+**Actionable for Lotus Core:**
+- [ ] Finalize the transition to `StaticString` (Zero-Allocation).
+- [ ] Refactor the 7-stage pipeline into a consolidated 4-stage model for < 0.01ms latency.
 
-### The Lotus Core Advantage
-Lotus Core refuses to compromise on linguistic accuracy.
-- **Strict Orthic Rules**: Enforces validation against 173+ exhaustive Vietnamese rhymes.
-- **Runtime Flexibility**: Offers runtime-selectable tone styles (`hòa` vs. `hoà`) and intelligent handling of complex clusters (`iêu`, `uôi`, `ưa`), ensuring output perfectly matches the user's stylistic preference, outputting strictly in stable Unicode NFC format.
+---
 
-## 🏁 Conclusion
-
-Lotus Core is not merely a hybrid of Bamboo and GoNhanh; it is an evolution. By leveraging modern C++20, an uncompromising C-API, ultra-low latency design principles, and developer-first context awareness, Lotus Core positions itself as the premier core engine for any application requiring world-class Vietnamese input.
+## Summary of Strategy
+Lotus Core will aim to be the **"Balanced Engine"**:
+1. **Bamboo's Precision**: Through Floating Tone dependency logic.
+2. **NexusKey's Modernity**: Through C++20 primitives and modular state.
+3. **GoNhanh's Speed**: Through Zero-Allocation and a 4-stage pipeline.

@@ -22,28 +22,25 @@ Lotus Core is a high-performance, developer-centric core engine designed for max
   - Decomposed Engine into ContextTracker, InputDispatcher, and CompositionBuffer.
   - Table-driven logic for all linguistic transformations.
 - [ ] **Ultra-Low Latency and Zero-Allocation**
-  - Transition internal buffers to stack-based structures to achieve a zero-allocation hot loop in `process_key`.
-  - Goal: Maintain < 0.05ms average latency with minimal memory pressure.
+  - Transition internal buffers to stack-based `StaticString` structures (inspired by GoNhanh).
+  - Goal: Maintain < 0.01ms latency by eliminating heap churn.
 - [ ] **Linguistic Diagnostic System**
-  - Implement detailed diagnostic codes in `EngineResult` to explain validation failures (e.g., `INVALID_INITIAL_CODA_COMBINATION`).
-- [x] **Modern Web UI**
-  - Professional 2-column sidebar layout for the web demo.
+  - Implement detailed diagnostic codes in `EngineResult` to explain validation failures.
+- [ ] **Floating Tone Implementation**
+  - Adopt Bamboo's dependency-based tone placement logic to automatically reposition diacritics when syllable structure changes.
 
 ## Phase 3: Intelligence and State Management (Upcoming)
 
+- [ ] **Semantic CharState Model**
+  - Explore the `CharState` pattern (NexusKey) to represent characters as `{base, modifier, tone}` instead of raw Unicode for simpler backspacing.
+- [ ] **Streamlined 4-Stage Pipeline**
+  - Consolidate the transformation stages into a `Stroke -> Vowel -> Mark -> Cleanup` model for maximum efficiency.
 - [ ] **Developer-First Auto-Restore Logic**
-  - Tailor English detection heuristics for developer-specific environments (code syntax vs. prose).
-- [ ] **Complex Vowel Reordering**
-  - Gracefully handle out-of-order typing without losing composition state.
+  - Tailor English detection heuristics for developer-specific environments.
 - [ ] **Surrounding Text API**
-  - Deepen integration for robust state reconstruction and cursor-aware editing.
+  - Deepen integration for robust state reconstruction using Context Anchors.
 
 ## Phase 4: Ecosystem and Long-Term Research (Future)
 
-- [ ] **Ecosystem Maturity**
-  - Develop idiomatic high-level bindings for Rust and Python.
-  - Release an official CLI tool for testing and integration.
-- [ ] **Property-Based Verification**
-  - Implement automated verification using millions of generated keystroke combinations to ensure 100% linguistic correctness.
-- [ ] **Matrix-Based Validation**
-  - Migrate validator to a CV/VC matrix lookup for O(1) latency.
+- [ ] **Opaque Handle C-API**
+  - Standardize on an ID-based handle system for engine instances to improve FFI stability across Rust, Python, and WASM.
