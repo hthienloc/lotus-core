@@ -62,19 +62,19 @@ size_t Validator::find_longest_initial(const std::u32string& input, size_t start
 /**
  * @brief Comprehensive validation of a Syllable structure against Vietnamese linguistic rules.
  * @param syllable The syllable instance to validate.
- * @param diagnostic_reason Optional pointer to a string that will be populated with the reason for
+ * @param diagnostic_code Optional pointer to a DiagnosticCode that will be populated with the reason for
  * failure if the syllable is invalid.
  * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
  * @return True if the syllable is phonotactically and orthographically valid.
  */
 bool Validator::validate_glide_compatibility(const Syllable& syllable, std::u32string_view lower_init,
-                                             std::string* diagnostic_reason) {
+                                             DiagnosticCode* diagnostic_code) {
     if (syllable.glide.has_value()) {
         char32_t lower_g = unicode::to_lower(syllable.glide.value());
         if (std::find(VALID_GLIDES_U32.begin(), VALID_GLIDES_U32.end(),
                       std::u32string_view(&lower_g, 1)) == VALID_GLIDES_U32.end()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Invalid glide.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_GLIDE;
             return false;
         }
     }
@@ -82,8 +82,8 @@ bool Validator::validate_glide_compatibility(const Syllable& syllable, std::u32s
     // Q Rule: q always followed by glide u
     if (lower_init == U"q") {
         if (!syllable.glide.has_value() || unicode::to_lower(syllable.glide.value()) != 'u') {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Initial 'q' must be followed by glide 'u'.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_GLIDE;
             return false;
         }
     }
@@ -91,7 +91,7 @@ bool Validator::validate_glide_compatibility(const Syllable& syllable, std::u32s
 }
 
 bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
-                                        std::string* diagnostic_reason) {
+                                        DiagnosticCode* diagnostic_code) {
     if (!syllable.vowel.empty()) {
         for (char32_t cp : syllable.vowel) {
             char32_t toned_cp = unicode::strip_tone(unicode::to_lower(cp));
@@ -101,8 +101,8 @@ bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string
         }
         if (std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), stripped_nucleus) ==
             VALID_NUCLEI_U32.end()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Invalid vowel nucleus.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_NUCLEUS;
             return false;
         }
     }
@@ -111,7 +111,7 @@ bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string
 
 bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucleus_start,
                                          std::u32string_view stripped_nucleus,
-                                         std::string* diagnostic_reason) {
+                                         DiagnosticCode* diagnostic_code) {
     if (!syllable.final_c.empty()) {
         static const std::vector<std::u32string_view> CLOSING_DIPHTHONGS = {
             U"ai", U"ao", U"au", U"âu", U"ay", U"ây", U"eo", U"êu", U"iu",
@@ -122,8 +122,8 @@ bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucl
             lower_v += unicode::to_lower(cp);
         if (std::find(CLOSING_DIPHTHONGS.begin(), CLOSING_DIPHTHONGS.end(), lower_v) !=
             CLOSING_DIPHTHONGS.end()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Closing diphthongs cannot have a coda.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_CODA;
             return false;
         }
 
@@ -132,31 +132,31 @@ bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucl
             lower_f += unicode::to_lower(cp);
         if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f) ==
             VALID_FINALS_U32.end()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Invalid final consonant (coda).";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_CODA;
             return false;
         }
     }
 
-    if (!check_coda_restrictions(nucleus_start, syllable.final_c, diagnostic_reason))
+    if (!check_coda_restrictions(nucleus_start, syllable.final_c, diagnostic_code))
         return false;
-    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c, diagnostic_reason))
+    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c, diagnostic_code))
         return false;
 
     return true;
 }
 
-bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reason, bool allow_non_standard) {
+bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_code, bool allow_non_standard) {
     if (syllable.vowel.empty() && !syllable.glide.has_value()) {
         if (syllable.initial.empty()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Empty syllable.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
             return false;
         }
         std::u32string lower_i = unicode::to_lower(syllable.initial);
         bool valid_init = is_valid_initial(lower_i, allow_non_standard);
-        if (!valid_init && diagnostic_reason) {
-            *diagnostic_reason = "Invalid initial consonant.";
+        if (!valid_init && diagnostic_code) {
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         }
         return valid_init;
     }
@@ -165,17 +165,17 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
     std::u32string lower_init = unicode::to_lower(syllable.initial);
     if (!lower_init.empty()) {
         if (!is_valid_initial(lower_init, allow_non_standard)) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Invalid initial consonant.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
             return false;
         }
     }
 
-    if (!validate_glide_compatibility(syllable, lower_init, diagnostic_reason))
+    if (!validate_glide_compatibility(syllable, lower_init, diagnostic_code))
         return false;
 
     std::u32string stripped_nucleus;
-    if (!validate_tone_placement(syllable, stripped_nucleus, diagnostic_reason))
+    if (!validate_tone_placement(syllable, stripped_nucleus, diagnostic_code))
         return false;
 
     // 2. Orthographic Rules
@@ -185,10 +185,10 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
         syllable.glide.has_value() ? unicode::to_lower(syllable.glide.value()) : nucleus_start;
 
     if (!check_initial_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c,
-                                      diagnostic_reason))
+                                      diagnostic_code))
         return false;
 
-    if (!check_coda_compatibility(syllable, nucleus_start, stripped_nucleus, diagnostic_reason))
+    if (!check_coda_compatibility(syllable, nucleus_start, stripped_nucleus, diagnostic_code))
         return false;
 
     return true;
@@ -232,52 +232,49 @@ bool Validator::is_centering_diphthong_forbidding_coda(std::u32string_view v) {
  * start).
  * @param nucleus_start The first character of the vowel nucleus.
  * @param final_c The final consonant (coda).
- * @param diagnostic_reason Optional pointer to a string to populate on failure.
+ * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
  * @return True if the combination is valid.
  */
 bool Validator::check_initial_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
                                              char32_t nucleus_start, std::u32string_view final_c,
-                                             std::string* diagnostic_reason) {
+                                             DiagnosticCode* diagnostic_code) {
     bool is_front = is_front_vowel(affinity_char);
     bool is_front_no_y = is_front_vowel_strict(affinity_char);
 
     if (lower_init == U"k" && !is_front) {
-        if (diagnostic_reason)
-            *diagnostic_reason = "Initial 'k' can only be followed by front vowels (e, ê, i, y).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
     if (lower_init == U"c" && is_front) {
-        if (diagnostic_reason)
-            *diagnostic_reason =
-                "Initial 'c' cannot be followed by front vowels (use 'k' instead).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
     if (lower_init == U"gh" && !is_front_no_y) {
-        if (diagnostic_reason)
-            *diagnostic_reason = "Initial 'gh' can only be followed by front vowels (e, ê, i).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
     if (lower_init == U"g" && is_front_no_y) {
-        if (diagnostic_reason)
-            *diagnostic_reason =
-                "Initial 'g' cannot be followed by front vowels (use 'gh' instead).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
     if (lower_init == U"ngh" && !is_front_no_y) {
-        if (diagnostic_reason)
-            *diagnostic_reason = "Initial 'ngh' can only be followed by front vowels (e, ê, i).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
     if (lower_init == U"ng" && is_front_no_y) {
-        if (diagnostic_reason)
-            *diagnostic_reason =
-                "Initial 'ng' cannot be followed by front vowels (use 'ngh' instead).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         return false;
     }
 
     if (final_c == U"ng" && is_e_vowel(nucleus_start)) {
-        if (diagnostic_reason)
-            *diagnostic_reason = "Coda '-ng' cannot follow vowel 'e' or 'ê' (use '-nh' instead).";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_CODA;
         return false;
     }
 
@@ -291,15 +288,15 @@ bool Validator::check_initial_vowel_affinity(std::u32string_view lower_init, cha
  *
  * @param nucleus_start The first character of the vowel nucleus.
  * @param final_c The final consonant (coda).
- * @param diagnostic_reason Optional pointer to a string to populate on failure.
+ * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
  * @return True if the coda restriction is satisfied.
  */
 bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c,
-                                        std::string* diagnostic_reason) {
+                                        DiagnosticCode* diagnostic_code) {
     if (final_c == U"ch" || final_c == U"nh") {
         if (!is_valid_ch_nh_nucleus(nucleus_start)) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Coda 'ch' or 'nh' can only follow vowels 'a', 'ê', 'i', 'y'.";
+            if (diagnostic_code)
+                *diagnostic_code = DiagnosticCode::INVALID_CODA;
             return false;
         }
     }
@@ -314,21 +311,19 @@ bool Validator::check_coda_restrictions(char32_t nucleus_start, std::u32string_v
  *
  * @param stripped_nucleus The vowel nucleus without tone marks.
  * @param final_c The final consonant (coda).
- * @param diagnostic_reason Optional pointer to a string to populate on failure.
+ * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
  * @return True if diphthong rules are respected.
  */
 bool Validator::check_diphthong_rules(std::u32string_view stripped_nucleus,
-                                      std::u32string_view final_c, std::string* diagnostic_reason) {
+                                      std::u32string_view final_c, DiagnosticCode* diagnostic_code) {
     if (is_centering_diphthong_requiring_coda(stripped_nucleus) && final_c.empty()) {
-        if (diagnostic_reason)
-            *diagnostic_reason =
-                "Centering diphthongs like 'iê', 'uô', 'ươ', 'yê' must be followed by a coda.";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_NUCLEUS;
         return false;
     }
     if (is_centering_diphthong_forbidding_coda(stripped_nucleus) && !final_c.empty()) {
-        if (diagnostic_reason)
-            *diagnostic_reason =
-                "Centering diphthongs like 'ia', 'ua', 'ưa' cannot be followed by a coda.";
+        if (diagnostic_code)
+            *diagnostic_code = DiagnosticCode::INVALID_NUCLEUS;
         return false;
     }
     return true;

@@ -102,6 +102,7 @@ EngineResult ShortcutManager::_make_transformation_result(const std::u32string& 
     result.count = (uint8_t)std::min((size_t)32, final_u32.size());
     for (int i = 0; i < result.count; i++)
         result.chars[i] = final_u32[i];
+    result.diagnostic = DiagnosticCode::MACRO_EXPANDED;
     return result;
 }
 

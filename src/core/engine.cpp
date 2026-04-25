@@ -175,17 +175,23 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     
     if (config.auto_restore && !transform_res.has_valid_initial && !transform_res.key_consumed) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
-        return build_result(composition_buffer.get_raw());
+        EngineResult br = build_result(composition_buffer.get_raw());
+        br.diagnostic = DiagnosticCode::ENGLISH_RESTORED;
+        return br;
     }
 
     bool is_eng = is_likely_english(unicode::to_utf8(composition_buffer.get_raw()));
     if (config.auto_restore && is_eng && (!transform_res.is_valid_vn || (!transform_res.key_consumed && key != 'z' && key != 'Z'))) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: English word logic"));
-        return build_result(composition_buffer.get_raw());
+        EngineResult br = build_result(composition_buffer.get_raw());
+        br.diagnostic = DiagnosticCode::ENGLISH_RESTORED;
+        return br;
     }
 
     LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Final: " + unicode::to_utf8(transform_res.output)));
-    return build_result(transform_res.output);
+    EngineResult br = build_result(transform_res.output);
+    br.diagnostic = transform_res.diagnostic;
+    return br;
 }
 
 

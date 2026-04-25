@@ -15,15 +15,19 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        """ Handles INBOX (Browser -> Gemini) and Commands """
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data.decode('utf-8'))
         
-        # Action: Clear Outbox
+        # Action: Clear both Outbox and Inbox
         if data.get('action') == 'clear_outbox':
             with open(OUTBOX_FILE, 'w', encoding='utf-8') as f:
                 json.dump({}, f)
-            print("[*] Outbox cleared by user.")
+            if os.path.exists(INBOX_FILE):
+                with open(INBOX_FILE, 'w', encoding='utf-8') as f:
+                    json.dump({}, f)
+            print("[*] Both Inbox and Outbox cleared by user.")
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
@@ -57,7 +61,6 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
                 
                 if outbox.get('status') == 'pending':
                     self.wfile.write(json.dumps(outbox).encode('utf-8'))
-                    # Note: We don't auto-clear on GET to allow for retry if network fails
                     return
             except:
                 pass
@@ -67,6 +70,8 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
 if __name__ == '__main__':
     if not os.path.exists(OUTBOX_FILE):
         with open(OUTBOX_FILE, 'w') as f: json.dump({}, f)
+    if not os.path.exists(INBOX_FILE):
+        with open(INBOX_FILE, 'w') as f: json.dump({}, f)
         
-    print(f"🚀 Gemini Bridge Relay V2.7 starting on http://localhost:{PORT}")
+    print(f"🚀 Gemini Bridge Relay V2.8 starting on http://localhost:{PORT}")
     http.server.HTTPServer(('localhost', PORT), BridgeHandler).serve_forever()

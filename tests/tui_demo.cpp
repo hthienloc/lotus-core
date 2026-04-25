@@ -435,6 +435,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                       << pad_right(unicode::to_utf8(screen), 28) << "| " << pad_right(opts, 10)
                       << " |" << std::endl;
 
+            if (res.diagnostic != DiagnosticCode::SUCCESS) {
+                debug_log << "  -> " << to_string(res.diagnostic) << "\n";
+            }
+
             // Apply engine results at cursor position
             if (res.backspace > 0) {
                 screen.erase(cursor_pos - res.backspace, res.backspace);

@@ -39,31 +39,31 @@ class Validator {
      *
      * Validates all component sets and applies orthographic co-occurrence rules.
      * @param syllable The syllable to validate.
-     * @param diagnostic_reason Optional pointer to a string that will be populated with the reason
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to be populated with the reason
      * for failure if the syllable is invalid.
      * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
      * @return true if the syllable is phonotactically valid Vietnamese.
      */
-    static bool is_valid(const Syllable& syllable, std::string* diagnostic_reason = nullptr, bool allow_non_standard = false);
+    static bool is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_code = nullptr, bool allow_non_standard = false);
 
    private:
     /**
      * @brief Validates glide compatibility including the orthographic 'q' rule.
      * @param syllable The syllable being validated.
      * @param lower_init The lowercase initial consonant.
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool validate_glide_compatibility(const Syllable& syllable, std::u32string_view lower_init,
-                                             std::string* diagnostic_reason = nullptr);
+                                             DiagnosticCode* diagnostic_code = nullptr);
 
     /**
      * @brief Validates tone placement and extracts the stripped nucleus.
      * @param syllable The syllable being validated.
      * @param stripped_nucleus Output parameter to store the nucleus without tone marks.
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
-                                        std::string* diagnostic_reason = nullptr);
+                                        DiagnosticCode* diagnostic_code = nullptr);
 
     /**
      * @brief Checks orthographic affinity between initial consonants and following vowels/glides.
@@ -72,41 +72,41 @@ class Validator {
      * start).
      * @param nucleus_start The first character of the vowel nucleus.
      * @param final_c The final consonant (coda).
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool check_initial_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
                                              char32_t nucleus_start, std::u32string_view final_c,
-                                             std::string* diagnostic_reason = nullptr);
+                                             DiagnosticCode* diagnostic_code = nullptr);
 
     /**
      * @brief High-level orchestrator for checking coda compatibility, internally calling restrictions and diphthong rules.
      * @param syllable The syllable being validated.
      * @param nucleus_start The first character of the vowel nucleus.
      * @param stripped_nucleus The vowel nucleus without tone marks.
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool check_coda_compatibility(const Syllable& syllable, char32_t nucleus_start,
                                          std::u32string_view stripped_nucleus,
-                                         std::string* diagnostic_reason = nullptr);
+                                         DiagnosticCode* diagnostic_code = nullptr);
 
     /**
      * @brief Checks restrictions on specific codas (nh, ch) based on the nucleus.
      * @param nucleus_start The first character of the vowel nucleus.
      * @param final_c The final consonant (coda).
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool check_coda_restrictions(char32_t nucleus_start, std::u32string_view final_c,
-                                        std::string* diagnostic_reason = nullptr);
+                                        DiagnosticCode* diagnostic_code = nullptr);
 
     /**
      * @brief Checks centering diphthong rules (ia/iê, ua/uô, ưa/ươ) regarding codas.
      * @param stripped_nucleus The vowel nucleus without tone marks.
      * @param final_c The final consonant (coda).
-     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
     static bool check_diphthong_rules(std::u32string_view stripped_nucleus,
                                       std::u32string_view final_c,
-                                      std::string* diagnostic_reason = nullptr);
+                                      DiagnosticCode* diagnostic_code = nullptr);
 
     // --- Repetitive cluster helpers ---
     static bool is_front_vowel(char32_t c);

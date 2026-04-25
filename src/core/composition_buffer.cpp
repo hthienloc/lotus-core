@@ -417,10 +417,14 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
         }
     }
 
-    bool is_valid_vn = Validator::is_valid(s, nullptr, allow_non_standard);
+    DiagnosticCode diagnostic = DiagnosticCode::SUCCESS;
+    bool is_valid_vn = Validator::is_valid(s, &diagnostic, allow_non_standard);
     
     if (!has_valid_initial) {
         is_valid_vn = false;
+        if (diagnostic == DiagnosticCode::SUCCESS) {
+            diagnostic = DiagnosticCode::INVALID_INITIAL;
+        }
     }
 
     std::string final_v_word = s.to_string(style);
@@ -429,7 +433,8 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
         unicode::to_utf32(final_v_word),
         key_consumed,
         is_valid_vn,
-        has_valid_initial
+        has_valid_initial,
+        diagnostic
     };
 }
 

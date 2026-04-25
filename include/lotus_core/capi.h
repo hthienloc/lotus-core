@@ -73,6 +73,21 @@ typedef enum {
 typedef void (*lotus_log_callback_t)(lotus_log_level_t level, const char* stage, double time_us, const char* message);
 
 /**
+ * @brief Linguistic diagnostic codes for engine evaluation and debugging.
+ */
+typedef enum {
+    LOTUS_DIAGNOSTIC_SUCCESS = 0,
+    LOTUS_DIAGNOSTIC_INVALID_INITIAL = 1,
+    LOTUS_DIAGNOSTIC_INVALID_GLIDE = 2,
+    LOTUS_DIAGNOSTIC_INVALID_NUCLEUS = 3,
+    LOTUS_DIAGNOSTIC_INVALID_CODA = 4,
+    LOTUS_DIAGNOSTIC_TONE_PLACEMENT_ERROR = 5,
+    LOTUS_DIAGNOSTIC_ENGLISH_RESTORED = 6,
+    LOTUS_DIAGNOSTIC_MACRO_EXPANDED = 7,
+    LOTUS_DIAGNOSTIC_INTERNAL_ERROR = 8
+} lotus_diagnostic_code_t;
+
+/**
  * @brief Result structure for a key processing action.
  */
 typedef struct {
@@ -80,6 +95,7 @@ typedef struct {
     uint8_t backspace;   // Number of characters to delete
     uint8_t count;       // Number of new characters in 'chars'
     uint32_t chars[32];  // Buffer of UTF-32 characters
+    uint8_t diagnostic;  // Diagnostic code indicating linguistic validation status (lotus_diagnostic_code_t)
 } lotus_result_t;
 
 /**

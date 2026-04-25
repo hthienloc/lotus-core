@@ -14,6 +14,7 @@ struct TransformationResult {
     bool key_consumed;
     bool is_valid_vn;
     bool has_valid_initial;
+    DiagnosticCode diagnostic = DiagnosticCode::SUCCESS;
 };
 
 /**

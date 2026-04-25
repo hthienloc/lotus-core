@@ -28,7 +28,7 @@ void lotus_core_destroy(lotus_core_t* engine) {
 }
 
 lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key, lotus_modifiers_t mods) {
-    if (!engine) return {0, 0, 0, {0}};
+    if (!engine) return {0, 0, 0, {0}, 0};
     
     Modifiers m = {mods.shift, mods.caps_lock};
     EngineResult res = engine->core.process_key(static_cast<char32_t>(key), m);
@@ -40,6 +40,7 @@ lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key, lotus_
     for (size_t i = 0; i < r.count && i < 32; ++i) {
         r.chars[i] = res.chars[i];
     }
+    r.diagnostic = static_cast<uint8_t>(res.diagnostic);
     return r;
 }
 

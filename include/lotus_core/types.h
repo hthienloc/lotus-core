@@ -66,6 +66,39 @@ struct Modifiers {
 };
 
 /**
+ * @brief Linguistic diagnostic codes for engine evaluation and debugging.
+ */
+enum class DiagnosticCode : uint8_t {
+    SUCCESS = 0,
+    INVALID_INITIAL,
+    INVALID_GLIDE,
+    INVALID_NUCLEUS,
+    INVALID_CODA,
+    TONE_PLACEMENT_ERROR,
+    ENGLISH_RESTORED,
+    MACRO_EXPANDED,
+    INTERNAL_ERROR
+};
+
+/**
+ * @brief Helper to convert a DiagnosticCode to a descriptive string.
+ */
+inline std::string to_string(DiagnosticCode code) {
+    switch (code) {
+        case DiagnosticCode::SUCCESS: return "Success";
+        case DiagnosticCode::INVALID_INITIAL: return "Error: Invalid initial consonant";
+        case DiagnosticCode::INVALID_GLIDE: return "Error: Invalid glide combination";
+        case DiagnosticCode::INVALID_NUCLEUS: return "Error: Invalid vowel nucleus";
+        case DiagnosticCode::INVALID_CODA: return "Error: Invalid final consonant (coda)";
+        case DiagnosticCode::TONE_PLACEMENT_ERROR: return "Error: Invalid tone placement";
+        case DiagnosticCode::ENGLISH_RESTORED: return "Info: Restored English fallback";
+        case DiagnosticCode::MACRO_EXPANDED: return "Info: Macro expanded";
+        case DiagnosticCode::INTERNAL_ERROR: return "Error: Internal engine error";
+        default: return "Unknown diagnostic code";
+    }
+}
+
+/**
  * @brief Actions returned by the engine indicating the type of transformation.
  */
 enum class EngineAction : uint8_t {
@@ -99,6 +132,11 @@ struct EngineResult {
      * @brief The number of valid characters in the 'chars' array.
      */
     uint8_t count;
+
+    /**
+     * @brief Diagnostic code indicating linguistic validation status.
+     */
+    DiagnosticCode diagnostic = DiagnosticCode::SUCCESS;
 
     /**
      * @brief Helper to convert the result into a UTF-8 string.
