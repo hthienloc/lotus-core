@@ -81,3 +81,4 @@ node_modules/
 *.patch
 *.txt
 tools/bridge_outbox.json
+tools/bridge_inbox.json

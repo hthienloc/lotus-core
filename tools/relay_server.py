@@ -15,12 +15,21 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        """ Handles INBOX (Browser -> Gemini) """
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data.decode('utf-8'))
         
-        # Extract Session ID from URL
+        # Action: Clear Outbox
+        if data.get('action') == 'clear_outbox':
+            with open(OUTBOX_FILE, 'w', encoding='utf-8') as f:
+                json.dump({}, f)
+            print("[*] Outbox cleared by user.")
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            return
+
+        # Regular Inbox flow (Browser -> Local)
         url = data.get('url', '')
         session_id = url.split('/')[-1]
         data['session_id'] = session_id
@@ -32,11 +41,10 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(b'{"status": "received"}')
-        print(f"[*] Gemini received message from Session: {session_id}")
+        print(f"[*] Received sync from session: {session_id}")
 
     def do_GET(self):
         """ Handles OUTBOX (Gemini -> Browser) """
-        # Expecting path: /get_reply?session_id=123
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Content-Type', 'application/json')
@@ -47,20 +55,18 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
                 with open(OUTBOX_FILE, 'r', encoding='utf-8') as f:
                     outbox = json.load(f)
                 
-                # Check if this reply is meant for the requesting session
-                # In real usage, we would parse query params, but here we just return the whole outbox
-                # and let the Userscript decide.
-                self.wfile.write(json.dumps(outbox).encode('utf-8'))
-                return
+                if outbox.get('status') == 'pending':
+                    self.wfile.write(json.dumps(outbox).encode('utf-8'))
+                    # Note: We don't auto-clear on GET to allow for retry if network fails
+                    return
             except:
                 pass
         
         self.wfile.write(b'{}')
 
 if __name__ == '__main__':
-    # Ensure files exist
     if not os.path.exists(OUTBOX_FILE):
         with open(OUTBOX_FILE, 'w') as f: json.dump({}, f)
         
-    print(f"🚀 Gemini Bridge Relay V2.0 starting on http://localhost:{PORT}")
+    print(f"🚀 Gemini Bridge Relay V2.7 starting on http://localhost:{PORT}")
     http.server.HTTPServer(('localhost', PORT), BridgeHandler).serve_forever()
