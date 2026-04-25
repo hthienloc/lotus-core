@@ -7,6 +7,7 @@
 namespace lotus_core {
 
 void ShortcutManager::add_shortcut(const std::string& trigger, const std::string& replacement) {
+    // Store both lowercase and exact case to support different macro expansion modes (Adaptive vs Exact)
     shortcuts[unicode::to_lower(trigger)] = replacement;
     exact_shortcuts[trigger] = replacement;
 }
@@ -17,12 +18,15 @@ void ShortcutManager::clear() {
 }
 
 bool ShortcutManager::is_trigger_key(char32_t key) const {
+    // These keys act as word boundaries. Shortcut expansion only occurs when a word is completed
+    // to prevent premature expansion in the middle of typing a longer word.
     return key == ' ' || key == '\t' || key == '\n' || key == '\r' ||
            key == ',' || key == '.' || key == '!' || key == '?' ||
            key == ':' || key == ';';
 }
 
 bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineResult& result, MacroMode mode) {
+    // Bail out early if macro mode is off, buffer is empty, or the input key is not a valid trigger boundary
     if (mode == MacroMode::OFF || buffer.empty() || !is_trigger_key(key))
         return false;
         
@@ -32,6 +36,7 @@ bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineR
     std::string replacement;
     
     if (mode == MacroMode::EXACT) {
+        // EXACT mode strictly requires the trigger case to match exactly what the user typed.
         if (exact_shortcuts.count(trigger_raw)) {
             replacement = exact_shortcuts[trigger_raw];
         } else {
@@ -46,6 +51,8 @@ bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineR
     } else if (mode == MacroMode::ADAPTIVE) {
         if (shortcuts.count(trigger_lower)) {
             replacement = shortcuts[trigger_lower];
+            // ADAPTIVE mode intelligently matches the capitalization of the expanded text
+            // to the capitalization of the trigger string provided by the user.
             bool is_all_upper = std::all_of(trigger_raw.begin(), trigger_raw.end(),
                                             [](unsigned char c) { return !isalpha(c) || isupper(c); });
             bool is_first_upper = isupper((unsigned char)trigger_raw[0]);
