@@ -135,9 +135,9 @@ class Engine {
     void rebuild_from_text(const std::string& text);
 
    private:
-    void apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+    void apply_telex_rules(std::string& current_str, char32_t key, bool& key_consumed,
                                Tone& tone_state);
-    void apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+    void apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
                              Tone& tone_state);
 
     bool handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result);
@@ -145,18 +145,18 @@ class Engine {
     bool handle_shortcuts(char32_t key, EngineResult& result);
     bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
     bool handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result);
-    bool handle_modifier_escape(char32_t key, EngineResult& result);
-    void apply_std_uo(char32_t& key);
-    EngineResult apply_im_pipeline(char32_t key, std::string& raw_word);
+    bool handle_manual_tone_escape(char32_t key, EngineResult& result);
+    void handle_hook_key_shortcuts(char32_t& key);
+    EngineResult transform_buffer(char32_t key, std::string& raw_word);
     bool reclaim_from_history(InputMethod method);
 
-    EngineResult make_transformation_result(const std::u32string& final_u32);
+    EngineResult build_result(const std::u32string& final_u32);
 
     ShortcutManager shortcut_manager;
     EngineConfig config;
     EngineState state;
 
-    bool is_english_word(const std::string& word) const;
+    bool is_likely_english(const std::string& word) const;
 };
 
 }  // namespace lotus_core

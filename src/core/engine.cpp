@@ -204,7 +204,7 @@ void Engine::rebuild_from_text(const std::string& text) {
  */
 EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     char32_t key = original_key;
-    apply_std_uo(key);
+    handle_hook_key_shortcuts(key);
 
     EngineResult res{};
 
@@ -221,7 +221,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     if (handle_boundary(key, res))
         return res;
-    if (handle_modifier_escape(key, res))
+    if (handle_manual_tone_escape(key, res))
         return res;
 
     if (key != 0) {
@@ -230,7 +230,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     }
 
     std::string raw_word = unicode::to_utf8(state.buffer);
-    return apply_im_pipeline(key, raw_word);
+    return transform_buffer(key, raw_word);
 }
 
 /**
@@ -242,7 +242,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
  * @param raw_word The current raw state.buffer content as UTF-8.
  * @return EngineResult the final result of the transformation pipeline.
  */
-EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
+EngineResult Engine::transform_buffer(char32_t key, std::string& raw_word) {
     std::string current_str = raw_word;
     Tone tone_state = Tone::NONE;
     bool key_consumed = (key == 0);
@@ -251,9 +251,9 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
         state.last_boundary_key = 0;
 
     if (config.method == InputMethod::TELEX) {
-        apply_telex_modifiers(current_str, key, key_consumed, tone_state);
+        apply_telex_rules(current_str, key, key_consumed, tone_state);
     } else {
-        apply_vni_modifiers(current_str, key, key_consumed, tone_state);
+        apply_vni_rules(current_str, key, key_consumed, tone_state);
     }
 
     LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "After IM: " + current_str +
@@ -293,7 +293,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     // If the transformation resulted in an invalid prefix, favor the raw English input.
     if (config.auto_restore && !has_valid_initial && !key_consumed) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
-        return make_transformation_result(state.buffer);
+        return build_result(state.buffer);
     }
 
     // Second Gate: Structural Vietnamese Validity
@@ -307,7 +307,7 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
 
     if (config.auto_restore && is_eng && (!is_valid_vn || (!key_consumed && key != 'z' && key != 'Z'))) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: English word logic"));
-        return make_transformation_result(state.buffer);
+        return build_result(state.buffer);
     }
 
     std::string final_v_word = s.to_string(config.tone_style);
@@ -319,13 +319,13 @@ EngineResult Engine::apply_im_pipeline(char32_t key, std::string& raw_word) {
     // `Linguistics::is_likely_english` to accurately evaluate the original key sequence.
 
     LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Final: " + final_v_word));
-    return make_transformation_result(unicode::to_utf32(final_v_word));
+    return build_result(unicode::to_utf32(final_v_word));
 }
 
 /**
  * @brief Applies standard UO key mappings.
  */
-void Engine::apply_std_uo(char32_t& key) {
+void Engine::handle_hook_key_shortcuts(char32_t& key) {
     if (!config.std_uo)
         return;
     if (key == '[')
@@ -361,7 +361,7 @@ bool Engine::handle_navigation(char32_t key, const Modifiers& mods, EngineResult
 /**
  * @brief Handles triple-tap escape logic (e.g., typing 'aaa' results in 'aa').
  */
-bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
+bool Engine::handle_manual_tone_escape(char32_t key, EngineResult& result) {
     if (key != 0 && key == state.last_modifier_key && !state.buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
         bool revertible =
@@ -374,7 +374,7 @@ bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
             std::u32string out = state.buffer;
             if (!out.empty())
                 out.pop_back();
-            result = make_transformation_result(out);
+            result = build_result(out);
             return true;
         }
     }
@@ -399,7 +399,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
         std::string word = unicode::to_utf8(state.last_committed_text);
         Syllable s = SyllableParser::parse(unicode::to_utf32(word));
         
-        bool is_english_fallback = config.auto_restore && is_english_word(unicode::to_utf8(state.buffer));
+        bool is_english_fallback = config.auto_restore && is_likely_english(unicode::to_utf8(state.buffer));
 
         if (config.backspace_style == BackspaceStyle::KEYSTROKE || is_english_fallback) {
             state.buffer.pop_back();
@@ -413,7 +413,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
             state.buffer.pop_back();
         }
         if (state.buffer.empty()) {
-            result = make_transformation_result(U"");
+            result = build_result(U"");
             reclaim_from_history(config.method);
             return true;
         }
@@ -482,10 +482,10 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
         return false;
 
     std::string raw_word = unicode::to_utf8(state.buffer);
-    if (is_english_word(raw_word)) {
+    if (is_likely_english(raw_word)) {
         std::u32string output = state.buffer;
         output.push_back(key);
-        result = make_transformation_result(output);
+        result = build_result(output);
         result.action = EngineAction::RESTORE;
         reset();
         state.last_boundary_key = key;
@@ -511,9 +511,9 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
             bool consumed = false;
 
             if (config.method == InputMethod::TELEX) {
-                apply_telex_modifiers(current_str, 0, consumed, tone_state);
+                apply_telex_rules(current_str, 0, consumed, tone_state);
             } else {
-                apply_vni_modifiers(current_str, 0, consumed, tone_state);
+                apply_vni_rules(current_str, 0, consumed, tone_state);
             }
 
             current_str = unicode::normalize_nfc(current_str);
@@ -588,7 +588,7 @@ bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineRes
  * @param key_consumed OUT: Set to true if the key triggered a transformation.
  * @param tone_state OUT: The identified tone for the current word.
  */
-void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+void Engine::apply_telex_rules(std::string& current_str, char32_t key, bool& key_consumed,
                                    Tone& tone_state) {
     const std::u32string& u32 = state.buffer;
     if (u32.empty())
@@ -823,7 +823,7 @@ void Engine::apply_telex_modifiers(std::string& current_str, char32_t key, bool&
  * @param key_consumed OUT: Set to true if the key triggered a transformation.
  * @param tone_state OUT: The identified tone for the current word.
  */
-void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& key_consumed,
+void Engine::apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) {
     const std::u32string& u32 = state.buffer;
     if (u32.empty())
@@ -923,7 +923,7 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
  * @param final_u32 The final transformed character sequence.
  * @return EngineResult indicating a replacement action.
  */
-EngineResult Engine::make_transformation_result(const std::u32string& final_u32) {
+EngineResult Engine::build_result(const std::u32string& final_u32) {
     EngineResult result{};
     result.action = EngineAction::TRANSFORM;
     result.backspace = (uint8_t)state.last_committed_text.size();
@@ -945,16 +945,16 @@ EngineResult Engine::make_transformation_result(const std::u32string& final_u32)
  * @param word The raw key sequence.
  * @return True if the word should be preserved as English.
  */
-bool Engine::is_english_word(const std::string& word) const {
+bool Engine::is_likely_english(const std::string& word) const {
     if (Linguistics::is_on_whitelist(word))
         return true;
     std::string transformed = word;
     Tone tone = Tone::NONE;
     bool consumed = false;
     if (config.method == InputMethod::TELEX) {
-        const_cast<Engine*>(this)->apply_telex_modifiers(transformed, 0, consumed, tone);
+        const_cast<Engine*>(this)->apply_telex_rules(transformed, 0, consumed, tone);
     } else {
-        const_cast<Engine*>(this)->apply_vni_modifiers(transformed, 0, consumed, tone);
+        const_cast<Engine*>(this)->apply_vni_rules(transformed, 0, consumed, tone);
     }
     Syllable s = SyllableParser::parse(unicode::to_utf32(transformed));
     if (tone != Tone::NONE)
