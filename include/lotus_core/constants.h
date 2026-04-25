@@ -76,17 +76,39 @@ constexpr std::array<char32_t, 11> GLIDE_U_NEXT_QU = {'a', 'e', 'i', U'â', U'ê
 constexpr std::array<char32_t, 5> GLIDE_U_NEXT = {U'ê', 'y', U'â', U'ơ', U'ô'};
 
 // Navigation and special keys
-const char32_t KEY_UP = 0xE001;
-const char32_t KEY_DOWN = 0xE002;
-const char32_t KEY_RIGHT = 0xE003;
-const char32_t KEY_LEFT = 0xE004;
-const char32_t KEY_HOME = 0xE005;
-const char32_t KEY_END = 0xE006;
-const char32_t KEY_PAGE_UP = 0xE007;
-const char32_t KEY_PAGE_DOWN = 0xE008;
-const char32_t KEY_ENTER = 0x0D;
-const char32_t KEY_TAB = 0x09;
-const char32_t KEY_ESC = 0x1B;
+constexpr char32_t KEY_UP = 0xE001;
+constexpr char32_t KEY_DOWN = 0xE002;
+constexpr char32_t KEY_RIGHT = 0xE003;
+constexpr char32_t KEY_LEFT = 0xE004;
+constexpr char32_t KEY_HOME = 0xE005;
+constexpr char32_t KEY_END = 0xE006;
+constexpr char32_t KEY_PAGE_UP = 0xE007;
+constexpr char32_t KEY_PAGE_DOWN = 0xE008;
+constexpr char32_t KEY_ENTER = 0x0D;
+constexpr char32_t KEY_TAB = 0x09;
+constexpr char32_t KEY_ESC = 27;
+constexpr char32_t KEY_BACKSPACE = 8;
+constexpr char32_t KEY_CTRL_W = 23;
+constexpr char32_t KEY_DELETE = 127;
+
+// Function keys
+constexpr char32_t KEY_F1 = 0xF001;
+constexpr char32_t KEY_F2 = 0xF002;
+constexpr char32_t KEY_F3 = 0xF003;
+constexpr char32_t KEY_F4 = 0xF004;
+constexpr char32_t KEY_F5 = 0xF005;
+constexpr char32_t KEY_F6 = 0xF006;
+constexpr char32_t KEY_F7 = 0xF007;
+constexpr char32_t KEY_F8 = 0xF008;
+constexpr char32_t KEY_F9 = 0xF009;
+constexpr char32_t KEY_F10 = 0xF00A;
+constexpr char32_t KEY_F11 = 0xF00B;
+constexpr char32_t KEY_F12 = 0xF00C;
+
+// Bounds and capacities
+constexpr size_t MAX_SYLLABLE_PART_LENGTH = 8;
+constexpr size_t RAW_KEY_BUFFER_SIZE = 8;
+constexpr char32_t ASCII_LIMIT = 128;
 
 }  // namespace constants
 

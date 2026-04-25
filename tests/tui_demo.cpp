@@ -65,19 +65,19 @@ void copy_to_clipboard(const std::string& text) {
 std::string key_to_name(char32_t key) {
     if (key == ' ')
         return "' '";
-    if (key == 8)
+    if (key == constants::KEY_BACKSPACE)
         return "CTRL_BACKSPACE";
-    if (key == 23)
+    if (key == constants::KEY_CTRL_W)
         return "CTRL_W";
-    if (key == 127)
+    if (key == constants::KEY_DELETE)
         return "BACKSPACE";
-    if (key == 13)
+    if (key == constants::KEY_ENTER)
         return "ENTER";
-    if (key == 27)
+    if (key == constants::KEY_ESC)
         return "ESC";
-    if (key >= 0xF001 && key <= 0xF00C)
+    if (key >= constants::KEY_F1 && key <= constants::KEY_F12)
         return "F" + std::to_string(key - 0xF000);
-    if (key < 128)
+    if (key < constants::ASCII_LIMIT)
         return std::string("'") + (char)key + "'";
     return "U+" + (std::stringstream() << std::hex << std::uppercase << (uint32_t)key).str();
 }
@@ -87,12 +87,12 @@ std::string key_to_name(char32_t key) {
  * @return The decoded char32_t key code.
  */
 char32_t read_key() {
-    unsigned char buf[8];
+    unsigned char buf[constants::RAW_KEY_BUFFER_SIZE];
     int n = read(STDIN_FILENO, &buf[0], 1);
     if (n <= 0)
         return 0;
 
-    if (buf[0] == 27) {  // Escape sequence
+    if (buf[0] == constants::KEY_ESC) {  // Escape sequence
         // Set non-blocking to peek
         struct termios raw;
         tcgetattr(STDIN_FILENO, &raw);
@@ -105,20 +105,20 @@ char32_t read_key() {
         tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
         if (n <= 0)
-            return 27;  // Pure ESC
+            return constants::KEY_ESC;  // Pure ESC
 
         if (buf[1] == 'O') {  // VT100 / Xterm style F1-F4 (\033OP - \033OS)
             if (read(STDIN_FILENO, &buf[2], 1) <= 0)
-                return 27;
+                return constants::KEY_ESC;
             if (buf[2] == 'P')
-                return 0xF001;  // F1
+                return constants::KEY_F1;  // F1
             if (buf[2] == 'Q')
-                return 0xF002;  // F2
+                return constants::KEY_F2;  // F2
             if (buf[2] == 'R')
-                return 0xF003;  // F3
+                return constants::KEY_F3;  // F3
             if (buf[2] == 'S')
-                return 0xF004;  // F4
-            return 27;
+                return constants::KEY_F4;  // F4
+            return constants::KEY_ESC;
         } else if (buf[1] == '[') {  // CSI sequences (\033[...] )
             std::string seq;
             unsigned char c;
@@ -128,35 +128,35 @@ char32_t read_key() {
                     break;
                 }
                 seq += (char)c;
-                if (seq.size() > 8)
+                if (seq.size() > constants::RAW_KEY_BUFFER_SIZE)
                     break;
             }
 
             // Xterm/Gnome/Konsole style (\033[15~, \033[1;5A etc)
             if (seq == "11~" || seq == "1~" || seq == "P")
-                return 0xF001;  // F1
+                return constants::KEY_F1;  // F1
             if (seq == "12~" || seq == "2~" || seq == "Q")
-                return 0xF002;  // F2
+                return constants::KEY_F2;  // F2
             if (seq == "13~" || seq == "3~" || seq == "R")
-                return 0xF003;  // F3
+                return constants::KEY_F3;  // F3
             if (seq == "14~" || seq == "4~" || seq == "S")
-                return 0xF004;  // F4
+                return constants::KEY_F4;  // F4
             if (seq == "15~" || seq == "5~")
-                return 0xF005;  // F5
+                return constants::KEY_F5;  // F5
             if (seq == "17~" || seq == "6~")
-                return 0xF006;  // F6
+                return constants::KEY_F6;  // F6
             if (seq == "18~")
-                return 0xF007;  // F7
+                return constants::KEY_F7;  // F7
             if (seq == "19~")
-                return 0xF008;  // F8
+                return constants::KEY_F8;  // F8
             if (seq == "20~")
-                return 0xF009;  // F9
+                return constants::KEY_F9;  // F9
             if (seq == "21~")
-                return 0xF00A;  // F10
+                return constants::KEY_F10;  // F10
             if (seq == "23~")
-                return 0xF00B;  // F11
+                return constants::KEY_F11;  // F11
             if (seq == "24~")
-                return 0xF00C;  // F12
+                return constants::KEY_F12;  // F12
 
             // Simple Arrows
             if (seq == "A")
@@ -176,11 +176,11 @@ char32_t read_key() {
             if (seq == "6~")
                 return 0xE008;  // PageDown
         }
-        return 27;
+        return constants::KEY_ESC;
     }
 
     // UTF-8 Decoding
-    if (buf[0] < 0x80)
+    if (buf[0] < constants::ASCII_LIMIT)
         return buf[0];
     if ((buf[0] & 0xE0) == 0xC0) {
         read(STDIN_FILENO, &buf[1], 1);
@@ -299,10 +299,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                       << std::flush;
 
             char32_t key = read_key();
-            if (key == 27 || key == 0)
+            if (key == constants::KEY_ESC || key == 0)
                 break;
 
-            if (key == 0xF001) {  // F1
+            if (key == constants::KEY_F1) {  // F1
                 engine.set_method(engine.get_method() == InputMethod::TELEX ? InputMethod::VNI
                                                                             : InputMethod::TELEX);
                 debug_log << "[CONFIG] Method changed to: "
@@ -310,7 +310,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                           << std::endl;
                 continue;
             }
-            if (key == 0xF002) {  // F2
+            if (key == constants::KEY_F2) {  // F2
                 engine.set_tone_style(engine.get_tone_style() == ToneStyle::NEW ? ToneStyle::OLD
                                                                                 : ToneStyle::NEW);
                 debug_log << "[CONFIG] ToneStyle changed to: "
@@ -318,49 +318,49 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
                           << std::endl;
                 continue;
             }
-            if (key == 0xF003) {  // F3
+            if (key == constants::KEY_F3) {  // F3
                 int next = ((int)engine.get_free_w() + 1) % 3;
                 engine.set_free_w((FreeWOption)next);
                 debug_log << "[CONFIG] FreeW changed to: " << (int)engine.get_free_w() << std::endl;
                 continue;
             }
-            if (key == 0xF004) {  // F4
+            if (key == constants::KEY_F4) {  // F4
                 engine.set_std_uo(!engine.get_std_uo());
                 debug_log << "[CONFIG] StdUO changed to: " << (engine.get_std_uo() ? "ON" : "OFF")
                           << std::endl;
                 continue;
             }
-            if (key == 0xF005) {  // F5
+            if (key == constants::KEY_F5) {  // F5
                 engine.set_double_space_to_period(!engine.get_double_space_to_period());
                 debug_log << "[CONFIG] Double-Space changed to: " << (engine.get_double_space_to_period() ? "ON" : "OFF")
                           << std::endl;
                 continue;
             }
-            if (key == 0xF006) {  // F6
+            if (key == constants::KEY_F6) {  // F6
                 engine.set_auto_capitalize(!engine.get_auto_capitalize());
                 debug_log << "[CONFIG] Auto-Caps changed to: " << (engine.get_auto_capitalize() ? "ON" : "OFF")
                           << std::endl;
                 continue;
             }
-            if (key == 0xF007) {  // F7
+            if (key == constants::KEY_F7) {  // F7
                 engine.set_auto_restore(!engine.get_auto_restore());
                 debug_log << "[CONFIG] Auto-Restore changed to: " << (engine.get_auto_restore() ? "ON" : "OFF")
                           << std::endl;
                 continue;
             }
-            if (key == 0xF008) {  // F8
+            if (key == constants::KEY_F8) {  // F8
                 engine.set_allow_non_standard_initials(!engine.get_allow_non_standard_initials());
                 debug_log << "[CONFIG] Initials(z,w,j,f) changed to: " << (engine.get_allow_non_standard_initials() ? "ON" : "OFF")
                           << std::endl;
                 continue;
             }
-            if (key == 0xF009) {  // F9
+            if (key == constants::KEY_F9) {  // F9
                 int next = ((int)engine.get_macro_mode() + 1) % 4;
                 engine.set_macro_mode((MacroMode)next);
                 debug_log << "[CONFIG] Macro Mode changed to: " << (int)engine.get_macro_mode() << std::endl;
                 continue;
             }
-            if (key == 0xF00A) {  // F10
+            if (key == constants::KEY_F10) {  // F10
                 engine.set_backspace_style(engine.get_backspace_style() == BackspaceStyle::SURGICAL ? BackspaceStyle::KEYSTROKE : BackspaceStyle::SURGICAL);
                 debug_log << "[CONFIG] Backspace Style changed to: " << (engine.get_backspace_style() == BackspaceStyle::SURGICAL ? "SURGICAL" : "REVERT")
                           << std::endl;
@@ -394,7 +394,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
             }
 
             // Handle Ctrl + Backspace or Ctrl + W (Delete whole word)
-            if (key == 8 || key == 23) {
+            if (key == constants::KEY_BACKSPACE || key == constants::KEY_CTRL_W) {
                 engine.reset();
                 debug_log << "[ACTION] Word deleted (Ctrl+W/BS)" << std::endl;
                 while (cursor_pos > 0 && screen[cursor_pos - 1] == ' ') {
@@ -411,7 +411,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
             auto res = engine.process_key(key, mods);
 
             // Manual Backspace handling if engine doesn't consume it
-            if (key == 127 && res.backspace == 0 && res.count == 0) {
+            if (key == constants::KEY_DELETE && res.backspace == 0 && res.count == 0) {
                 if (cursor_pos > 0) {
                     screen.erase(cursor_pos - 1, 1);
                     cursor_pos--;

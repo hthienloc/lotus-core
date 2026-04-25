@@ -383,13 +383,13 @@ bool Engine::handle_modifier_escape(char32_t key, EngineResult& result) {
  * If the state.buffer is not empty, it attempts to reconstruct the previous syllable state.
  * If the state.buffer is empty, it attempts to recover the last committed word from history.
  *
- * @param key The key pressed (8 or 127).
+ * @param key The key pressed (constants::KEY_BACKSPACE or constants::KEY_DELETE).
  * @param mods Keyboard modifiers.
  * @param result OUT: The engine result to populate.
  * @return True if the key was a backspace and was handled.
  */
 bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result) {
-    if (key != 8 && key != 127)
+    if (key != constants::KEY_BACKSPACE && key != constants::KEY_DELETE)
         return false;
     if (!state.buffer.empty()) {
         std::string word = unicode::to_utf8(state.last_committed_text);

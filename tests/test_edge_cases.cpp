@@ -1,3 +1,4 @@
+#include "lotus_core/constants.h"
 /**
  * @file test_edge_cases.cpp
  * @brief Tests for complex Vietnamese syllables and direct validator edge cases.
@@ -28,7 +29,7 @@ void type_into_edge(Engine& engine, std::u32string& screen, const std::string& k
     for (unsigned char c : keys) {
         auto res = engine.process_key(static_cast<char32_t>(c), mods);
 
-        if (res.backspace == 0 && (c == 8 || c == 127)) {
+        if (res.backspace == 0 && (c == lotus_core::constants::KEY_BACKSPACE || c == lotus_core::constants::KEY_DELETE)) {
             if (!screen.empty())
                 screen.pop_back();
         } else {
