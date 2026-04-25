@@ -47,8 +47,15 @@ set_target_properties(lotus_core_core_shared PROPERTIES OUTPUT_NAME lotus_core_c
 target_include_directories(lotus_core_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 target_include_directories(lotus_core_core_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 
-# Find Google Test
-find_package(GTest REQUIRED)
+# Find Google Test or download it
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
 # Test Executable
 add_executable(lotus_tests
@@ -66,7 +73,7 @@ add_executable(lotus_tests
     tests/test_edge_cases.cpp
     tests/test_features.cpp
 )
-target_link_libraries(lotus_tests lotus_core_core GTest::gtest)
+target_link_libraries(lotus_tests lotus_core_core gtest_main)
 
 # Helper to run tests
 add_custom_target(run_tests
