@@ -20,17 +20,24 @@ size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow
     s.initial = input.substr(0, initial_len);
     std::u32string lower_init = unicode::to_lower(s.initial);
 
-    // Vietnamese rule for 'gi':
-    if (lower_init == U"gi") {
-        if (input.size() == 2 || !SyllableParser::is_vowel(input[2])) {
-            s.initial = s.initial.substr(0, 1);
-            initial_len = 1;
+    // Apply context-sensitive overrides (e.g. 'gi' vs 'g', 'qu' vs 'q')
+    for (const auto& rule : unicode::INITIAL_OVERRIDE_RULES) {
+        if (lower_init == rule.initial) {
+            bool condition_met = false;
+            if (rule.requires_no_vowel_at_index) {
+                if (input.size() <= rule.check_index || !SyllableParser::is_vowel(input[rule.check_index])) {
+                    condition_met = true;
+                }
+            } else {
+                condition_met = true;
+            }
+
+            if (condition_met) {
+                s.initial = s.initial.substr(0, rule.new_len);
+                initial_len = rule.new_len;
+            }
+            break;
         }
-    }
-    // Vietnamese rule for 'qu':
-    else if (lower_init == U"qu") {
-        s.initial = s.initial.substr(0, 1);
-        initial_len = 1;
     }
 
     return initial_len;

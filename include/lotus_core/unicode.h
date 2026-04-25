@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <array>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -101,6 +102,33 @@ inline const std::map<std::pair<char32_t, char32_t>, char32_t> COMPOSITION_MAP =
     {{U'o', 0x031B}, U'ơ'}, {{U'u', 0x031B}, U'ư'}, {{U'O', 0x031B}, U'Ơ'}, {{U'U', 0x031B}, U'Ư'}};
 
 }  // namespace detail
+
+constexpr std::u32string_view BASE_VOWELS = U"aăâeêioôơuưy";
+
+struct GlideRule {
+    char32_t glide_char;
+    std::u32string_view initial_context; // empty means any initial
+    std::u32string_view valid_next_chars;
+};
+
+// Map of glide rules: glide character -> (initial context -> valid next characters)
+constexpr std::array<GlideRule, 3> GLIDE_RULES = {{
+    {'o', U"", U"aeă"},
+    {'u', U"q", U"aeiâêoôơuưy"},
+    {'u', U"", U"êyâơô"}
+}};
+
+struct InitialOverrideRule {
+    std::u32string_view initial;
+    size_t new_len; // length to truncate to if condition is met
+    bool requires_no_vowel_at_index; // if true, condition is input.size() <= 2 or !is_vowel(input[2])
+    size_t check_index;
+};
+
+constexpr std::array<InitialOverrideRule, 2> INITIAL_OVERRIDE_RULES = {{
+    {U"gi", 1, true, 2},
+    {U"qu", 1, false, 0}
+}};
 
 /**
  * @brief Convert a UTF-8 string to a UTF-32 vector.
@@ -233,9 +261,9 @@ inline Tone get_tone(char32_t cp) {
 /**
  * @brief Normalize Vietnamese text to NFC (Precomposed) form.
  */
-inline std::string normalize_nfc(const std::string& input) {
-    std::u32string u32 = to_utf32(input);
+inline std::u32string normalize_nfc(const std::u32string& u32) {
     std::u32string res;
+    res.reserve(u32.size());
 
     for (size_t i = 0; i < u32.size(); ++i) {
         char32_t current = u32[i];
@@ -253,7 +281,11 @@ inline std::string normalize_nfc(const std::string& input) {
         }
         res.push_back(current);
     }
-    return to_utf8(res);
+    return res;
+}
+
+inline std::string normalize_nfc(const std::string& input) {
+    return to_utf8(normalize_nfc(to_utf32(input)));
 }
 
 /**

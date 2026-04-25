@@ -29,9 +29,7 @@ bool SyllableParser::is_vowel(char32_t c) {
     char32_t low = unicode::to_lower(c);
     char32_t stripped = unicode::strip_tone(low);
     // Standard Vietnamese vowels (and their toned versions)
-    return stripped == 'a' || stripped == U'ă' || stripped == U'â' || stripped == 'e' ||
-           stripped == U'ê' || stripped == 'i' || stripped == 'o' || stripped == U'ô' ||
-           stripped == U'ơ' || stripped == 'u' || stripped == U'ư' || stripped == 'y' ||
+    return unicode::BASE_VOWELS.find(stripped) != std::u32string_view::npos ||
            (c >= 0x0300 && c <= 0x036F);  // Combining Marks
 }
 
@@ -92,14 +90,16 @@ Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_stand
     if (input.empty())
         return s;
 
+    std::u32string normalized_input = unicode::normalize_nfc(input);
+
     size_t pos = 0;
-    pos += InitialParser::parse(input, s, allow_non_standard);
-    pos += parse_glide(input, pos, s);
-    pos += parse_nucleus(input, pos, s);
+    pos += InitialParser::parse(normalized_input, s, allow_non_standard);
+    pos += parse_glide(normalized_input, pos, s);
+    pos += parse_nucleus(normalized_input, pos, s);
 
     reorder_vowels(s);
 
-    parse_coda(input, pos, s);
+    parse_coda(normalized_input, pos, s);
 
     return s;
 }
@@ -115,14 +115,17 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     if (valid && s.glide.has_value()) {
         char32_t g = unicode::strip_tone(unicode::to_lower(s.glide.value()));
         char32_t next_char = s.vowel.empty() ? 0 : unicode::strip_tone(unicode::to_lower(s.vowel[0]));
-        if (g == 'o') {
-            valid = std::find(constants::GLIDE_O_NEXT.begin(), constants::GLIDE_O_NEXT.end(), next_char) != constants::GLIDE_O_NEXT.end();
-        } else if (g == 'u') {
-            std::u32string lower_init = unicode::to_lower(s.initial);
-            if (lower_init == U"q") {
-                valid = std::find(constants::GLIDE_U_NEXT_QU.begin(), constants::GLIDE_U_NEXT_QU.end(), next_char) != constants::GLIDE_U_NEXT_QU.end();
-            } else {
-                valid = std::find(constants::GLIDE_U_NEXT.begin(), constants::GLIDE_U_NEXT.end(), next_char) != constants::GLIDE_U_NEXT.end();
+        std::u32string lower_init = unicode::to_lower(s.initial);
+        
+        valid = false;
+        for (const auto& rule : unicode::GLIDE_RULES) {
+            if (rule.glide_char == g) {
+                if (rule.initial_context.empty() || lower_init == rule.initial_context) {
+                    if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
+                        valid = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -217,14 +220,15 @@ void SyllableParser::reorder_vowels(Syllable& s) {
             if (is_permutation(combo_view)) {
                 char32_t next_char = n[0];
                 bool glide_ok = false;
-                if (g == 'o') {
-                    glide_ok = std::find(constants::GLIDE_O_NEXT.begin(), constants::GLIDE_O_NEXT.end(), next_char) != constants::GLIDE_O_NEXT.end();
-                } else if (g == 'u') {
-                    std::u32string lower_init = unicode::to_lower(s.initial);
-                    if (lower_init == U"q") {
-                        glide_ok = std::find(constants::GLIDE_U_NEXT_QU.begin(), constants::GLIDE_U_NEXT_QU.end(), next_char) != constants::GLIDE_U_NEXT_QU.end();
-                    } else {
-                        glide_ok = std::find(constants::GLIDE_U_NEXT.begin(), constants::GLIDE_U_NEXT.end(), next_char) != constants::GLIDE_U_NEXT.end();
+                std::u32string lower_init = unicode::to_lower(s.initial);
+                for (const auto& rule : unicode::GLIDE_RULES) {
+                    if (rule.glide_char == g) {
+                        if (rule.initial_context.empty() || lower_init == rule.initial_context) {
+                            if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
+                                glide_ok = true;
+                                break;
+                            }
+                        }
                     }
                 }
 

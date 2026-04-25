@@ -24,18 +24,16 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
 
     if (pos + 1 < n) {
         char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
-        if (first_char == 'o') {
-            if (std::find(constants::GLIDE_O_NEXT.begin(), constants::GLIDE_O_NEXT.end(), next_char) != constants::GLIDE_O_NEXT.end())
-                has_glide = true;
-        } else if (first_char == 'u') {
-            std::u32string lower_init = unicode::to_lower(s.initial);
-            bool is_qu = (lower_init == U"q");
-            if (is_qu) {
-                if (std::find(constants::GLIDE_U_NEXT_QU.begin(), constants::GLIDE_U_NEXT_QU.end(), next_char) != constants::GLIDE_U_NEXT_QU.end())
-                    has_glide = true;
-            } else {
-                if (std::find(constants::GLIDE_U_NEXT.begin(), constants::GLIDE_U_NEXT.end(), next_char) != constants::GLIDE_U_NEXT.end())
-                    has_glide = true;
+        std::u32string lower_init = unicode::to_lower(s.initial);
+        
+        for (const auto& rule : unicode::GLIDE_RULES) {
+            if (rule.glide_char == first_char) {
+                if (rule.initial_context.empty() || lower_init == rule.initial_context) {
+                    if (rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
+                        has_glide = true;
+                        break;
+                    }
+                }
             }
         }
     }
