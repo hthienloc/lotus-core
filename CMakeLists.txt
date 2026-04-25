@@ -16,6 +16,7 @@ add_library(lotus_core_core STATIC
     src/core/parser/glide_parser.cpp
     src/core/parser/nucleus_parser.cpp
     src/core/parser/coda_parser.cpp
+    src/core/composition_buffer.cpp
     src/core/engine.cpp
     src/core/context_tracker.cpp
     src/core/input_dispatcher.cpp
@@ -36,6 +37,7 @@ add_library(lotus_core_core_shared SHARED
     src/core/parser/glide_parser.cpp
     src/core/parser/nucleus_parser.cpp
     src/core/parser/coda_parser.cpp
+    src/core/composition_buffer.cpp
     src/core/engine.cpp
     src/core/context_tracker.cpp
     src/core/input_dispatcher.cpp

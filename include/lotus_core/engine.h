@@ -5,6 +5,7 @@
 #include "lotus_core/shortcut_manager.h"
 #include "lotus_core/context_tracker.h"
 #include "lotus_core/input_dispatcher.h"
+#include "lotus_core/composition_buffer.h"
 
 #include <functional>
 #include <string>
@@ -32,9 +33,7 @@ struct EngineConfig {
  * @brief Internal processing state of the Engine.
  */
 struct EngineState {
-    std::u32string buffer;
-    char32_t last_modifier_key = 0;
-    std::u32string last_committed_text;
+            std::u32string last_committed_text;
     char32_t last_boundary_key = 0;
 };
 
@@ -135,25 +134,19 @@ class Engine {
     void rebuild_from_text(const std::string& text);
 
    private:
-    void apply_telex_rules(std::string& current_str, char32_t key, bool& key_consumed,
-                               Tone& tone_state);
-    void apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
-                             Tone& tone_state);
 
     bool handle_backspace(char32_t key, const Modifiers& mods, EngineResult& result);
     bool handle_boundary(char32_t key, EngineResult& result);
     bool handle_shortcuts(char32_t key, EngineResult& result);
     bool handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result);
     bool handle_navigation(char32_t key, const Modifiers& mods, EngineResult& result);
-    bool handle_manual_tone_escape(char32_t key, EngineResult& result);
-    void handle_hook_key_shortcuts(char32_t& key);
-    EngineResult transform_buffer(char32_t key, std::string& raw_word);
     bool reclaim_from_history(InputMethod method);
     void commit_syllable_to_history(char32_t boundary_key);
 
     EngineResult build_result(const std::u32string& final_u32);
 
     ShortcutManager shortcut_manager;
+    CompositionBuffer composition_buffer;
     ContextTracker context_tracker;
     EngineConfig config;
     EngineState state;
