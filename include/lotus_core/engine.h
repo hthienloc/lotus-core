@@ -3,6 +3,7 @@
 #include "lotus_core/linguistics.h"
 #include "lotus_core/types.h"
 #include "lotus_core/shortcut_manager.h"
+#include "lotus_core/context_tracker.h"
 
 #include <functional>
 #include <string>
@@ -33,9 +34,7 @@ struct EngineState {
     std::u32string buffer;
     char32_t last_modifier_key = 0;
     std::u32string last_committed_text;
-    WordHistory word_history;
     char32_t last_boundary_key = 0;
-    bool at_sentence_start = true;
 };
 
 /**
@@ -84,9 +83,9 @@ class Engine {
     bool get_auto_capitalize() const { return config.auto_capitalize; }
 
     /** @brief Sets whether the next input is at the start of a new sentence. */
-    void set_at_sentence_start(bool enabled) { state.at_sentence_start = enabled; }
+    void set_at_sentence_start(bool enabled) { context_tracker.set_at_sentence_start(enabled); }
     /** @brief Returns whether the engine is currently at a sentence start. */
-    bool get_at_sentence_start() const { return state.at_sentence_start; }
+    bool get_at_sentence_start() const { return context_tracker.is_at_sentence_start(); }
 
     /** @brief Enables or disables non-standard initials (z, w, j, f). */
     void set_allow_non_standard_initials(bool enabled) { config.allow_non_standard_initials = enabled; }
@@ -149,12 +148,12 @@ class Engine {
     void handle_hook_key_shortcuts(char32_t& key);
     EngineResult transform_buffer(char32_t key, std::string& raw_word);
     bool reclaim_from_history(InputMethod method);
-    bool is_word_boundary(char32_t c) const;
     void commit_syllable_to_history(char32_t boundary_key);
 
     EngineResult build_result(const std::u32string& final_u32);
 
     ShortcutManager shortcut_manager;
+    ContextTracker context_tracker;
     EngineConfig config;
     EngineState state;
 

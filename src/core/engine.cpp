@@ -27,28 +27,6 @@ using namespace constants;
 namespace lotus_core {
 
 // ============================================================================
-// [ Internal Helpers ]
-// ============================================================================
-
-/**
- * @brief Checks if a character marks the end of a sentence.
- * @param c UTF-32 character.
- * @return True if it's a sentence-ending punctuation or newline.
- */
-static bool is_sentence_ending(char32_t c) {
-    return c == '.' || c == '!' || c == '?' || c == '\n' || c == '\r';
-}
-
-/**
- * @brief Checks if a character is a general word boundary.
- * @param c UTF-32 character.
- * @return True if it acts as a boundary.
- */
-bool Engine::is_word_boundary(char32_t c) const {
-    return c == ' ' || c == '\r' || c == '\n' || (c < 128 && (ispunct((int)c) || c == '\t'));
-}
-
-// ============================================================================
 // [ EngineResult Implementation ]
 // ============================================================================
 
@@ -100,7 +78,7 @@ void Engine::reset() {
  */
 void Engine::clear_all() {
     reset();
-    state.word_history.clear();
+    context_tracker.clear();
 }
 
 /**
@@ -111,71 +89,18 @@ void Engine::clear_all() {
  */
 void Engine::rebuild_from_text(const std::string& text) {
     reset();
-    state.at_sentence_start = true;
-    state.word_history.clear();
-    if (text.empty())
-        return;
-
-    std::u32string full_text = unicode::to_utf32(text);
-    if (!full_text.empty()) {
-        auto it = std::find_if(full_text.rbegin(), full_text.rend(),
-                               [](char32_t c) { return c != ' ' && c != '\t'; });
-        state.at_sentence_start = (it != full_text.rend() && is_sentence_ending(*it));
+    context_tracker.clear();
+    
+    ReconstructResult result = context_tracker.reconstruct(text, config.method);
+    context_tracker.set_at_sentence_start(result.at_sentence_start);
+    
+    for (const auto& w : result.history_words) {
+        context_tracker.push_word(w);
     }
-
-    std::vector<std::string> words;
-    std::string current_word;
-    for (char32_t c : full_text) {
-        if (is_word_boundary(c)) {
-            if (!current_word.empty()) {
-                words.push_back(current_word);
-                current_word.clear();
-            }
-            words.push_back(unicode::to_utf8(std::u32string(1, c)));
-        } else {
-            current_word += unicode::to_utf8(std::u32string(1, c));
-        }
-    }
-    if (!current_word.empty()) {
-        words.push_back(current_word);
-    }
-
-    if (words.empty())
-        return;
-
-    std::string last_word = words.back();
-    words.pop_back();
-
-    for (const auto& w : words) {
-        state.word_history.push(unicode::to_utf32(w));
-        std::u32string w32 = unicode::to_utf32(w);
-        if (!w32.empty()) {
-            char32_t last_c = w32.back();
-            state.last_boundary_key = is_word_boundary(last_c) ? last_c : 0;
-        }
-    }
-
-    Syllable s = SyllableParser::parse(unicode::to_utf32(last_word));
-    std::vector<char32_t> keys = s.to_keys(config.method);
-    state.buffer.clear();
-    for (char32_t k : keys)
-        state.buffer.push_back(k);
-    state.last_committed_text = unicode::to_utf32(last_word);
-
-    std::u32string last32 = unicode::to_utf32(last_word);
-    if (!last32.empty()) {
-        char32_t last_c = last32.back();
-        bool is_boundary = (last_c == ' ' || last_c == '\r' || last_c == '\n' ||
-                            (last_c < 128 && (ispunct((int)last_c) || last_c == '\t')));
-        if (is_boundary) {
-            state.last_boundary_key = last_c;
-            state.word_history.push(last32);
-            state.buffer.clear();
-            state.last_committed_text.clear();
-        } else {
-            state.last_boundary_key = 0;
-        }
-    }
+    
+    state.buffer = result.active_buffer;
+    state.last_committed_text = result.last_committed_text;
+    state.last_boundary_key = result.last_boundary_key;
 }
 
 /**
@@ -198,9 +123,9 @@ void Engine::commit_syllable_to_history(char32_t boundary_key) {
         Syllable s = SyllableParser::parse(unicode::to_utf32(current_str));
         if (tone_state != Tone::NONE)
             s.tone = tone_state;
-        state.word_history.push(unicode::to_utf32(s.to_string(config.tone_style)));
+        context_tracker.push_word(unicode::to_utf32(s.to_string(config.tone_style)));
     }
-    state.word_history.push({boundary_key});
+    context_tracker.push_boundary(boundary_key);
 }
 
 /**
@@ -238,7 +163,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
 
     if (key != 0) {
         state.buffer.push_back(key);
-        state.at_sentence_start = false;
+        context_tracker.set_at_sentence_start(false);
     }
 
     std::string raw_word = unicode::to_utf8(state.buffer);
@@ -376,7 +301,7 @@ bool Engine::handle_manual_tone_escape(char32_t key, EngineResult& result) {
         if (revertible) {
             state.buffer.push_back(key);
             state.last_modifier_key = 0;
-            state.at_sentence_start = false;
+            context_tracker.set_at_sentence_start(false);
             state.last_boundary_key = 0;
             std::u32string out = state.buffer;
             if (!out.empty())
@@ -444,12 +369,13 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
  * @return True if something was reclaimed.
  */
 bool Engine::reclaim_from_history(InputMethod method) {
-    auto recovered = state.word_history.pop();
-    if (recovered.empty())
+    auto recovered_opt = context_tracker.reclaim_last_word();
+    if (!recovered_opt.has_value())
         return false;
 
+    std::u32string recovered = recovered_opt.value();
     char32_t rc = recovered[0];
-    bool is_boundary = (recovered.size() == 1 && is_word_boundary(rc));
+    bool is_boundary = (recovered.size() == 1 && ContextTracker::is_word_boundary(rc));
 
     if (is_boundary) {
         // If we reclaimed a boundary, we just set it as the active state
@@ -482,7 +408,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
  * @return True if the key was a boundary and was handled.
  */
 bool Engine::handle_boundary(char32_t key, EngineResult& result) {
-    if (!is_word_boundary(key))
+    if (!ContextTracker::is_word_boundary(key))
         return false;
 
     std::string raw_word = unicode::to_utf8(state.buffer);
@@ -502,7 +428,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     bool is_safe_boundary = SAFE_BOUNDARY_KEYS.find(key) != std::u32string_view::npos;
 
     if (!is_safe_boundary) {
-        state.word_history.clear();
+        context_tracker.clear();
     } else {
         commit_syllable_to_history(key);
     }
@@ -516,10 +442,10 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     result.backspace = 0;
     reset();
     state.last_boundary_key = key;
-    if (is_sentence_ending(key))
-        state.at_sentence_start = true;
+    if (ContextTracker::is_sentence_ending(key))
+        context_tracker.set_at_sentence_start(true);
     else if (key != ' ' && key != '\t')
-        state.at_sentence_start = false;
+        context_tracker.set_at_sentence_start(false);
     return true;
 }
 
@@ -551,10 +477,10 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
  */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
     (void)mods;
-    bool handled = SmartTyping::handle(key, config.double_space_to_period, config.auto_capitalize, state.last_boundary_key, state.at_sentence_start, state.buffer, result, state.last_committed_text);
+    bool handled = SmartTyping::handle(key, config.double_space_to_period, config.auto_capitalize, state.last_boundary_key, context_tracker.is_at_sentence_start(), state.buffer, result, state.last_committed_text);
     if (handled) {
         state.last_boundary_key = ' ';
-        state.at_sentence_start = true;
+        context_tracker.set_at_sentence_start(true);
     }
     return handled;
 }
@@ -928,8 +854,6 @@ EngineResult Engine::build_result(const std::u32string& final_u32) {
  * @return True if the word should be preserved as English.
  */
 bool Engine::is_likely_english(const std::string& word) const {
-    if (Linguistics::is_on_whitelist(word))
-        return true;
     std::string transformed = word;
     Tone tone = Tone::NONE;
     bool consumed = false;
@@ -938,12 +862,11 @@ bool Engine::is_likely_english(const std::string& word) const {
     } else {
         const_cast<Engine*>(this)->apply_vni_rules(transformed, 0, consumed, tone);
     }
-    Syllable s = SyllableParser::parse(unicode::to_utf32(transformed));
+    Syllable s = SyllableParser::parse(unicode::to_utf32(transformed), config.allow_non_standard_initials);
     if (tone != Tone::NONE)
         s.tone = tone;
-    if (Validator::is_valid(s))
-        return false;
-    return Linguistics::is_likely_english(word);
+    bool is_valid_vn = Validator::is_valid(s, nullptr, config.allow_non_standard_initials);
+    return context_tracker.is_likely_english(word, is_valid_vn);
 }
 
 }  // namespace lotus_core

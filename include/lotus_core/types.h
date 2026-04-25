@@ -66,47 +66,6 @@ struct Modifiers {
 };
 
 /**
- * @brief A fixed-capacity ring buffer that stores the most recently committed words.
- * Used to support cross-word backspace and English auto-restore.
- */
-struct WordHistory {
-    static constexpr size_t CAPACITY = 10;
-    std::u32string data[CAPACITY];
-    size_t head = 0;
-    size_t size = 0;
-
-    /**
-     * @brief Appends a word to the history, evicting the oldest entry if over capacity.
-     */
-    void push(const std::u32string& word) {
-        data[head] = word;
-        head = (head + 1) % CAPACITY;
-        if (size < CAPACITY)
-            size++;
-    }
-
-    /**
-     * @brief Removes and returns the most recently committed word.
-     * @return The most recent word, or an empty string if the history is empty.
-     */
-    std::u32string pop() {
-        if (size == 0)
-            return U"";
-        head = (head + CAPACITY - 1) % CAPACITY;
-        size--;
-        return data[head];
-    }
-
-    /**
-     * @brief Clears the entire word history.
-     */
-    void clear() {
-        head = 0;
-        size = 0;
-    }
-};
-
-/**
  * @brief Actions returned by the engine indicating the type of transformation.
  */
 enum class EngineAction : uint8_t {
