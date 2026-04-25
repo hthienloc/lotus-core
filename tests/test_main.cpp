@@ -5,6 +5,7 @@
  */
 
 #include <iostream>
+#include <gtest/gtest.h>
 
 // ============================================================================
 // [ External Test Declarations ]
@@ -71,9 +72,6 @@ void test_capi_integration();
 // --- Edge Cases ---
 void test_edge_cases_run();
 
-// --- Features ---
-void test_features();
-
 // ============================================================================
 // [ Main Runner ]
 // ============================================================================
@@ -82,7 +80,15 @@ void test_features();
  * @brief Main entry point for the test suite.
  * Executes all registered test suites and reports overall status.
  */
-int main() {
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+
+    std::cout << "\n\033[1;34m[ Google Tests ]\033[0m\n";
+    int gtest_res = RUN_ALL_TESTS();
+    if (gtest_res != 0) {
+        return gtest_res;
+    }
+
     std::cout << "Running Vietnamese Engine Tests..." << std::endl;
 
     // --- Core ---
@@ -138,10 +144,7 @@ int main() {
     std::cout << "\n\033[1;34m[ Edge Case Tests ]\033[0m\n";
     test_edge_cases_run();
 
-    // --- Features ---
-    std::cout << "\n\033[1;34m[ Feature Tests ]\033[0m\n";
-    test_features();
-
     std::cout << "\n\033[1;32mAll tests PASSED!\033[0m" << std::endl;
+
     return 0;
 }

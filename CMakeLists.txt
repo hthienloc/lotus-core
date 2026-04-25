@@ -47,6 +47,9 @@ set_target_properties(lotus_core_core_shared PROPERTIES OUTPUT_NAME lotus_core_c
 target_include_directories(lotus_core_core PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 target_include_directories(lotus_core_core_shared PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 
+# Find Google Test
+find_package(GTest REQUIRED)
+
 # Test Executable
 add_executable(lotus_tests
     tests/test_main.cpp
@@ -61,9 +64,9 @@ add_executable(lotus_tests
     tests/test_capi.cpp
     tests/test_capi_integration.cpp
     tests/test_edge_cases.cpp
-    tests/test_features_stub.cpp
+    tests/test_features.cpp
 )
-target_link_libraries(lotus_tests lotus_core_core)
+target_link_libraries(lotus_tests lotus_core_core GTest::gtest)
 
 # Helper to run tests
 add_custom_target(run_tests
