@@ -211,7 +211,7 @@ void test_engine_production_features() {
         std::u32string screen;
         type_into(engine, screen, "hello ");
         auto res = engine.process_key(8, mods);  // Backspace
-        assert(res.action == 1);
+        assert(res.action == EngineAction::TRANSFORM);
         assert(res.backspace == 1);
         assert(res.count == 0);
     }

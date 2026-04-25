@@ -12,7 +12,7 @@ void test_features() {
 
         EngineResult res;
         bool handled = mgr.handle(' ', U"vn", res);
-        if (!handled || res.action != 1 || res.backspace != 2) {
+        if (!handled || res.action != EngineAction::TRANSFORM || res.backspace != 2) {
             std::cerr << "\033[1;31m[FAIL]\033[0m ShortcutManagerExpands failed." << std::endl;
             exit(1);
         }
@@ -25,13 +25,13 @@ void test_features() {
 
         EngineResult res;
         bool handled = mgr.handle(' ', U"Vn", res);
-        if (!handled || res.action != 1 || res.backspace != 2 || res.chars[0] != 'V') {
+        if (!handled || res.action != EngineAction::TRANSFORM || res.backspace != 2 || res.chars[0] != 'V') {
             std::cerr << "\033[1;31m[FAIL]\033[0m ShortcutManagerCaseSensitivity (Vn) failed." << std::endl;
             exit(1);
         }
 
         handled = mgr.handle(' ', U"VN", res);
-        if (!handled || res.action != 1 || res.backspace != 2 || res.chars[0] != 'V') {
+        if (!handled || res.action != EngineAction::TRANSFORM || res.backspace != 2 || res.chars[0] != 'V') {
             std::cerr << "\033[1;31m[FAIL]\033[0m ShortcutManagerCaseSensitivity (VN) failed." << std::endl;
             exit(1);
         }
@@ -77,7 +77,7 @@ void test_features() {
         EngineResult res2;
         std::u32string last_committed_text;
         bool handled = SmartTyping::handle(key, true, false, ' ', false, U"", res2, last_committed_text);
-        if (!handled || res2.action != 1 || res2.chars[0] != '.' || res2.chars[1] != ' ') {
+        if (!handled || res2.action != EngineAction::TRANSFORM || res2.chars[0] != '.' || res2.chars[1] != ' ') {
             std::cerr << "\033[1;31m[FAIL]\033[0m SmartTypingDoubleSpace failed." << std::endl;
             exit(1);
         }

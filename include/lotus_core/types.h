@@ -107,6 +107,15 @@ struct WordHistory {
 };
 
 /**
+ * @brief Actions returned by the engine indicating the type of transformation.
+ */
+enum class EngineAction : uint8_t {
+    PASS = 0,      ///< No transformation, output character normally.
+    TRANSFORM = 1, ///< Replace 'backspace' characters with 'count' new 'chars'.
+    RESTORE = 2    ///< English detection restoration, revert to original keys.
+};
+
+/**
  * @brief Result structure returned after each key press, containing instructions for the frontend.
  * Designed to be FFI-compatible (C ABI).
  */
@@ -119,11 +128,8 @@ struct EngineResult {
 
     /**
      * @brief Control action for the frontend.
-     * - 0: Pass (No transformation)
-     * - 1: Send (Insert or Replace with 'chars')
-     * - 2: Restore (Fix for English detection restoration)
      */
-    uint8_t action;
+    EngineAction action;
 
     /**
      * @brief Number of characters to delete using backspace BEFORE inserting 'chars'.

@@ -8,7 +8,7 @@ bool SmartTyping::handle(char32_t& key, bool double_space_to_period, bool auto_c
     // If the user typed a space, and the last boundary recorded was also a space,
     // we backspace the previous space and replace it with a period and a new space.
     if (double_space_to_period && key == ' ' && last_boundary_key == ' ') {
-        result.action = 1;       // Transformation action
+        result.action = EngineAction::TRANSFORM;       // Transformation action
         result.backspace = 1;    // Backspace the previously committed space
         result.count = 2;        // Insert two characters
         result.chars[0] = '.';   // Period

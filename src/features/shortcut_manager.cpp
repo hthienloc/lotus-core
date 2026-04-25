@@ -95,7 +95,7 @@ bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineR
 
 EngineResult ShortcutManager::_make_transformation_result(const std::u32string& final_u32, size_t prev_size) const {
     EngineResult result{};
-    result.action = 1;
+    result.action = EngineAction::TRANSFORM;
     result.backspace = (uint8_t)prev_size;
     result.count = (uint8_t)std::min((size_t)32, final_u32.size());
     for (int i = 0; i < result.count; i++)

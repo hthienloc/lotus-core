@@ -12,7 +12,7 @@ TEST(FeatureTests, ShortcutManagerExpands) {
     EngineResult res;
     bool handled = mgr.handle(' ', U"vn", res);
     EXPECT_TRUE(handled);
-    EXPECT_EQ(res.action, 1);
+    EXPECT_EQ(res.action, EngineAction::TRANSFORM);
     EXPECT_EQ(res.backspace, 2);
     EXPECT_GT(res.count, 0);
 }
@@ -24,7 +24,7 @@ TEST(FeatureTests, ShortcutManagerCaseSensitivity) {
     EngineResult res;
     bool handled = mgr.handle(' ', U"Vn", res);
     EXPECT_TRUE(handled);
-    EXPECT_EQ(res.action, 1);
+    EXPECT_EQ(res.action, EngineAction::TRANSFORM);
     EXPECT_EQ(res.backspace, 2);
     // Should be capitalized
     // The first char in U"Việt Nam" is 'V'
@@ -32,7 +32,7 @@ TEST(FeatureTests, ShortcutManagerCaseSensitivity) {
 
     handled = mgr.handle(' ', U"VN", res);
     EXPECT_TRUE(handled);
-    EXPECT_EQ(res.action, 1);
+    EXPECT_EQ(res.action, EngineAction::TRANSFORM);
     EXPECT_EQ(res.backspace, 2);
     // All caps -> VIỆT NAM (first char 'V')
     EXPECT_EQ(res.chars[0], 'V');
@@ -118,7 +118,7 @@ TEST(FeatureTests, SmartTypingDoubleSpace) {
     std::u32string last_committed_text;
     bool handled = SmartTyping::handle(key, true, false, ' ', false, U"", res, last_committed_text);
     EXPECT_TRUE(handled);
-    EXPECT_EQ(res.action, 1);
+    EXPECT_EQ(res.action, EngineAction::TRANSFORM);
     EXPECT_EQ(res.chars[0], '.');
     EXPECT_EQ(res.chars[1], ' ');
 }

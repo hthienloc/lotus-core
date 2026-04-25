@@ -214,7 +214,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
         return res;
     if (handle_backspace(key, mods, res))
         return res;
-    if (handle_smart_typing(key, mods, res) && res.action != 0)
+    if (handle_smart_typing(key, mods, res) && res.action != EngineAction::PASS)
         return res;
 
     if (key != 0 && buffer.empty()) {
@@ -488,7 +488,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
         std::u32string output = buffer;
         output.push_back(key);
         result = make_transformation_result(output);
-        result.action = 2;
+        result.action = EngineAction::RESTORE;
         reset();
         last_boundary_key = key;
         return true;
@@ -530,7 +530,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     if (handle_shortcuts(key, result))
         return true;
 
-    result.action = 0;
+    result.action = EngineAction::PASS;
     result.count = 1;
     result.chars[0] = key;
     result.backspace = 0;
@@ -927,7 +927,7 @@ void Engine::apply_vni_modifiers(std::string& current_str, char32_t key, bool& k
  */
 EngineResult Engine::make_transformation_result(const std::u32string& final_u32) {
     EngineResult result{};
-    result.action = 1;
+    result.action = EngineAction::TRANSFORM;
     result.backspace = (uint8_t)last_committed_text.size();
     result.count = (uint8_t)std::min((size_t)32, final_u32.size());
     for (int i = 0; i < result.count; i++)
