@@ -10,6 +10,7 @@ This file defines the foundational constraints and operational standards for the
 
 ### 1. Architectural Integrity (READ THIS FIRST)
 
+- **Simplicity Over Performance**: Prioritize clean, readable, and maintainable code over micro-optimizations. Only optimize logic after empirical evidence (via `bench`) suggests a bottleneck.
 - **Modularity is Non-Negotiable**: Keep the engine decomposed. The `Engine::process_key` function must remain a high-level orchestrator. New features (e.g., new smart typing rules) must be added as private helper methods, not directly into the main loop.
 - **Table-Driven Logic**: Vietnamese character transformations (casing, tones, NFC) MUST use the data-driven lookup tables in `include/lotus_core/unicode.h`. Avoid re-introducing long `switch` statements or manual if-else chains for character mapping.
 - **Rule-Based Validation**: Linguistic rules in `Validator::is_valid` must be encapsulated in semantic helper methods (e.g., `check_front_vowel_affinity`).
@@ -51,6 +52,20 @@ This file defines the foundational constraints and operational standards for the
 6. **Finalization**: Perform the final commit and push if all criteria are met. Any discrepancies found during review should be sent back to Jules as a follow-up task.
 
 - **Debug Log**: When using `tui_demo`, use `LOTUSDEBUG=1` to see the aligned ASCII table log. Maintain the fixed-width formatting using `unicode::display_width`. Never strip debug-only code or logging statements during surgical edits.
+
+## Task Delegation Framework
+
+To maintain project integrity while maximizing efficiency, tasks are classified into three levels:
+
+- **Level 1: High Autonomy (Direct Delegation)**
+  - *Targets:* Test coverage expansion, migrating legacy tests, Doxygen documentation, and non-breaking refactoring of leaf modules.
+  - *Standard:* Jules/Agents handle implementation; Orchestrator performs code review and validation.
+- **Level 2: Guided Implementation (Detailed Scoping)**
+  - *Targets:* Adding new linguistic rules, smart typing variants, or localized bug fixes in parser/validator.
+  - *Standard:* Orchestrator defines strict linguistic constraints and test cases; Agents implement.
+- **Level 3: Strategic Core (Orchestrator Only)**
+  - *Targets:* Changes to `Engine` orchestration logic, modification of shared types (`types.h`, `unicode.h`), and architectural shifts.
+  - *Standard:* Handled directly by Gemini to ensure project-wide consistency.
 
 ## Key Files
 
