@@ -1,89 +1,86 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier
+// @name         Jules Session & Message Copier (Direct Link Edition)
 // @namespace    http://tampermonkey.net/
-// @version      1.7
-// @description  Copy Jules message with Session URL (Agent Only & CSP Compliant)
+// @version      1.9
+// @description  Automated bridge with Local Relay Server
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @connect      localhost
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    console.log('%c[Lotus Helper] Script V1.7 Loaded (Agent Only)', 'color: #34a853; font-weight: bold;');
+    const RELAY_URL = 'http://localhost:8080';
 
-    function copyToClipboard(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            console.log('[Lotus Helper] Copied successfully');
-        } catch (err) {
-            console.error('[Lotus Helper] Copy failed', err);
-        }
-        document.body.removeChild(textArea);
+    console.log('%c[Lotus Bridge] Version 1.9 Active (Direct Link)', 'color: #34a853; font-weight: bold;');
+
+    function sendToRelay(data) {
+        fetch(RELAY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: json.stringify(data)
+        })
+        .then(response => console.log('[Lotus Bridge] Message delivered to local relay.'))
+        .catch(error => console.error('[Lotus Bridge] Relay error:', error));
     }
 
-    function createSafeButton(textGetter) {
-        const btn = document.createElement('button');
-        btn.textContent = '📋 COPY JULES MESSAGE + SESSION';
+    function createCopyButton(container, textGetter) {
+        if (container.getAttribute('data-gemini-injected') === 'true') return;
         
-        const s = btn.style;
-        s.display = 'block';
-        s.marginTop = '12px';
-        s.marginBottom = '12px';
-        s.padding = '8px 16px';
-        s.backgroundColor = '#1a73e8';
-        s.color = '#ffffff';
-        s.border = 'none';
-        s.borderRadius = '8px';
-        s.fontSize = '12px';
-        s.fontWeight = 'bold';
-        s.cursor = 'pointer';
-        s.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-        s.zIndex = '9999';
+        const btn = document.createElement('button');
+        btn.textContent = '🚀 SYNC TO GEMINI';
+        Object.assign(btn.style, {
+            display: 'block', marginTop: '10px', padding: '8px 16px',
+            background: '#4285f4', color: 'white', border: 'none', borderRadius: '8px',
+            fontSize: '12px', fontWeight: 'bold', cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        });
 
-        btn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const sessionUrl = window.location.href;
-            const message = textGetter();
-            copyToClipboard(`Session URL: ${sessionUrl}\n\nJules Message:\n${message}`);
-            
-            const originalText = btn.textContent;
-            btn.textContent = '✅ COPIED!';
-            btn.style.backgroundColor = '#34a853';
+        btn.onclick = () => {
+            const payload = {
+                url: window.location.href,
+                message: textGetter(),
+                timestamp: new Date().toISOString()
+            };
+
+            // 1. Copy to clipboard (as fallback)
+            const textArea = document.createElement("textarea");
+            textArea.value = `Session URL: ${payload.url}\n\nMessage:\n${payload.message}`;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+
+            // 2. Send to Local Relay
+            fetch(RELAY_URL, {
+                method: 'POST',
+                mode: 'no-cors', // To avoid preflight issues in some browsers
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            btn.textContent = '⚡ SYNCED!';
+            btn.style.background = '#34a853';
             setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.backgroundColor = '#1a73e8';
+                btn.textContent = '🚀 SYNC TO GEMINI';
+                btn.style.background = '#4285f4';
             }, 2000);
         };
 
-        return btn;
+        container.appendChild(btn);
+        container.setAttribute('data-gemini-injected', 'true');
     }
 
-    function scanAndInject() {
-        // CHỈ tìm các message container của Jules (Agent)
+    function scan() {
         const containers = document.querySelectorAll('swebot-agent-chat-bubble .message-container');
-        
         containers.forEach(container => {
-            if (container.getAttribute('data-gemini-injected') === 'true') return;
-            
-            // Tìm vùng hiển thị Markdown
             const content = container.querySelector('swebot-markdown-viewer') || container;
-            
-            const btn = createSafeButton(() => content.innerText);
-            container.appendChild(btn);
-            container.setAttribute('data-gemini-injected', 'true');
-            console.log('[Lotus Helper] Jules message button injected');
+            createCopyButton(container, () => content.innerText);
         });
     }
 
-    // Quét liên tục để bắt kịp Angular re-render
-    setInterval(scanAndInject, 1000);
-    scanAndInject();
+    setInterval(scan, 1000);
 })();
