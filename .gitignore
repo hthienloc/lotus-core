@@ -6,6 +6,7 @@ build/
 *.orig
 *.csv
 *.patch
+*.diff
 *.txt
 cmake-build-*/
 CMakeFiles/
