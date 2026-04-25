@@ -38,7 +38,9 @@ This file defines the foundational constraints and operational standards for the
 
 ## Workflow (Orchestration Model)
 
-1. **Research & Scoping**: Analyze the codebase and reproduce bugs in `tui_demo.cpp` or a new test file. Define a clear, surgical task for Jules.
+0.  **Synchronization (CRITICAL)**: ALWAYS push all local commits to the remote repository (`git push`) before starting a new Jules task or delegating work. This ensures agents operate on the most recent architectural context.
+1.  **Research & Scoping**: Analyze the codebase and reproduce bugs in `tui_demo.cpp` or a new test file. Define a clear, surgical task for Jules.
+
 2. **Delegation**: Hand over the implementation to **Jules** using the `mcp_julesServer_start_new_jules_task` tool. Provide detailed linguistic and technical constraints in the task description.
 3. **Passive Monitoring**: Check the status of active tasks using `jules remote list --session`. Avoid continuous manual polling; wait for significant progress or an agent's signal.
 4. **Rigorous Review & Pull**: Once Jules is done, pull the code using `jules remote pull --session <id> --apply`.
