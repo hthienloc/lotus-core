@@ -66,31 +66,8 @@ size_t Validator::find_longest_initial(const std::u32string& input, size_t start
  * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
  * @return True if the syllable is phonotactically and orthographically valid.
  */
-bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reason, bool allow_non_standard) {
-    if (syllable.vowel.empty() && !syllable.glide.has_value()) {
-        if (syllable.initial.empty()) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Empty syllable.";
-            return false;
-        }
-        std::u32string lower_i = unicode::to_lower(syllable.initial);
-        bool valid_init = is_valid_initial(lower_i, allow_non_standard);
-        if (!valid_init && diagnostic_reason) {
-            *diagnostic_reason = "Invalid initial consonant.";
-        }
-        return valid_init;
-    }
-
-    // 1. Component Set Checks
-    std::u32string lower_init = unicode::to_lower(syllable.initial);
-    if (!lower_init.empty()) {
-        if (!is_valid_initial(lower_init, allow_non_standard)) {
-            if (diagnostic_reason)
-                *diagnostic_reason = "Invalid initial consonant.";
-            return false;
-        }
-    }
-
+bool Validator::validate_glide_compatibility(const Syllable& syllable, std::u32string_view lower_init,
+                                             std::string* diagnostic_reason) {
     if (syllable.glide.has_value()) {
         char32_t lower_g = unicode::to_lower(syllable.glide.value());
         if (std::find(VALID_GLIDES_U32.begin(), VALID_GLIDES_U32.end(),
@@ -101,7 +78,19 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
         }
     }
 
-    std::u32string stripped_nucleus;
+    // Q Rule: q always followed by glide u
+    if (lower_init == U"q") {
+        if (!syllable.glide.has_value() || unicode::to_lower(syllable.glide.value()) != 'u') {
+            if (diagnostic_reason)
+                *diagnostic_reason = "Initial 'q' must be followed by glide 'u'.";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
+                                        std::string* diagnostic_reason) {
     if (!syllable.vowel.empty()) {
         for (char32_t cp : syllable.vowel) {
             char32_t toned_cp = unicode::strip_tone(unicode::to_lower(cp));
@@ -116,7 +105,12 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
             return false;
         }
     }
+    return true;
+}
 
+bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucleus_start,
+                                         std::u32string_view stripped_nucleus,
+                                         std::string* diagnostic_reason) {
     if (!syllable.final_c.empty()) {
         static const std::vector<std::u32string_view> CLOSING_DIPHTHONGS = {
             U"ai", U"ao", U"au", U"âu", U"ay", U"ây", U"eo", U"êu", U"iu",
@@ -143,27 +137,57 @@ bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reaso
         }
     }
 
-    // 2. Orthographic Rules
+    if (!check_coda_restrictions(nucleus_start, syllable.final_c, diagnostic_reason))
+        return false;
+    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c, diagnostic_reason))
+        return false;
 
-    // Q Rule: q always followed by glide u
-    if (lower_init == U"q") {
-        if (!syllable.glide.has_value() || unicode::to_lower(syllable.glide.value()) != 'u') {
+    return true;
+}
+
+bool Validator::is_valid(const Syllable& syllable, std::string* diagnostic_reason, bool allow_non_standard) {
+    if (syllable.vowel.empty() && !syllable.glide.has_value()) {
+        if (syllable.initial.empty()) {
             if (diagnostic_reason)
-                *diagnostic_reason = "Initial 'q' must be followed by glide 'u'.";
+                *diagnostic_reason = "Empty syllable.";
+            return false;
+        }
+        std::u32string lower_i = unicode::to_lower(syllable.initial);
+        bool valid_init = is_valid_initial(lower_i, allow_non_standard);
+        if (!valid_init && diagnostic_reason) {
+            *diagnostic_reason = "Invalid initial consonant.";
+        }
+        return valid_init;
+    }
+
+    // 1. Component Set Checks
+    std::u32string lower_init = unicode::to_lower(syllable.initial);
+    if (!lower_init.empty()) {
+        if (!is_valid_initial(lower_init, allow_non_standard)) {
+            if (diagnostic_reason)
+                *diagnostic_reason = "Invalid initial consonant.";
             return false;
         }
     }
+
+    if (!validate_glide_compatibility(syllable, lower_init, diagnostic_reason))
+        return false;
+
+    std::u32string stripped_nucleus;
+    if (!validate_tone_placement(syllable, stripped_nucleus, diagnostic_reason))
+        return false;
+
+    // 2. Orthographic Rules
 
     char32_t nucleus_start = syllable.vowel.empty() ? 0 : unicode::to_lower(syllable.vowel[0]);
     char32_t affinity_char =
         syllable.glide.has_value() ? unicode::to_lower(syllable.glide.value()) : nucleus_start;
 
-    if (!check_front_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c,
-                                    diagnostic_reason))
+    if (!check_initial_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c,
+                                      diagnostic_reason))
         return false;
-    if (!check_coda_restrictions(nucleus_start, syllable.final_c, diagnostic_reason))
-        return false;
-    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c, diagnostic_reason))
+
+    if (!check_coda_compatibility(syllable, nucleus_start, stripped_nucleus, diagnostic_reason))
         return false;
 
     return true;
@@ -210,9 +234,9 @@ bool Validator::is_centering_diphthong_forbidding_coda(std::u32string_view v) {
  * @param diagnostic_reason Optional pointer to a string to populate on failure.
  * @return True if the combination is valid.
  */
-bool Validator::check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
-                                           char32_t nucleus_start, std::u32string_view final_c,
-                                           std::string* diagnostic_reason) {
+bool Validator::check_initial_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
+                                             char32_t nucleus_start, std::u32string_view final_c,
+                                             std::string* diagnostic_reason) {
     bool is_front = is_front_vowel(affinity_char);
     bool is_front_no_y = is_front_vowel_strict(affinity_char);
 

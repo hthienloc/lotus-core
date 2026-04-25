@@ -48,6 +48,24 @@ class Validator {
 
    private:
     /**
+     * @brief Validates glide compatibility including the orthographic 'q' rule.
+     * @param syllable The syllable being validated.
+     * @param lower_init The lowercase initial consonant.
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     */
+    static bool validate_glide_compatibility(const Syllable& syllable, std::u32string_view lower_init,
+                                             std::string* diagnostic_reason = nullptr);
+
+    /**
+     * @brief Validates tone placement and extracts the stripped nucleus.
+     * @param syllable The syllable being validated.
+     * @param stripped_nucleus Output parameter to store the nucleus without tone marks.
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     */
+    static bool validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
+                                        std::string* diagnostic_reason = nullptr);
+
+    /**
      * @brief Checks orthographic affinity between initial consonants and following vowels/glides.
      * @param lower_init Lowercase initial consonant.
      * @param affinity_char The character immediately following the initial (glide or nucleus
@@ -56,9 +74,20 @@ class Validator {
      * @param final_c The final consonant (coda).
      * @param diagnostic_reason Optional pointer to a string to populate on failure.
      */
-    static bool check_front_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
-                                           char32_t nucleus_start, std::u32string_view final_c,
-                                           std::string* diagnostic_reason = nullptr);
+    static bool check_initial_vowel_affinity(std::u32string_view lower_init, char32_t affinity_char,
+                                             char32_t nucleus_start, std::u32string_view final_c,
+                                             std::string* diagnostic_reason = nullptr);
+
+    /**
+     * @brief High-level orchestrator for checking coda compatibility, internally calling restrictions and diphthong rules.
+     * @param syllable The syllable being validated.
+     * @param nucleus_start The first character of the vowel nucleus.
+     * @param stripped_nucleus The vowel nucleus without tone marks.
+     * @param diagnostic_reason Optional pointer to a string to populate on failure.
+     */
+    static bool check_coda_compatibility(const Syllable& syllable, char32_t nucleus_start,
+                                         std::u32string_view stripped_nucleus,
+                                         std::string* diagnostic_reason = nullptr);
 
     /**
      * @brief Checks restrictions on specific codas (nh, ch) based on the nucleus.
