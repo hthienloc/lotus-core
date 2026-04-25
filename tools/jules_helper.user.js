@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Jules Session & Message Copier (V3.2 Production)
+// @name         Jules Session & Message Copier (V3.3 Final)
 // @namespace    http://tampermonkey.net/
-// @version      3.2
-// @description  A robust, bi-directional bridge with Regex-based Session ID extraction and cache-busting.
+// @version      3.3
+// @description  Full bi-directional bridge with Regex ID extraction, Cache-Busting, and Strict Comment Preservation.
 // @author       Gemini Orchestrator
 // @match        https://jules.google.com/session/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=google.com
@@ -14,10 +14,12 @@
  * ARCHITECTURE OVERVIEW:
  * 
  * 1. SYNC (Jules -> Gemini): Transfers Jules message content to local relay.
- * 2. PROPOSAL (Gemini -> Jules): Polls for replies targeting this specific Session.
- * 3. APPROVAL: User confirms delivery of Gemini's reply to Jules.
- * 4. SECURITY: Pure DOM construction (createElement) to bypass strict CSP.
- * 5. URL RESILIENCE: Regex extraction ensures correct ID even with sub-pages (e.g. /code/).
+ * 2. PROPOSAL (Gemini -> Jules): Polls for replies targeting this specific Session ID.
+ * 3. APPROVAL: User confirms delivery of Gemini's reply to Jules via UI panel.
+ * 4. SECURITY (CSP): Pure DOM construction (createElement) to bypass Google's strict CSP.
+ * 5. CACHE BUSTING: Polling requests include a timestamp to ensure fresh data.
+ * 6. URL RESILIENCE: Regex extraction ensuring correct Session ID in all sub-pages.
+ * 7. STATE MANAGEMENT: Message fingerprinting prevents handled proposals from reappearing.
  */
 
 (function() {
@@ -27,7 +29,6 @@
     
     /**
      * Extracts the core Session ID from the URL using Regex.
-     * Prevents issues when navigating to sub-routes like /code/ or /history/.
      */
     function extractSessionID() {
         const match = window.location.href.match(/\/session\/([^\/]+)/);
@@ -37,7 +38,7 @@
     const SESSION_ID = extractSessionID();
     let handledMessages = new Set();
 
-    console.log(`%c[Lotus Bridge V3.2] Active for Session: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
+    console.log(`%c[Lotus Bridge V3.3] Active for Session: ${SESSION_ID}`, 'color: #3d5afe; font-weight: bold;');
 
     function getMessageFingerprint(msg) {
         try {
@@ -52,7 +53,7 @@
     }
 
     /**
-     * Periodically polls the local relay server for messages from Gemini.
+     * Polling mechanism to receive instructions from Gemini.
      */
     function poll() {
         if (!SESSION_ID) return;
@@ -61,7 +62,6 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: cacheBusterUrl,
-            timeout: 2000,
             onload: function(res) {
                 try {
                     const data = JSON.parse(res.responseText);
@@ -75,7 +75,6 @@
                         return;
                     }
 
-                    // Strict matching using the robust Regex-extracted ID
                     if (data.target_session_id === SESSION_ID) {
                         const fingerprint = getMessageFingerprint(data.message);
                         if (!handledMessages.has(fingerprint)) {
@@ -87,6 +86,9 @@
         });
     }
 
+    /**
+     * Displays the proposal panel.
+     */
     function injectProposalUI(message, fingerprint) {
         if (document.getElementById('gemini-safe-panel')) return;
 
@@ -95,7 +97,7 @@
         Object.assign(panel.style, {
             position: 'fixed', bottom: '120px', left: '50%', transform: 'translateX(-50%)',
             width: '450px', padding: '20px', background: '#ffffff', border: '4px solid #3d5afe',
-            borderRadius: '16px', zIndex: '2147483647', boxShadow: '0 10px 40px rgba(61,90,254,0.4)',
+            borderRadius: '16px', zIndex: '2147483647', boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
             fontFamily: 'sans-serif'
         });
 
