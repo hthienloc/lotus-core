@@ -80,3 +80,4 @@ node_modules/
 # ========================
 *.patch
 *.txt
+tools/bridge_outbox.json
