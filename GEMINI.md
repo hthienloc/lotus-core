@@ -19,6 +19,10 @@ This file defines the foundational constraints and operational standards for the
 ### 2. Engineering Standards
 
 - **Unicode awareness**: All internal logic and composition buffers MUST use `char32_t`. Conversion to UTF-8 should only happen at the boundary (Engine output or file I/O).
+- **Semantic Naming Principles**:
+  - **Linguistic Domain**: Use precise phonological terms: `Initial` (phụ âm đầu), `Glide` (âm đệm), `Nucleus` (nguyên âm chính), `Coda` (phụ âm cuối), and `Tone` (thanh điệu). Avoid generic terms like 'Start', 'End', or 'Mark'.
+  - **Action Prefixes**: Use verbs that reveal intent: `transform_` (mutation), `validate_` (boolean checks), `handle_` (event/logic routing), `build_` (result construction), and `is_likely_` (heuristics/guessing).
+  - **Intent over Mechanism**: Names should reflect *why* or *what* for the user/language, not just the technical implementation (e.g., `handle_hook_key_shortcuts` is preferred over `apply_std_uo`).
 - **Zero-Regression Policy**: Every bug fix or feature MUST have a reproduction test case in `tests/`. Before finishing a task, run the full suite: `./dev.sh`.
 - **Test Integrity (STRICT)**: NEVER modify existing test case expectations or delete existing tests without explicit user permission.
 - **New Tests (STRICT)**: NEVER add new test cases or new test files without explicitly asking the user for permission first.

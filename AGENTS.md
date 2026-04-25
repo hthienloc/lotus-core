@@ -10,6 +10,13 @@
 ## ⚙️ Technical Standards
 - **Language**: C++20.
 - **Unicode**: Internally uses `char32_t` (UTF-32) for all logic. UTF-8 is only for boundaries.
+- **Naming Conventions**:
+  - **Classes/Structs**: `PascalCase` (e.g., `SyllableParser`).
+  - **Methods/Variables**: `snake_case` (e.g., `transform_buffer()`).
+  - **Constants/Enums**: `SCREAMING_SNAKE_CASE` (e.g., `KEY_BACKSPACE`).
+- **Semantic Naming Principles**:
+  - **Phonology**: Use precise terms (`Initial`, `Glide`, `Nucleus`, `Coda`, `Tone`). Avoid 'Start', 'End', 'Vowel', 'Mark'.
+  - **Intent**: Use prefixes `transform_` (mutation), `validate_` (checks), `handle_` (routing), `build_` (construction), and `is_likely_` (heuristics).
 - **Standards**: Strict Doxygen documentation for all public/private members. Explain the *linguistic rationale* for changes.
 - **Formatting**: Adhere to `.clang-format`. Use `clang-format -i` before committing.
 - **Safety**: NEVER delete or strip comments. Maintain existing architectural patterns.
