@@ -66,12 +66,24 @@ struct TraceScope {
     ~TraceScope();
 };
 
+/**
+ * @brief Formats a log message with a standardized aligned component tag.
+ * @param component The component name (e.g., "PARSER").
+ * @param message The log message.
+ * @return The formatted log string.
+ */
+std::string format_log_message(const std::string& component, const std::string& message);
+
 }  // namespace lotus_core
 
 // Internal macros for easily emitting logs
 #define LOTUS_TRACE_SCOPE(name) lotus_core::TraceScope _lotus_trace_##__LINE__(name)
 
-#define LOTUS_LOG_DEBUG(msg) lotus_core::emit_log(lotus_core::LogLevel::DEBUG, msg)
-#define LOTUS_LOG_INFO(msg) lotus_core::emit_log(lotus_core::LogLevel::INFO, msg)
-#define LOTUS_LOG_WARN(msg) lotus_core::emit_log(lotus_core::LogLevel::WARN, msg)
-#define LOTUS_LOG_ERROR(msg) lotus_core::emit_log(lotus_core::LogLevel::ERROR, msg)
+#define LOTUS_LOG_DEBUG(msg) \
+    do { if (lotus_core::g_has_log_callback) lotus_core::emit_log(lotus_core::LogLevel::DEBUG, msg); } while(0)
+#define LOTUS_LOG_INFO(msg) \
+    do { if (lotus_core::g_has_log_callback) lotus_core::emit_log(lotus_core::LogLevel::INFO, msg); } while(0)
+#define LOTUS_LOG_WARN(msg) \
+    do { if (lotus_core::g_has_log_callback) lotus_core::emit_log(lotus_core::LogLevel::WARN, msg); } while(0)
+#define LOTUS_LOG_ERROR(msg) \
+    do { if (lotus_core::g_has_log_callback) lotus_core::emit_log(lotus_core::LogLevel::ERROR, msg); } while(0)

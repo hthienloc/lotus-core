@@ -12,6 +12,7 @@
 #include "lotus_core/unicode.h"
 #include "lotus_core/parser_components.h"
 #include "lotus_core/phonology_data.h"
+#include "lotus_core/log.h"
 
 #include <algorithm>
 
@@ -95,12 +96,19 @@ Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_stand
 
     size_t pos = 0;
     pos += InitialParser::parse(normalized_input, s, allow_non_standard);
+    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PARSER", "Initial: [" + unicode::to_utf8(s.initial) + "]"));
+
     pos += parse_glide(normalized_input, pos, s);
+    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PARSER", "Glide: [" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "]"));
+
     pos += parse_nucleus(normalized_input, pos, s);
+    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PARSER", "Nucleus: [" + unicode::to_utf8(s.vowel) + "], Tone: " + std::to_string(static_cast<int>(s.tone))));
 
     reorder_vowels(s);
+    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PARSER", "Reorder: Glide=[" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "], Nucleus=[" + unicode::to_utf8(s.vowel) + "]"));
 
     parse_coda(normalized_input, pos, s);
+    LOTUS_LOG_DEBUG(lotus_core::format_log_message("PARSER", "Coda: [" + unicode::to_utf8(s.final_c) + "]"));
 
     return s;
 }

@@ -5,6 +5,7 @@
  */
 
 #include "lotus_core/log.h"
+#include "lotus_core/unicode.h"
 #include <mutex>
 #include <vector>
 #include <fstream>
@@ -33,6 +34,24 @@ static std::vector<TraceEvent> g_trace_buffer;
 // ============================================================================
 // [ Logging & Tracing Implementation ]
 // ============================================================================
+
+std::string format_log_message(const std::string& component, const std::string& message) {
+    // We want the component tag (including brackets) to be 12 visual characters wide.
+    // e.g. "[PARSER     ]" -> 12 characters.
+    // So the component name itself plus brackets is width = 2 + display_width(component).
+    
+    std::string tag = "[" + component + "]";
+    size_t width = unicode::display_width(tag);
+    
+    if (width < 13) { // 13 is target width of 12 for the tag + 1 space before message? No, requirement says "[PARSER     ] Initial: [ngh]" (where [PARSER     ] is exactly 12 width).
+        // Let's make the tag exactly 12 visual characters wide.
+        size_t pad_len = 12 - width;
+        // insert padding before the closing bracket.
+        tag.insert(tag.length() - 1, pad_len, ' ');
+    }
+    
+    return tag + " " + message;
+}
 
 void set_log_callback(LogCallback callback) {
     std::lock_guard<std::mutex> lock(g_log_mutex);
