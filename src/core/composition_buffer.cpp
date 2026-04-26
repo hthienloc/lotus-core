@@ -84,22 +84,29 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
     }
 
     char32_t lk = unicode::to_lower(key);
-    std::array<bool, StaticString::MAX_LEN> to_strip{};
 
-    // Single pass to gather all candidate indices for transformations.
-    struct CandidateList { std::array<size_t, StaticString::MAX_LEN> data; size_t count = 0; void push_back(size_t val) { if (count < StaticString::MAX_LEN) data[count++] = val; } bool empty() const { return count == 0; } size_t back() const { return data[count - 1]; } size_t operator[](size_t i) const { return data[i]; } size_t size() const { return count; } auto begin() const { return data.begin(); } auto end() const { return data.begin() + count; } auto begin() { return data.begin(); } auto end() { return data.begin() + count; } };
-    CandidateList indices_d, indices_a, indices_e, indices_o, indices_u, indices_w;
-    CandidateList tone_indices;
+    // Tracker for single-character indices
+    struct CharTracker {
+        std::array<size_t, StaticString::MAX_LEN> data{};
+        size_t count = 0;
+        void push_back(size_t val) { if (count < StaticString::MAX_LEN) data[count++] = val; }
+        bool empty() const { return count == 0; }
+        size_t back() const { return data[count - 1]; }
+        size_t operator[](size_t i) const { return data[i]; }
+        size_t size() const { return count; }
+        auto begin() const { return data.begin(); }
+        auto end() const { return data.begin() + count; }
+    };
+    
+    std::array<CharTracker, 26> trackers;
+    CharTracker tone_indices;
     size_t ir_len = Validator::find_longest_initial(u32, 0);
 
     for (size_t i = 0; i < u32.size(); ++i) {
         char32_t l = unicode::to_lower(u32[i]);
-        if (l == 'd') indices_d.push_back(i);
-        else if (l == 'a') indices_a.push_back(i);
-        else if (l == 'e') indices_e.push_back(i);
-        else if (l == 'o') indices_o.push_back(i);
-        else if (l == 'u') indices_u.push_back(i);
-        else if (l == 'w') indices_w.push_back(i);
+        if (l >= 'a' && l <= 'z') {
+            trackers[l - 'a'].push_back(i);
+        }
 
         if (i > 0 && i >= ir_len) {
             if (l == 's' || l == 'f' || l == 'r' || l == 'x' || l == 'j' || l == 'z' || l == '0') {
@@ -108,14 +115,15 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
         }
     }
 
-    std::u32string u32_copy = u32;
+    // Use StaticString to avoid heap allocations
+    StaticString u32_copy(u32);
     auto* self = const_cast<CompositionBuffer*>(this);
 
     // Stage 1: Flexible Consonants (dd -> đ)
-    if ((!key_consumed || key == 0) && indices_d.size() >= 2) {
-        size_t first = indices_d[0], last = indices_d.back();
+    if ((!key_consumed || key == 0) && trackers['d' - 'a'].size() >= 2) {
+        size_t first = trackers['d' - 'a'][0], last = trackers['d' - 'a'].back();
         u32_copy[first] = (u32[first] == 'D') ? U'Đ' : U'đ';
-        to_strip[last] = true;
+        u32_copy[last] = 0; // Mark for stripping
         if (lk == 'd' && key != 0) {
             self->last_modifier_key = key;
             key_consumed = true;
@@ -124,60 +132,72 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
 
     // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
     if (!key_consumed || key == 0) {
-        auto try_flex = [&](CandidateList& idxs, char32_t base, char32_t target_l, char32_t target_u) {
-            
+        struct FlexRule {
+            char32_t base;
+            char32_t target_l;
+            char32_t target_u;
+        };
+        constexpr std::array<FlexRule, 3> flex_rules = {{
+            {'a', U'â', U'Â'},
+            {'e', U'ê', U'Ê'},
+            {'o', U'ô', U'Ô'}
+        }};
+
+        for (const auto& rule : flex_rules) {
+            const auto& idxs = trackers[rule.base - 'a'];
             if (idxs.size() >= 2) {
-                size_t first = idxs[0]; size_t last = idxs.back();
-                u32_copy[first] = (u32[first] == unicode::to_upper(base)) ? target_u : target_l;
-                to_strip[last] = true;
-                if (lk == base && key != 0) {
+                size_t first = idxs[0];
+                size_t last = idxs.back();
+                u32_copy[first] = (u32[first] == unicode::to_upper(rule.base)) ? rule.target_u : rule.target_l;
+                u32_copy[last] = 0; // Mark for stripping
+                if (lk == rule.base && key != 0) {
                     self->last_modifier_key = key;
                     key_consumed = true;
                 }
-                return true;
             }
-            return false;
-        };
-        try_flex(indices_a, 'a', U'â', U'Â');
-        try_flex(indices_e, 'e', U'ê', U'Ê');
-        try_flex(indices_o, 'o', U'ô', U'Ô');
+        }
     }
 
     // Stage 3: Combined Hooks (uo, uaw, aw, ow, uw)
-    if (!indices_w.empty()) {
-        size_t u_pos = indices_u.empty() ? std::u32string::npos : indices_u[0];
-        size_t o_pos = indices_o.empty() ? std::u32string::npos : indices_o[0];
-        size_t a_pos = indices_a.empty() ? std::u32string::npos : indices_a[0];
+    if (!trackers['w' - 'a'].empty()) {
+        size_t u_pos = trackers['u' - 'a'].empty() ? std::u32string::npos : trackers['u' - 'a'][0];
+        size_t o_pos = trackers['o' - 'a'].empty() ? std::u32string::npos : trackers['o' - 'a'][0];
+        size_t a_pos = trackers['a' - 'a'].empty() ? std::u32string::npos : trackers['a' - 'a'][0];
+        
+        bool has_u = (u_pos != std::u32string::npos);
+        bool has_o = (o_pos != std::u32string::npos);
+        bool has_a = (a_pos != std::u32string::npos);
         bool hooked = false;
 
-        if (u_pos != std::u32string::npos && o_pos != std::u32string::npos) {
-            u32_copy[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
-            u32_copy[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
-            hooked = true;
-        } else if (u_pos != std::u32string::npos && a_pos != std::u32string::npos) {
-            u32_copy[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
-            hooked = true;
-        } else {
-            if (u_pos != std::u32string::npos) {
-                u32_copy[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
-                hooked = true;
-            }
-            if (o_pos != std::u32string::npos) {
-                if (a_pos == std::u32string::npos) {
-                    u32_copy[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
-                    hooked = true;
-                }
-            }
-            if (a_pos != std::u32string::npos) {
-                u32_copy[a_pos] = (u32[a_pos] == 'A') ? U'Ă' : U'ă';
-                hooked = true;
+        struct HookPattern {
+            bool has_u, has_o, has_a;
+            bool apply_u, apply_o, apply_a;
+        };
+
+        constexpr std::array<HookPattern, 7> hook_rules = {{
+            {true, true, false, true, true, false},   // uo
+            {true, true, true, true, true, false},    // uo (ignore a)
+            {true, false, true, true, false, false},  // ua -> uaw
+            {true, false, false, true, false, false}, // u
+            {false, true, false, false, true, false}, // o
+            {false, true, true, false, false, true},  // oa -> aw
+            {false, false, true, false, false, true}  // a
+        }};
+
+        for (const auto& rule : hook_rules) {
+            if (has_u == rule.has_u && has_o == rule.has_o && has_a == rule.has_a) {
+                if (rule.apply_u) u32_copy[u_pos] = (u32[u_pos] == 'U') ? U'Ư' : U'ư';
+                if (rule.apply_o) u32_copy[o_pos] = (u32[o_pos] == 'O') ? U'Ơ' : U'ơ';
+                if (rule.apply_a) u32_copy[a_pos] = (u32[a_pos] == 'A') ? U'Ă' : U'ă';
+                hooked = (rule.apply_u || rule.apply_o || rule.apply_a);
+                break;
             }
         }
 
         if (hooked) {
-            for (size_t idx : indices_w)
-                if (idx > 0)
-                    to_strip[idx] = true;
+            for (size_t idx : trackers['w' - 'a']) {
+                if (idx > 0) u32_copy[idx] = 0; // Mark for stripping
+            }
             if (lk == 'w' && key != 0) {
                 self->last_modifier_key = key;
                 key_consumed = true;
@@ -193,8 +213,8 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             for (auto c : u32)
                 if (SyllableParser::is_vowel(c) && unicode::to_lower(c) != 'w')
                     has_real_v = true;
-            if (!has_real_v && !indices_w.empty()) {
-                size_t first_w = indices_w[0];
+            if (!has_real_v && !trackers['w' - 'a'].empty()) {
+                size_t first_w = trackers['w' - 'a'][0];
                 u32_copy[first_w] = (u32[first_w] == 'W') ? U'Ư' : U'ư';
                 key_consumed = true;
                 self->last_modifier_key = key;
@@ -204,8 +224,8 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
 
     // Stage 5: Tone Marks
     if (!tone_indices.empty()) {
-        std::vector<bool> is_literal_marker(u32.size(), false);
-        std::vector<size_t> potential_active_indices;
+        std::array<bool, StaticString::MAX_LEN> is_literal_marker{};
+        CharTracker potential_active_indices;
 
         for (size_t i = 0; i < tone_indices.size(); ++i) {
             size_t idx = tone_indices[i];
@@ -214,23 +234,31 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             if (i + 1 < tone_indices.size() &&
                 current_key == unicode::to_lower(u32[tone_indices[i + 1]])) {
                 is_literal_marker[idx] = true;
-                to_strip[tone_indices[i + 1]] = true;
+                u32_copy[tone_indices[i + 1]] = 0; // Mark for stripping
                 i++;
             } else {
                 potential_active_indices.push_back(idx);
             }
         }
 
-        std::vector<size_t> active_tone_indices;
+        CharTracker active_tone_indices;
         for (size_t idx : potential_active_indices) {
             char32_t current_key = unicode::to_lower(u32[idx]);
 
-            std::u32string base_u32;
+            StaticString base_u32;
             for (size_t j = 0; j < idx; ++j) {
-                if (!to_strip[j] &&
-                    (is_literal_marker[j] || std::find(tone_indices.begin(), tone_indices.end(),
-                                                       j) == tone_indices.end())) {
-                    base_u32 += u32_copy[j];
+                if (u32_copy[j] != 0) {
+                    bool is_tone_idx = false;
+                    for (size_t t_idx : tone_indices) {
+                        if (t_idx == j) {
+                            is_tone_idx = true;
+                            break;
+                        }
+                    }
+                    
+                    if (is_literal_marker[j] || !is_tone_idx) {
+                        base_u32.push_back(u32_copy[j]);
+                    }
                 }
             }
 
@@ -275,15 +303,17 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             else if (marker == 'z' || marker == '0')
                 tone_state = Tone::NONE;
 
-            to_strip[idx] = true;
+            u32_copy[idx] = 0; // Mark for stripping
         }
     }
 
-    std::u32string final_u32;
-    for (size_t i = 0; i < u32.size(); ++i)
-        if (!to_strip[i])
-            final_u32 += u32_copy[i];
-    current_str = unicode::to_utf8(final_u32);
+    StaticString final_u32;
+    for (size_t i = 0; i < u32.size(); ++i) {
+        if (u32_copy[i] != 0) {
+            final_u32.push_back(u32_copy[i]);
+        }
+    }
+    current_str = unicode::to_utf8(final_u32.to_u32string());
 }
 
 void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
@@ -296,8 +326,7 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
     if (Linguistics::is_definite_english(raw_str))
         return;
 
-    std::u32string u32_copy = u32;
-    std::array<bool, StaticString::MAX_LEN> to_strip{};
+    StaticString u32_copy(u32);
 
     bool has_mod = false;
     char32_t lk = unicode::to_lower(key);
@@ -316,7 +345,7 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
 
         if (k >= '0' && k <= '9') {
             has_mod = true;
-            to_strip[i] = true;
+            u32_copy[i] = 0; // Mark for stripping
 
             if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
             else if (k == '0') tone_state = Tone::NONE;
@@ -334,8 +363,9 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
 
     if (!has_mod) return;
 
-    for (size_t i = 0; i < u32_copy.size(); ++i) {
+    for (size_t i = 0; i < u32.size(); ++i) {
         char32_t c = u32_copy[i];
+        if (c == 0) continue;
 
         if (has_9) {
             if (c == 'd') c = U'đ';
@@ -366,14 +396,14 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
         u32_copy[i] = c;
     }
 
-    std::u32string final_u32;
+    StaticString final_u32;
     for (size_t i = 0; i < u32.size(); ++i) {
-        if (!to_strip[i]) {
-            final_u32 += u32_copy[i];
+        if (u32_copy[i] != 0) {
+            final_u32.push_back(u32_copy[i]);
         }
     }
 
-    current_str = unicode::to_utf8(final_u32);
+    current_str = unicode::to_utf8(final_u32.to_u32string());
 }
 
 TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard) {
