@@ -42,44 +42,42 @@ bool SyllableParser::is_vowel(char32_t c) {
 /**
  * @brief Identifies and extracts the initial consonant.
  * @param input The raw input character sequence.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the initial consonant.
+ * @param allow_non_standard Whether to allow z, w, j, f.
+ * @return InitialParseResult The parsed initial and consumed count.
  */
-size_t SyllableParser::parse_initial(const std::u32string& input, Syllable& s) {
-    return InitialParser::parse(input, s);
+InitialParseResult SyllableParser::parse_initial(std::u32string_view input, bool allow_non_standard) {
+    return InitialParser::parse(input, allow_non_standard);
 }
 
 /**
  * @brief Identifies and extracts the glide ('o' or 'u' following an initial).
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the glide (0 or 1).
+ * @param initial The already parsed initial.
+ * @return GlideParseResult The parsed glide and consumed count.
  */
-size_t SyllableParser::parse_glide(const std::u32string& input, size_t pos, Syllable& s) {
-    return GlideParser::parse(input, pos, s);
+GlideParseResult SyllableParser::parse_glide(std::u32string_view input, size_t pos, std::u32string_view initial) {
+    return GlideParser::parse(input, pos, initial);
 }
 
 /**
  * @brief Extracts the vowel nucleus sequence and identifies the tone mark if present.
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the nucleus.
+ * @return NucleusParseResult The parsed nucleus, tone, and consumed count.
  */
-size_t SyllableParser::parse_nucleus(const std::u32string& input, size_t pos, Syllable& s) {
-    return NucleusParser::parse(input, pos, s);
+NucleusParseResult SyllableParser::parse_nucleus(std::u32string_view input, size_t pos) {
+    return NucleusParser::parse(input, pos);
 }
 
 /**
  * @brief Extracts the remaining characters as the final coda.
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the coda.
+ * @return CodaParseResult The parsed coda and consumed count.
  */
-size_t SyllableParser::parse_coda(const std::u32string& input, size_t pos, Syllable& s) {
-    return CodaParser::parse(input, pos, s);
+CodaParseResult SyllableParser::parse_coda(std::u32string_view input, size_t pos) {
+    return CodaParser::parse(input, pos);
 }
 
 /**
@@ -97,21 +95,30 @@ Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_stand
         return s;
 
     std::u32string normalized_input = unicode::normalize_nfc(input);
+    std::u32string_view view = normalized_input;
 
     size_t pos = 0;
-    pos += InitialParser::parse(normalized_input, s, allow_non_standard);
+    InitialParseResult init_res = parse_initial(view, allow_non_standard);
+    s.initial = init_res.initial;
+    pos += init_res.consumed;
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Initial: [" + unicode::to_utf8(s.initial.view()) + "]"));
 
-    pos += parse_glide(normalized_input, pos, s);
+    GlideParseResult glide_res = parse_glide(view, pos, s.initial.view());
+    s.glide = glide_res.glide;
+    pos += glide_res.consumed;
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Glide: [" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "]"));
 
-    pos += parse_nucleus(normalized_input, pos, s);
+    NucleusParseResult nuc_res = parse_nucleus(view, pos);
+    s.vowel = nuc_res.vowel;
+    s.tone = nuc_res.tone;
+    pos += nuc_res.consumed;
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Nucleus: [" + unicode::to_utf8(s.vowel.view()) + "], Tone: " + std::to_string(static_cast<int>(s.tone))));
 
     reorder_vowels(s);
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Reorder: Glide=[" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "], Nucleus=[" + unicode::to_utf8(s.vowel.view()) + "]"));
 
-    parse_coda(normalized_input, pos, s);
+    CodaParseResult coda_res = parse_coda(view, pos);
+    s.final_c = coda_res.final_c;
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Coda: [" + unicode::to_utf8(s.final_c.view()) + "]"));
 
     return s;
@@ -124,11 +131,16 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     if (!s.vowel.empty()) {
         valid = std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), s.vowel.view()) != VALID_NUCLEI_U32.end();
     }
+
+    StaticString lower_init_str;
+    for (char32_t c : s.initial.view()) {
+        lower_init_str += unicode::to_lower(c);
+    }
+    std::u32string_view lower_init = lower_init_str.view();
     
     if (valid && s.glide.has_value()) {
         char32_t g = unicode::strip_tone(unicode::to_lower(s.glide.value()));
         char32_t next_char = s.vowel.empty() ? 0 : unicode::strip_tone(unicode::to_lower(s.vowel[0]));
-        std::u32string lower_init = unicode::to_lower(s.initial.view());
         
         valid = false;
         for (const auto& rule : phonology::GLIDE_RULES) {
@@ -145,90 +157,82 @@ void SyllableParser::reorder_vowels(Syllable& s) {
     
     if (valid) return;
 
-    std::u32string combined;
+    StaticString combined_orig;
+    StaticString combined_base;
+
     if (s.glide.has_value()) {
         char32_t raw_g = s.glide.value();
         Tone t = unicode::get_tone(raw_g);
         if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
-        combined += unicode::strip_tone(raw_g);
+        char32_t stripped = unicode::strip_tone(raw_g);
+        combined_orig += stripped;
+        combined_base += unicode::to_lower(stripped);
     }
     for (char32_t raw_v : s.vowel.view()) {
         Tone t = unicode::get_tone(raw_v);
         if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
-        combined += unicode::strip_tone(raw_v);
+        char32_t stripped = unicode::strip_tone(raw_v);
+        combined_orig += stripped;
+        combined_base += unicode::to_lower(stripped);
     }
 
-    if (combined.length() < 2) return;
+    if (combined_base.size() < 2) return;
 
-    std::u32string base_combined;
-    for (char32_t c : combined) {
-        base_combined += unicode::to_lower(c);
-    }
+    // Sort the base string to match against our precomputed table
+    StaticString sorted_base = combined_base;
+    std::sort(sorted_base.begin(), sorted_base.end());
+    std::u32string_view sorted_view = sorted_base.view();
 
-    auto apply_match = [&](std::u32string_view target_seq, bool has_glide) {
-        std::u32string result;
-        std::vector<bool> used(combined.length(), false);
-        for (char32_t target_c : target_seq) {
-            for (size_t i = 0; i < base_combined.length(); ++i) {
-                if (!used[i] && base_combined[i] == target_c) {
-                    used[i] = true;
-                    result += combined[i];
-                    break;
-                }
-            }
-        }
+    const phonology::ReorderPattern* matched_pattern = nullptr;
 
-        if (has_glide) {
-            s.glide = result[0];
-            s.vowel = result.substr(1).c_str();
-        } else {
-            s.glide = std::nullopt;
-            s.vowel = result.c_str();
-        }
-    };
-
-    // 1. Check no glide
-    for (std::u32string_view n : VALID_NUCLEI_U32) {
-        if (n.length() == base_combined.length() &&
-            std::is_permutation(n.begin(), n.end(), base_combined.begin())) {
-            apply_match(n, false);
-            return;
-        }
-    }
-
-    // 2. Check with glide
-    for (std::u32string_view g_str : VALID_GLIDES_U32) {
-        if (g_str.empty()) continue;
-        char32_t g = g_str[0];
-
-        for (std::u32string_view n : VALID_NUCLEI_U32) {
-            if (n.empty() || (1 + n.length() != base_combined.length())) continue;
-
-            std::u32string combo;
-            combo += g;
-            combo += n;
-
-            if (std::is_permutation(combo.begin(), combo.end(), base_combined.begin())) {
-                char32_t next_char = n[0];
+    for (const auto& pattern : phonology::REORDER_PATTERNS) {
+        if (pattern.sorted_chars == sorted_view) {
+            if (pattern.has_glide) {
+                char32_t next_char = pattern.vowel.empty() ? 0 : pattern.vowel[0];
                 bool glide_ok = false;
-                std::u32string lower_init = unicode::to_lower(s.initial.view());
-                
                 for (const auto& rule : phonology::GLIDE_RULES) {
-                    if (rule.glide_char == g &&
+                    if (rule.glide_char == pattern.glide &&
                         (rule.initial_context.empty() || lower_init == rule.initial_context) &&
                         rule.valid_next_chars.find(next_char) != std::u32string_view::npos) {
                         glide_ok = true;
                         break;
                     }
                 }
-
-                if (glide_ok) {
-                    apply_match(combo, true);
-                    return;
-                }
+                if (!glide_ok) continue;
             }
+            matched_pattern = &pattern;
+            break; // found the first valid pattern
         }
     }
+
+    if (!matched_pattern) return;
+
+    // Reconstruct using original casing
+    StaticString new_vowel;
+    std::optional<char32_t> new_glide = std::nullopt;
+
+    bool used[8] = {false}; // Max length is safe to bound
+
+    auto extract_orig_char = [&](char32_t target_c) -> char32_t {
+        for (size_t i = 0; i < combined_base.size(); ++i) {
+            if (!used[i] && combined_base[i] == target_c) {
+                used[i] = true;
+                return combined_orig[i];
+            }
+        }
+        return target_c; // Should never happen if pattern matches
+    };
+
+    if (matched_pattern->has_glide) {
+        new_glide = extract_orig_char(matched_pattern->glide);
+    }
+
+    for (char32_t target_c : matched_pattern->vowel) {
+        new_vowel += extract_orig_char(target_c);
+    }
+
+    s.glide = new_glide;
+    s.vowel = new_vowel;
 }
 
 }  // namespace lotus_core

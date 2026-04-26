@@ -8,15 +8,15 @@ namespace lotus_core {
  * @brief Extracts the remaining characters as the final coda.
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the coda.
+ * @return CodaParseResult The parsed coda and the number of characters consumed.
  */
-size_t CodaParser::parse(const std::u32string& input, size_t pos, Syllable& s) {
+CodaParseResult CodaParser::parse(std::u32string_view input, size_t pos) {
+    CodaParseResult result;
     if (pos < input.size()) {
-        s.final_c = input.substr(pos).c_str();
-        return s.final_c.size();
+        result.final_c = input.substr(pos);
+        result.consumed = result.final_c.size();
     }
-    return 0;
+    return result;
 }
 
 } // namespace lotus_core

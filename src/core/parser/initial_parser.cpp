@@ -11,17 +11,21 @@ namespace lotus_core {
 /**
  * @brief Identifies and extracts the initial consonant.
  * @param input The raw input character sequence.
- * @param s OUT: The Syllable object to populate.
  * @param allow_non_standard Whether to allow z, w, j, f.
- * @return size_t The number of characters consumed as the initial consonant.
+ * @return InitialParseResult The parsed initial and the number of characters consumed.
  */
-size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow_non_standard) {
+InitialParseResult InitialParser::parse(std::u32string_view input, bool allow_non_standard) {
+    InitialParseResult result;
     size_t initial_len = Validator::find_longest_initial(input, 0, allow_non_standard);
     if (initial_len == 0)
-        return 0;
+        return result;
 
-    s.initial = input.substr(0, initial_len).c_str();
-    std::u32string lower_init = unicode::to_lower(s.initial.view());
+    result.initial = input.substr(0, initial_len);
+    StaticString lower_init_str;
+    for (char32_t c : result.initial.view()) {
+        lower_init_str += unicode::to_lower(c);
+    }
+    std::u32string_view lower_init = lower_init_str.view();
 
     // Apply context-sensitive overrides (e.g. 'gi' vs 'g', 'qu' vs 'q')
     for (const auto& rule : phonology::INITIAL_OVERRIDE_RULES) {
@@ -36,14 +40,15 @@ size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow
             }
 
             if (condition_met) {
-                s.initial = s.initial.substr(0, rule.new_len);
+                result.initial = result.initial.substr(0, rule.new_len);
                 initial_len = rule.new_len;
             }
             break;
         }
     }
 
-    return initial_len;
+    result.consumed = initial_len;
+    return result;
 }
 
 } // namespace lotus_core

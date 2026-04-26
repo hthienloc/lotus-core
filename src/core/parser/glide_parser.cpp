@@ -13,13 +13,14 @@ namespace lotus_core {
  * @brief Identifies and extracts the glide ('o' or 'u' following an initial).
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the glide (0 or 1).
+ * @param initial The already parsed initial.
+ * @return GlideParseResult The parsed glide and the number of characters consumed.
  */
-size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) {
+GlideParseResult GlideParser::parse(std::u32string_view input, size_t pos, std::u32string_view initial) {
+    GlideParseResult result;
     size_t n = input.size();
     if (pos >= n)
-        return 0;
+        return result;
 
     bool has_glide = false;
     char32_t raw_char = input[pos];
@@ -27,7 +28,11 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
 
     if (pos + 1 < n) {
         char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
-        std::u32string lower_init = unicode::to_lower(s.initial.view());
+        StaticString lower_init_str;
+        for (char32_t c : initial) {
+            lower_init_str += unicode::to_lower(c);
+        }
+        std::u32string_view lower_init = lower_init_str.view();
         
         for (const auto& rule : phonology::GLIDE_RULES) {
             if (rule.glide_char == first_char) {
@@ -42,11 +47,11 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
     }
 
     if (has_glide) {
-        s.glide = unicode::strip_tone(raw_char);
-        return 1;
+        result.glide = unicode::strip_tone(raw_char);
+        result.consumed = 1;
     }
 
-    return 0;
+    return result;
 }
 
 } // namespace lotus_core

@@ -10,24 +10,25 @@ namespace lotus_core {
  * @brief Extracts the vowel nucleus sequence and identifies the tone mark if present.
  * @param input The raw input character sequence.
  * @param pos The current parsing position.
- * @param s OUT: The Syllable object to populate.
- * @return size_t The number of characters consumed as the nucleus.
+ * @return NucleusParseResult The parsed nucleus, tone, and number of characters consumed.
  */
-size_t NucleusParser::parse(const std::u32string& input, size_t pos, Syllable& s) {
+NucleusParseResult NucleusParser::parse(std::u32string_view input, size_t pos) {
+    NucleusParseResult result;
     size_t n = input.size();
     size_t len = 0;
 
     while (pos + len < n && SyllableParser::is_vowel(input[pos + len])) {
-        if (s.tone == Tone::NONE) {
+        if (result.tone == Tone::NONE) {
             Tone t = unicode::get_tone(input[pos + len]);
             if (t != Tone::NONE)
-                s.tone = t;
+                result.tone = t;
         }
-        s.vowel += unicode::strip_tone(input[pos + len]);
+        result.vowel += unicode::strip_tone(input[pos + len]);
         len++;
     }
 
-    return len;
+    result.consumed = len;
+    return result;
 }
 
 } // namespace lotus_core

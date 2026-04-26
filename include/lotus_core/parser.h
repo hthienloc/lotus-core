@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lotus_core/types.h"
+#include "lotus_core/parser_components.h"
 
 #include <string>
 #include <vector>
@@ -33,10 +34,10 @@ class SyllableParser {
     static bool is_vowel(char32_t c);
 
    private:
-    static size_t parse_initial(const std::u32string& input, Syllable& s);
-    static size_t parse_glide(const std::u32string& input, size_t pos, Syllable& s);
-    static size_t parse_nucleus(const std::u32string& input, size_t pos, Syllable& s);
-    static size_t parse_coda(const std::u32string& input, size_t pos, Syllable& s);
+    static InitialParseResult parse_initial(std::u32string_view input, bool allow_non_standard);
+    static GlideParseResult parse_glide(std::u32string_view input, size_t pos, std::u32string_view initial);
+    static NucleusParseResult parse_nucleus(std::u32string_view input, size_t pos);
+    static CodaParseResult parse_coda(std::u32string_view input, size_t pos);
 
     static void reorder_vowels(Syllable& s);
 

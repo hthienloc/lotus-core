@@ -45,14 +45,14 @@ bool Validator::is_valid_initial(std::u32string_view initial, bool allow_non_sta
  * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
  * @return The length (in code points) of the longest valid initial found.
  */
-size_t Validator::find_longest_initial(const std::u32string& input, size_t start_pos, bool allow_non_standard) {
+size_t Validator::find_longest_initial(std::u32string_view input, size_t start_pos, bool allow_non_standard) {
     size_t n = input.size();
     for (size_t len = 3; len >= 1; --len) {
         if (start_pos + len <= n) {
-            std::u32string lower_prefix;
+            StaticString lower_prefix;
             for (auto cp : input.substr(start_pos, len))
                 lower_prefix += unicode::to_lower(cp);
-            if (is_valid_initial(lower_prefix, allow_non_standard))
+            if (is_valid_initial(lower_prefix.view(), allow_non_standard))
                 return len;
         }
     }

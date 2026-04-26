@@ -32,7 +32,7 @@ class Validator {
      * @param allow_non_standard If true, allows 'z', 'w', 'j', 'f'.
      * @return The length (in codepoints) of the matched initial, or 0 if none.
      */
-    static size_t find_longest_initial(const std::u32string& input, size_t start_pos, bool allow_non_standard = false);
+    static size_t find_longest_initial(std::u32string_view input, size_t start_pos, bool allow_non_standard = false);
 
     /**
      * @brief Performs comprehensive phonotactic validation of a syllable.
