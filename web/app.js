@@ -52,16 +52,16 @@ document.addEventListener("DOMContentLoaded", () => {
         engine = Module._lotus_core_create();
 
         // Allocate memory for lotus_result_t
-        // struct lotus_result_t { uint8_t action; uint8_t backspace; uint8_t count; uint8_t pad; uint32_t chars[32]; uint8_t diagnostic; uint8_t pad2[3]; }
+        // struct lotus_result_t { uint8_t action; uint8_t backspace; uint8_t count; uint8_t pad; uint32_t chars[128]; uint8_t diagnostic; uint8_t pad2[3]; }
         // Offset 0: action (1)
         // Offset 1: backspace (1)
         // Offset 2: count (1)
         // Offset 3: padding (1)
-        // Offset 4: chars array (32 * 4 = 128)
-        // Offset 132: diagnostic (1)
-        // Offset 133: padding (3) to align to 4 bytes
-        // Total = 136 bytes
-        resultPtr = Module._malloc(136);
+        // Offset 4: chars array (128 * 4 = 512)
+        // Offset 516: diagnostic (1)
+        // Offset 517: padding (3) to align to 4 bytes
+        // Total = 520 bytes
+        resultPtr = Module._malloc(520);
 
         // Setup Log Callback
         const logCallback = Module.addFunction(function(level, msgPtr) {
@@ -171,16 +171,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Memory Dump & Verification
         let hexDump = [];
-        for (let i = 0; i < 136; i++) {
+        for (let i = 0; i < 520; i++) {
             hexDump.push(heap8[resultPtr + i].toString(16).padStart(2, '0'));
         }
-        uiLog('debug', "Memory Dump (136 bytes): " + hexDump.join(' '));
+        uiLog('debug', "Memory Dump (520 bytes): " + hexDump.join(' '));
 
         // Read struct fields
         const action = heap8[resultPtr + 0];
         const backspaceCount = heap8[resultPtr + 1];
         const insertCount = heap8[resultPtr + 2];
-        const diagnostic = heap8[resultPtr + 132];
+        const diagnostic = heap8[resultPtr + 516];
 
         // Print Diagnostic Message
         if (diagnostic !== 0) {
