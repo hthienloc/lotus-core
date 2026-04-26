@@ -21,9 +21,9 @@ using namespace lotus_core;
  */
 void test_parser_basic() {
     auto s = SyllableParser::parse(U"nghieng");
-    assert(s.initial == U"ngh");
-    assert(s.vowel == U"ie");
-    assert(s.final_c == U"ng");
+    assert(s.initial.view() == U"ngh");
+    assert(s.vowel.view() == U"ie");
+    assert(s.final_c.view() == U"ng");
 
     auto s2 = SyllableParser::parse(U"hoa");
     assert(s2.initial == U"h");
@@ -39,9 +39,9 @@ void test_parser_basic() {
 void test_parser_special() {
     auto s = SyllableParser::parse(U"qua");
     // New logic: q is initial, u is glide
-    assert(s.initial == U"q");
+    assert(s.initial.view() == U"q");
     assert(s.glide.has_value() && s.glide.value() == 'u');
-    assert(s.vowel == U"a");
+    assert(s.vowel.view() == U"a");
 
     auto s2 = SyllableParser::parse(U"giai");
     assert(s2.initial == U"gi");

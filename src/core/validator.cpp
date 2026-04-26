@@ -128,7 +128,7 @@ bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucl
         }
 
         std::u32string lower_f;
-        for (char32_t cp : syllable.final_c)
+        for (char32_t cp : syllable.final_c.view())
             lower_f += unicode::to_lower(cp);
         if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f) ==
             VALID_FINALS_U32.end()) {
@@ -138,9 +138,9 @@ bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucl
         }
     }
 
-    if (!check_coda_restrictions(nucleus_start, syllable.final_c, diagnostic_code))
+    if (!check_coda_restrictions(nucleus_start, syllable.final_c.view(), diagnostic_code))
         return false;
-    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c, diagnostic_code))
+    if (!check_diphthong_rules(stripped_nucleus, syllable.final_c.view(), diagnostic_code))
         return false;
 
     return true;
@@ -153,7 +153,7 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
                 *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
             return false;
         }
-        std::u32string lower_i = unicode::to_lower(syllable.initial);
+        std::u32string lower_i = unicode::to_lower(syllable.initial.view());
         bool valid_init = is_valid_initial(lower_i, allow_non_standard);
         if (!valid_init && diagnostic_code) {
             *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
@@ -162,7 +162,7 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
     }
 
     // 1. Component Set Checks
-    std::u32string lower_init = unicode::to_lower(syllable.initial);
+    std::u32string lower_init = unicode::to_lower(syllable.initial.view());
     if (!lower_init.empty()) {
         if (!is_valid_initial(lower_init, allow_non_standard)) {
             if (diagnostic_code)
@@ -184,7 +184,7 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
     char32_t affinity_char =
         syllable.glide.has_value() ? unicode::to_lower(syllable.glide.value()) : nucleus_start;
 
-    if (!check_initial_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c,
+    if (!check_initial_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c.view(),
                                       diagnostic_code))
         return false;
 

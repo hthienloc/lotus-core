@@ -52,9 +52,9 @@ void test_rhymes_exhaustive() {
 void test_syllable_parts() {
     SyllableParser p;
     auto s = p.parse(U"nghiêng");
-    assert(s.initial == U"ngh");
-    assert(s.vowel == U"iê");
-    assert(s.final_c == U"ng");
+    assert(s.initial.view() == U"ngh");
+    assert(s.vowel.view() == U"iê");
+    assert(s.final_c.view() == U"ng");
 
     auto s2 = p.parse(U"toán");
     assert(s2.initial == U"t");

@@ -164,7 +164,17 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
                 return build_result(esc_opt.value());
             }
             if (key != 0) {
-                composition_buffer.append_key(key);
+                bool forced_flush = composition_buffer.append_key(key, config.commit_threshold);
+                if (forced_flush) {
+                    auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+                    EngineResult br = build_result(transform_res.output);
+                    br.diagnostic = transform_res.diagnostic;
+                    br.action = EngineAction::PASS;
+                    state.last_committed_text.clear();
+                    context_tracker.set_at_sentence_start(false);
+                    composition_buffer.clear();
+                    return br;
+                }
                 context_tracker.set_at_sentence_start(false);
             }
             break;
@@ -242,7 +252,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
             std::vector<char32_t> keys = s.to_keys(config.method);
             composition_buffer.clear();
             for (char32_t k : keys)
-                composition_buffer.append_key(k);
+                composition_buffer.append_key(k, config.commit_threshold);
         } else {
             composition_buffer.pop_back();
         }

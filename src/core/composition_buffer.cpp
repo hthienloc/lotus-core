@@ -14,10 +14,11 @@ using namespace constants;
 
 namespace lotus_core {
 
-void CompositionBuffer::append_key(char32_t key) {
+bool CompositionBuffer::append_key(char32_t key, size_t commit_threshold) {
     if (key != 0) {
         buffer.push_back(key);
     }
+    return buffer.size() >= commit_threshold || buffer.size() >= StaticString::MAX_LEN;
 }
 
 void CompositionBuffer::clear() {
@@ -83,18 +84,22 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
     }
 
     char32_t lk = unicode::to_lower(key);
-    std::vector<bool> to_strip(u32.size(), false);
+    std::array<bool, StaticString::MAX_LEN> to_strip{};
 
     // Single pass to gather all candidate indices for transformations.
-    std::map<char32_t, std::vector<size_t>> indices;
-    std::vector<size_t> tone_indices;
+    struct CandidateList { std::array<size_t, StaticString::MAX_LEN> data; size_t count = 0; void push_back(size_t val) { if (count < StaticString::MAX_LEN) data[count++] = val; } bool empty() const { return count == 0; } size_t back() const { return data[count - 1]; } size_t operator[](size_t i) const { return data[i]; } size_t size() const { return count; } auto begin() const { return data.begin(); } auto end() const { return data.begin() + count; } auto begin() { return data.begin(); } auto end() { return data.begin() + count; } };
+    CandidateList indices_d, indices_a, indices_e, indices_o, indices_u, indices_w;
+    CandidateList tone_indices;
     size_t ir_len = Validator::find_longest_initial(u32, 0);
 
     for (size_t i = 0; i < u32.size(); ++i) {
         char32_t l = unicode::to_lower(u32[i]);
-        if (l == 'd' || l == 'a' || l == 'e' || l == 'o' || l == 'u' || l == 'w') {
-            indices[l].push_back(i);
-        }
+        if (l == 'd') indices_d.push_back(i);
+        else if (l == 'a') indices_a.push_back(i);
+        else if (l == 'e') indices_e.push_back(i);
+        else if (l == 'o') indices_o.push_back(i);
+        else if (l == 'u') indices_u.push_back(i);
+        else if (l == 'w') indices_w.push_back(i);
 
         if (i > 0 && i >= ir_len) {
             if (l == 's' || l == 'f' || l == 'r' || l == 'x' || l == 'j' || l == 'z' || l == '0') {
@@ -107,8 +112,8 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
     auto* self = const_cast<CompositionBuffer*>(this);
 
     // Stage 1: Flexible Consonants (dd -> đ)
-    if ((!key_consumed || key == 0) && indices['d'].size() >= 2) {
-        size_t first = indices['d'][0], last = indices['d'].back();
+    if ((!key_consumed || key == 0) && indices_d.size() >= 2) {
+        size_t first = indices_d[0], last = indices_d.back();
         u32_copy[first] = (u32[first] == 'D') ? U'Đ' : U'đ';
         to_strip[last] = true;
         if (lk == 'd' && key != 0) {
@@ -119,10 +124,10 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
 
     // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
     if (!key_consumed || key == 0) {
-        auto try_flex = [&](char32_t base, char32_t target_l, char32_t target_u) {
-            auto& idxs = indices[base];
+        auto try_flex = [&](CandidateList& idxs, char32_t base, char32_t target_l, char32_t target_u) {
+            
             if (idxs.size() >= 2) {
-                size_t first = idxs[0], last = idxs.back();
+                size_t first = idxs[0]; size_t last = idxs.back();
                 u32_copy[first] = (u32[first] == unicode::to_upper(base)) ? target_u : target_l;
                 to_strip[last] = true;
                 if (lk == base && key != 0) {
@@ -133,16 +138,16 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             }
             return false;
         };
-        try_flex('a', U'â', U'Â');
-        try_flex('e', U'ê', U'Ê');
-        try_flex('o', U'ô', U'Ô');
+        try_flex(indices_a, 'a', U'â', U'Â');
+        try_flex(indices_e, 'e', U'ê', U'Ê');
+        try_flex(indices_o, 'o', U'ô', U'Ô');
     }
 
     // Stage 3: Combined Hooks (uo, uaw, aw, ow, uw)
-    if (!indices['w'].empty()) {
-        size_t u_pos = indices['u'].empty() ? std::u32string::npos : indices['u'][0];
-        size_t o_pos = indices['o'].empty() ? std::u32string::npos : indices['o'][0];
-        size_t a_pos = indices['a'].empty() ? std::u32string::npos : indices['a'][0];
+    if (!indices_w.empty()) {
+        size_t u_pos = indices_u.empty() ? std::u32string::npos : indices_u[0];
+        size_t o_pos = indices_o.empty() ? std::u32string::npos : indices_o[0];
+        size_t a_pos = indices_a.empty() ? std::u32string::npos : indices_a[0];
         bool hooked = false;
 
         if (u_pos != std::u32string::npos && o_pos != std::u32string::npos) {
@@ -170,7 +175,7 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
         }
 
         if (hooked) {
-            for (size_t idx : indices['w'])
+            for (size_t idx : indices_w)
                 if (idx > 0)
                     to_strip[idx] = true;
             if (lk == 'w' && key != 0) {
@@ -188,8 +193,8 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             for (auto c : u32)
                 if (SyllableParser::is_vowel(c) && unicode::to_lower(c) != 'w')
                     has_real_v = true;
-            if (!has_real_v && !indices['w'].empty()) {
-                size_t first_w = indices['w'][0];
+            if (!has_real_v && !indices_w.empty()) {
+                size_t first_w = indices_w[0];
                 u32_copy[first_w] = (u32[first_w] == 'W') ? U'Ư' : U'ư';
                 key_consumed = true;
                 self->last_modifier_key = key;
@@ -292,7 +297,7 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
         return;
 
     std::u32string u32_copy = u32;
-    std::vector<bool> to_strip(u32.size(), false);
+    std::array<bool, StaticString::MAX_LEN> to_strip{};
 
     bool has_mod = false;
     char32_t lk = unicode::to_lower(key);

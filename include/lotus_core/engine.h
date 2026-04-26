@@ -25,6 +25,7 @@ struct EngineConfig {
     bool double_space_to_period = false;
     bool auto_capitalize = false;
     bool allow_non_standard_initials = false;
+    size_t commit_threshold = 64;
     MacroMode macro_mode = MacroMode::ADAPTIVE;
     BackspaceStyle backspace_style = BackspaceStyle::SURGICAL;
 };

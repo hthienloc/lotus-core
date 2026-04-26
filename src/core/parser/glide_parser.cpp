@@ -27,7 +27,7 @@ size_t GlideParser::parse(const std::u32string& input, size_t pos, Syllable& s) 
 
     if (pos + 1 < n) {
         char32_t next_char = unicode::strip_tone(unicode::to_lower(input[pos + 1]));
-        std::u32string lower_init = unicode::to_lower(s.initial);
+        std::u32string lower_init = unicode::to_lower(s.initial.view());
         
         for (const auto& rule : phonology::GLIDE_RULES) {
             if (rule.glide_char == first_char) {

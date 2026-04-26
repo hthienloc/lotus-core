@@ -28,7 +28,7 @@ public:
     CompositionBuffer() = default;
 
     /** @brief Appends a key to the raw buffer. */
-    void append_key(char32_t key);
+    bool append_key(char32_t key, size_t commit_threshold);
 
     /**
      * @brief Transforms the raw buffer into a Vietnamese syllable string.

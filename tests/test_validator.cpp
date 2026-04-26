@@ -22,8 +22,8 @@ using namespace lotus_core;
  */
 void test_validator_basic() {
     Syllable s;
-    s.initial = U"h";
-    s.vowel = U"a";
+    s.initial = std::u32string_view(U"h");
+    s.vowel = std::u32string_view(U"a");
     assert(Validator::is_valid(s));
 
     DiagnosticCode reason;
@@ -37,11 +37,11 @@ void test_validator_basic() {
     assert(r_z == false);
 
     // Invalid vowel pattern
-    s.initial = U"h";
+    s.initial = std::u32string_view(U"h");
     s.vowel = U"io";  // In Vietnamese "io" is not a standard vowel pattern alone
     bool r_io = Validator::is_valid(s, &reason);
     if (r_io != false) {
-        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [" << unicode::to_utf8(s.vowel) << "]: " << to_string(reason) << std::endl;
+        std::cout << "    \033[1;31m[FAIL]\033[0m Diagnostics [" << unicode::to_utf8(s.vowel.view()) << "]: " << to_string(reason) << std::endl;
     }
     assert(r_io == false);
 

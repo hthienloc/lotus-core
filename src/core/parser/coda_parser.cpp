@@ -13,7 +13,7 @@ namespace lotus_core {
  */
 size_t CodaParser::parse(const std::u32string& input, size_t pos, Syllable& s) {
     if (pos < input.size()) {
-        s.final_c = input.substr(pos);
+        s.final_c = input.substr(pos).c_str();
         return s.final_c.size();
     }
     return 0;

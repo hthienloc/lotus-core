@@ -16,9 +16,31 @@ namespace lotus_core {
  */
 class StaticString {
 public:
-    static constexpr size_t MAX_LEN = 16;
+    static constexpr size_t MAX_LEN = 128;
     
     StaticString() : len(0) {}
+    StaticString(const std::u32string& str) : len(0) {
+        for (char32_t c : str) {
+            if (len < MAX_LEN) data[len++] = c;
+        }
+    }
+    StaticString& operator=(std::u32string_view view) {
+        len = 0;
+        for (char32_t c : view) {
+            if (len < MAX_LEN) data[len++] = c;
+        }
+        return *this;
+    }
+
+    StaticString& operator+=(char32_t c) { push_back(c); return *this; }
+    StaticString substr(size_t pos, size_t count = std::u32string::npos) const {
+        StaticString res;
+        if (pos >= len) return res;
+        size_t end = (count == std::u32string::npos) ? len : std::min(len, pos + count);
+        for (size_t i = pos; i < end; ++i) res.push_back(data[i]);
+        return res;
+    }
+
     
     StaticString(std::u32string_view view) : len(0) {
         for (char32_t c : view) {
@@ -185,7 +207,7 @@ struct EngineResult {
      * @brief Output characters in UTF-32.
      * Fixed size for FFI compatibility. 'count' defines the number of valid entries.
      */
-    uint32_t chars[32];
+    uint32_t chars[128];
 
     /**
      * @brief Control action for the frontend.

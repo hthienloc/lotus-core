@@ -20,8 +20,8 @@ size_t InitialParser::parse(const std::u32string& input, Syllable& s, bool allow
     if (initial_len == 0)
         return 0;
 
-    s.initial = input.substr(0, initial_len);
-    std::u32string lower_init = unicode::to_lower(s.initial);
+    s.initial = input.substr(0, initial_len).c_str();
+    std::u32string lower_init = unicode::to_lower(s.initial.view());
 
     // Apply context-sensitive overrides (e.g. 'gi' vs 'g', 'qu' vs 'q')
     for (const auto& rule : phonology::INITIAL_OVERRIDE_RULES) {

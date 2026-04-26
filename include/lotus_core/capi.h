@@ -94,7 +94,7 @@ typedef struct {
     uint8_t action;      // 0: pass-through, 1: transformation
     uint8_t backspace;   // Number of characters to delete
     uint8_t count;       // Number of new characters in 'chars'
-    uint32_t chars[32];  // Buffer of UTF-32 characters
+    uint32_t chars[128];  // Buffer of UTF-32 characters
     uint8_t diagnostic;  // Diagnostic code indicating linguistic validation status (lotus_diagnostic_code_t)
 } lotus_result_t;
 

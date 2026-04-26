@@ -100,19 +100,19 @@ Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_stand
 
     size_t pos = 0;
     pos += InitialParser::parse(normalized_input, s, allow_non_standard);
-    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Initial: [" + unicode::to_utf8(s.initial) + "]"));
+    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Initial: [" + unicode::to_utf8(s.initial.view()) + "]"));
 
     pos += parse_glide(normalized_input, pos, s);
     LOTUS_LOG_DEBUG(format_log_message("PARSER", "Glide: [" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "]"));
 
     pos += parse_nucleus(normalized_input, pos, s);
-    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Nucleus: [" + unicode::to_utf8(s.vowel) + "], Tone: " + std::to_string(static_cast<int>(s.tone))));
+    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Nucleus: [" + unicode::to_utf8(s.vowel.view()) + "], Tone: " + std::to_string(static_cast<int>(s.tone))));
 
     reorder_vowels(s);
-    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Reorder: Glide=[" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "], Nucleus=[" + unicode::to_utf8(s.vowel) + "]"));
+    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Reorder: Glide=[" + (s.glide.has_value() ? unicode::to_utf8(s.glide.value()) : "") + "], Nucleus=[" + unicode::to_utf8(s.vowel.view()) + "]"));
 
     parse_coda(normalized_input, pos, s);
-    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Coda: [" + unicode::to_utf8(s.final_c) + "]"));
+    LOTUS_LOG_DEBUG(format_log_message("PARSER", "Coda: [" + unicode::to_utf8(s.final_c.view()) + "]"));
 
     return s;
 }
@@ -122,13 +122,13 @@ void SyllableParser::reorder_vowels(Syllable& s) {
 
     bool valid = true;
     if (!s.vowel.empty()) {
-        valid = std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), s.vowel) != VALID_NUCLEI_U32.end();
+        valid = std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), s.vowel.view()) != VALID_NUCLEI_U32.end();
     }
     
     if (valid && s.glide.has_value()) {
         char32_t g = unicode::strip_tone(unicode::to_lower(s.glide.value()));
         char32_t next_char = s.vowel.empty() ? 0 : unicode::strip_tone(unicode::to_lower(s.vowel[0]));
-        std::u32string lower_init = unicode::to_lower(s.initial);
+        std::u32string lower_init = unicode::to_lower(s.initial.view());
         
         valid = false;
         for (const auto& rule : phonology::GLIDE_RULES) {
@@ -152,7 +152,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
         if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
         combined += unicode::strip_tone(raw_g);
     }
-    for (char32_t raw_v : s.vowel) {
+    for (char32_t raw_v : s.vowel.view()) {
         Tone t = unicode::get_tone(raw_v);
         if (t != Tone::NONE && s.tone == Tone::NONE) s.tone = t;
         combined += unicode::strip_tone(raw_v);
@@ -180,10 +180,10 @@ void SyllableParser::reorder_vowels(Syllable& s) {
 
         if (has_glide) {
             s.glide = result[0];
-            s.vowel = result.substr(1);
+            s.vowel = result.substr(1).c_str();
         } else {
             s.glide = std::nullopt;
-            s.vowel = result;
+            s.vowel = result.c_str();
         }
     };
 
@@ -211,7 +211,7 @@ void SyllableParser::reorder_vowels(Syllable& s) {
             if (std::is_permutation(combo.begin(), combo.end(), base_combined.begin())) {
                 char32_t next_char = n[0];
                 bool glide_ok = false;
-                std::u32string lower_init = unicode::to_lower(s.initial);
+                std::u32string lower_init = unicode::to_lower(s.initial.view());
                 
                 for (const auto& rule : phonology::GLIDE_RULES) {
                     if (rule.glide_char == g &&

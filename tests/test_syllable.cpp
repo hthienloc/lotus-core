@@ -20,8 +20,8 @@ using namespace lotus_core;
  */
 void test_syllable_to_string_basic() {
     Syllable s;
-    s.initial = U"h";
-    s.vowel = U"a";
+    s.initial = std::u32string_view(U"h");
+    s.vowel = std::u32string_view(U"a");
     assert(s.to_string() == "ha");
     std::cout << "  \033[1;32m[PASS]\033[0m Syllable basic to_string" << std::endl;
 }
@@ -32,7 +32,7 @@ void test_syllable_to_string_basic() {
 void test_syllable_is_empty() {
     Syllable s;
     assert(s.is_empty());
-    s.initial = U"b";
+    s.initial = std::u32string_view(U"b");
     assert(!s.is_empty());
     std::cout << "  \033[1;32m[PASS]\033[0m Syllable is_empty check" << std::endl;
 }
