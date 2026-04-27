@@ -90,7 +90,7 @@ bool Validator::validate_glide_compatibility(const Syllable& syllable, std::u32s
     return true;
 }
 
-bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
+bool Validator::validate_tone_placement(const Syllable& syllable, StaticString& stripped_nucleus,
                                         DiagnosticCode* diagnostic_code) {
     if (!syllable.vowel.empty()) {
         for (char32_t cp : syllable.vowel) {
@@ -99,7 +99,7 @@ bool Validator::validate_tone_placement(const Syllable& syllable, std::u32string
                 continue;
             stripped_nucleus += toned_cp;
         }
-        if (std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), stripped_nucleus) ==
+        if (std::find(VALID_NUCLEI_U32.begin(), VALID_NUCLEI_U32.end(), stripped_nucleus.view()) ==
             VALID_NUCLEI_U32.end()) {
             if (diagnostic_code)
                 *diagnostic_code = DiagnosticCode::INVALID_NUCLEUS;
@@ -113,24 +113,24 @@ bool Validator::check_coda_compatibility(const Syllable& syllable, char32_t nucl
                                          std::u32string_view stripped_nucleus,
                                          DiagnosticCode* diagnostic_code) {
     if (!syllable.final_c.empty()) {
-        static const std::vector<std::u32string_view> CLOSING_DIPHTHONGS = {
+        static const std::array<std::u32string_view, 20> CLOSING_DIPHTHONGS = {
             U"ai", U"ao", U"au", U"âu", U"ay", U"ây", U"eo", U"êu", U"iu",
             U"oi", U"ôi", U"ơi", U"ui", U"ưi", U"ưu", U"iêu", U"yêu", U"uôi", U"ươi", U"ươu"
         };
-        std::u32string lower_v;
+        StaticString lower_v;
         for (char32_t cp : syllable.vowel)
             lower_v += unicode::to_lower(cp);
-        if (std::find(CLOSING_DIPHTHONGS.begin(), CLOSING_DIPHTHONGS.end(), lower_v) !=
+        if (std::find(CLOSING_DIPHTHONGS.begin(), CLOSING_DIPHTHONGS.end(), lower_v.view()) !=
             CLOSING_DIPHTHONGS.end()) {
             if (diagnostic_code)
                 *diagnostic_code = DiagnosticCode::INVALID_CODA;
             return false;
         }
 
-        std::u32string lower_f;
+        StaticString lower_f;
         for (char32_t cp : syllable.final_c.view())
             lower_f += unicode::to_lower(cp);
-        if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f) ==
+        if (std::find(VALID_FINALS_U32.begin(), VALID_FINALS_U32.end(), lower_f.view()) ==
             VALID_FINALS_U32.end()) {
             if (diagnostic_code)
                 *diagnostic_code = DiagnosticCode::INVALID_CODA;
@@ -153,8 +153,8 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
                 *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
             return false;
         }
-        std::u32string lower_i = unicode::to_lower(syllable.initial.view());
-        bool valid_init = is_valid_initial(lower_i, allow_non_standard);
+        StaticString lower_i = unicode::to_lower_static(syllable.initial.view());
+        bool valid_init = is_valid_initial(lower_i.view(), allow_non_standard);
         if (!valid_init && diagnostic_code) {
             *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
         }
@@ -162,19 +162,19 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
     }
 
     // 1. Component Set Checks
-    std::u32string lower_init = unicode::to_lower(syllable.initial.view());
+    StaticString lower_init = unicode::to_lower_static(syllable.initial.view());
     if (!lower_init.empty()) {
-        if (!is_valid_initial(lower_init, allow_non_standard)) {
+        if (!is_valid_initial(lower_init.view(), allow_non_standard)) {
             if (diagnostic_code)
                 *diagnostic_code = DiagnosticCode::INVALID_INITIAL;
             return false;
         }
     }
 
-    if (!validate_glide_compatibility(syllable, lower_init, diagnostic_code))
+    if (!validate_glide_compatibility(syllable, lower_init.view(), diagnostic_code))
         return false;
 
-    std::u32string stripped_nucleus;
+    StaticString stripped_nucleus;
     if (!validate_tone_placement(syllable, stripped_nucleus, diagnostic_code))
         return false;
 
@@ -184,11 +184,11 @@ bool Validator::is_valid(const Syllable& syllable, DiagnosticCode* diagnostic_co
     char32_t affinity_char =
         syllable.glide.has_value() ? unicode::to_lower(syllable.glide.value()) : nucleus_start;
 
-    if (!check_initial_vowel_affinity(lower_init, affinity_char, nucleus_start, syllable.final_c.view(),
+    if (!check_initial_vowel_affinity(lower_init.view(), affinity_char, nucleus_start, syllable.final_c.view(),
                                       diagnostic_code))
         return false;
 
-    if (!check_coda_compatibility(syllable, nucleus_start, stripped_nucleus, diagnostic_code))
+    if (!check_coda_compatibility(syllable, nucleus_start, stripped_nucleus.view(), diagnostic_code))
         return false;
 
     return true;

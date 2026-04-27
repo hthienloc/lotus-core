@@ -129,10 +129,10 @@ void Syllable::remove_last_char() {
 /**
  * @brief Deconstructs the syllable back into a sequence of input keys.
  * @param method The input method (Telex/VNI) to assume for key mapping.
- * @return A vector of character keys that would produce this syllable.
+ * @return A StaticString of character keys that would produce this syllable.
  */
-std::vector<char32_t> Syllable::to_keys(InputMethod method) const {
-    std::vector<char32_t> keys;
+StaticString Syllable::to_keys(InputMethod method) const {
+    StaticString keys;
 
     // 1. Initial
     for (char32_t c : initial) {

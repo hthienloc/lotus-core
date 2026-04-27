@@ -89,13 +89,13 @@ bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineR
         return false;
     }
     
-    std::u32string repl_u32 = unicode::to_utf32(replacement);
+    StaticString repl_u32 = unicode::to_utf32_static(replacement);
     repl_u32.push_back(key);
     result = _make_transformation_result(repl_u32, buffer.size());
     return true;
 }
 
-EngineResult ShortcutManager::_make_transformation_result(const std::u32string& final_u32, size_t prev_size) const {
+EngineResult ShortcutManager::_make_transformation_result(const StaticString& final_u32, size_t prev_size) const {
     EngineResult result{};
     result.action = EngineAction::TRANSFORM;
     result.backspace = (uint8_t)prev_size;

@@ -82,7 +82,7 @@ private:
      * @param prev_size The length of the trigger string in the buffer, dictating how many backspaces are needed.
      * @return An EngineResult structure instructing the editor on what text to replace and insert.
      */
-    EngineResult _make_transformation_result(const std::u32string& final_u32, size_t prev_size) const;
+    EngineResult _make_transformation_result(const StaticString& final_u32, size_t prev_size) const;
 };
 
 } // namespace lotus_core

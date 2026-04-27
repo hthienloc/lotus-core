@@ -57,10 +57,10 @@ std::optional<std::u32string> CompositionBuffer::handle_manual_tone_escape(char3
         if (revertible) {
             buffer.push_back(key);
             last_modifier_key = 0;
-            std::u32string out = buffer;
+            StaticString out(buffer);
             if (!out.empty())
                 out.pop_back();
-            return out;
+            return out.to_u32string();
         }
     }
     return std::nullopt;
@@ -437,7 +437,7 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
 
     bool has_valid_initial = true;
     if (!current_str.empty()) {
-        std::u32string u32_curr = unicode::to_utf32(current_str);
+        StaticString u32_curr = unicode::to_utf32_static(current_str);
         size_t first_vowel = std::u32string::npos;
         for (size_t i = 0; i < u32_curr.size(); ++i) {
             if (SyllableParser::is_vowel(u32_curr[i])) {
@@ -445,9 +445,9 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
                 break;
             }
         }
-        std::u32string prefix =
+        StaticString prefix =
             (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
-        if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower(prefix), allow_non_standard)) {
+        if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower_static(prefix.view()).view(), allow_non_standard)) {
             has_valid_initial = false;
         }
     }

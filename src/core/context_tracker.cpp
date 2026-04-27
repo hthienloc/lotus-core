@@ -96,7 +96,7 @@ ReconstructResult ContextTracker::reconstruct(const std::string& text, InputMeth
     }
 
     Syllable s = SyllableParser::parse(unicode::to_utf32(last_word));
-    std::vector<char32_t> keys = s.to_keys(method);
+    StaticString keys = s.to_keys(method);
     for (char32_t k : keys) {
         result.active_buffer.push_back(k);
     }

@@ -131,6 +131,26 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     composition_buffer.handle_hook_key_shortcuts(key, config.std_uo);
 
     EngineResult res{};
+    
+    // --- UX Safety: Auto-commit when buffer is nearly full (127 chars) ---
+    // This ensures no data loss even if the user types extremely long sequences.
+    if (composition_buffer.get_raw().size() >= StaticString::MAX_LEN - 1 &&
+        InputDispatcher::categorize(key, mods) == InputCategory::CHARACTER) {
+        
+        auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+        res.action = EngineAction::TRANSFORM;
+        res.backspace = 0;
+        res.count = transform_res.output.size();
+        for (size_t i = 0; i < res.count; ++i) res.chars[i] = transform_res.output[i];
+        
+        // Reset state for the next word
+        commit_syllable_to_history(0);
+        composition_buffer.clear();
+        state.last_committed_text = transform_res.output;
+        
+        return res;
+    }
+
     InputCategory category = InputDispatcher::categorize(key, mods);
 
     switch (category) {
@@ -249,7 +269,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
             composition_buffer.pop_back();
         } else if (Validator::is_valid(s)) {
             s.remove_last_char();
-            std::vector<char32_t> keys = s.to_keys(config.method);
+            StaticString keys = s.to_keys(config.method);
             composition_buffer.clear();
             for (char32_t k : keys)
                 composition_buffer.append_key(k, config.commit_threshold);
@@ -302,8 +322,8 @@ bool Engine::reclaim_from_history(InputMethod method) {
         
         // Re-parse the word string into canonical keys
         Syllable s = SyllableParser::parse(recovered);
-        std::vector<char32_t> keys = s.to_keys(method);
-        composition_buffer.set_raw(std::u32string(keys.begin(), keys.end()));
+        StaticString keys = s.to_keys(method);
+        composition_buffer.set_raw(keys.to_u32string());
         state.last_committed_text = recovered;
         LOTUS_LOG_DEBUG(format_log_message("BACKSPACE", "Reclaimed word: '" + unicode::to_utf8(recovered) + "'"));
     }
@@ -337,7 +357,13 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     // Check if the boundary is a non-word breaking symbol that should clear context.
     // Standard sentence punctuation like .,!?;: and quotes/brackets might be safe to keep in history
     // but math symbols and special characters like @, #, $, +, = etc. should invalidate history.
-    bool is_safe_boundary = SAFE_BOUNDARY_KEYS.find(key) != std::u32string_view::npos;
+    bool is_safe_boundary = false;
+    for (char32_t c : SAFE_BOUNDARY_KEYS) {
+        if (c == key) {
+            is_safe_boundary = true;
+            break;
+        }
+    }
 
     if (!is_safe_boundary) {
         context_tracker.clear();

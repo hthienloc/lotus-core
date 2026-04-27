@@ -62,7 +62,7 @@ class Validator {
      * @param stripped_nucleus Output parameter to store the nucleus without tone marks.
      * @param diagnostic_code Optional pointer to a DiagnosticCode to populate on failure.
      */
-    static bool validate_tone_placement(const Syllable& syllable, std::u32string& stripped_nucleus,
+    static bool validate_tone_placement(const Syllable& syllable, StaticString& stripped_nucleus,
                                         DiagnosticCode* diagnostic_code = nullptr);
 
     /**

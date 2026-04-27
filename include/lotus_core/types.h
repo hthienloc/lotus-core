@@ -142,9 +142,9 @@ struct Syllable {
     /**
      * @brief Decomposes the current syllable back into raw input keys.
      * @param method The input method (TELEX/VNI) to use for decomposition.
-     * @return std::vector<char32_t> A vector of UTF-32 key codes.
+     * @return StaticString A StaticString of UTF-32 key codes.
      */
-    std::vector<char32_t> to_keys(InputMethod method) const;
+    StaticString to_keys(InputMethod method) const;
 };
 
 /**

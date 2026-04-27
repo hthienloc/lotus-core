@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "lotus_core/phonology_data.h"
+#include "lotus_core/types.h"
 
 namespace lotus_core {
 namespace unicode {
@@ -123,6 +124,13 @@ inline std::u32string to_lower(std::u32string_view input) {
     return res;
 }
 
+inline StaticString to_lower_static(std::u32string_view input) {
+    StaticString res(input);
+    for (auto& cp : res)
+        cp = to_lower(cp);
+    return res;
+}
+
 /**
  * @brief Checks if a character is alphabetical (ASCII or Vietnamese letters).
  */
@@ -158,6 +166,31 @@ inline size_t display_width(std::string_view utf8) {
         count++;
     }
     return count;
+}
+
+inline StaticString to_utf32_static(std::string_view utf8) {
+    StaticString u32;
+    for (size_t i = 0; i < utf8.size(); ++i) {
+        unsigned char c = static_cast<unsigned char>(utf8[i]);
+        char32_t val = 0;
+        if (c < 0x80) {
+            val = c;
+        } else if (c < 0xE0) {
+            val = (c & 0x1F) << 6;
+            val |= (utf8[++i] & 0x3F);
+        } else if (c < 0xF0) {
+            val = (c & 0x0F) << 12;
+            val |= (utf8[++i] & 0x3F) << 6;
+            val |= (utf8[++i] & 0x3F);
+        } else {
+            val = (c & 0x07) << 18;
+            val |= (utf8[++i] & 0x3F) << 12;
+            val |= (utf8[++i] & 0x3F) << 6;
+            val |= (utf8[++i] & 0x3F);
+        }
+        u32.push_back(val);
+    }
+    return u32;
 }
 
 /**
