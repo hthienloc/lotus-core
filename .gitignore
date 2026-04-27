@@ -83,3 +83,4 @@ node_modules/
 *.txt
 tools/bridge_outbox.json
 tools/bridge_inbox.json
+.env
