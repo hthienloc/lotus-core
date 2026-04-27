@@ -29,6 +29,12 @@ struct CodaParseResult {
     size_t consumed = 0;
 };
 
+struct ReorderParseResult {
+    std::optional<char32_t> glide;
+    StaticString vowel;
+    Tone tone = Tone::NONE;
+};
+
 class InitialParser {
 public:
     static InitialParseResult parse(std::u32string_view input, bool allow_non_standard = false);

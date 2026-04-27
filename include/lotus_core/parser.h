@@ -39,7 +39,7 @@ class SyllableParser {
     static NucleusParseResult parse_nucleus(std::u32string_view input, size_t pos);
     static CodaParseResult parse_coda(std::u32string_view input, size_t pos);
 
-    static void reorder_vowels(Syllable& s);
+    static ReorderParseResult reorder_vowels(std::optional<char32_t> glide, std::u32string_view vowel, Tone tone, std::u32string_view initial);
 
     static std::u32string to_u32(const std::string& s);
     static std::string from_u32(const std::u32string& s);
