@@ -134,7 +134,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     
     // --- UX Safety: Auto-commit when buffer is nearly full (127 chars) ---
     // This ensures no data loss even if the user types extremely long sequences.
-    if (composition_buffer.get_raw().size() >= StaticString::MAX_LEN - 1 &&
+    if (composition_buffer.get_raw().size() >= StaticString::MAX_LEN_CONST - 1 &&
         InputDispatcher::categorize(key, mods) == InputCategory::CHARACTER) {
         
         auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);

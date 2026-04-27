@@ -14,17 +14,18 @@ namespace lotus_core {
 /**
  * @brief A fixed-size zero-allocation string for hot-loop operations.
  */
-class StaticString {
+template<size_t MAX_LEN = 128>
+class StaticStringTemplate {
 public:
-    static constexpr size_t MAX_LEN = 128;
-    
-    StaticString() : len(0) {}
-    StaticString(const std::u32string& str) : len(0) {
+    static constexpr size_t MAX_LEN_CONST = MAX_LEN;
+
+    StaticStringTemplate() : len(0) {}
+    StaticStringTemplate(const std::u32string& str) : len(0) {
         for (char32_t c : str) {
             if (len < MAX_LEN) data[len++] = c;
         }
     }
-    StaticString& operator=(std::u32string_view view) {
+    StaticStringTemplate& operator=(std::u32string_view view) {
         len = 0;
         for (char32_t c : view) {
             if (len < MAX_LEN) data[len++] = c;
@@ -32,9 +33,9 @@ public:
         return *this;
     }
 
-    StaticString& operator+=(char32_t c) { push_back(c); return *this; }
-    StaticString substr(size_t pos, size_t count = std::u32string::npos) const {
-        StaticString res;
+    StaticStringTemplate& operator+=(char32_t c) { push_back(c); return *this; }
+    StaticStringTemplate substr(size_t pos, size_t count = std::u32string::npos) const {
+        StaticStringTemplate res;
         if (pos >= len) return res;
         size_t end = (count == std::u32string::npos) ? len : std::min(len, pos + count);
         for (size_t i = pos; i < end; ++i) res.push_back(data[i]);
@@ -42,7 +43,7 @@ public:
     }
 
     
-    StaticString(std::u32string_view view) : len(0) {
+    StaticStringTemplate(std::u32string_view view) : len(0) {
         for (char32_t c : view) {
             if (len < MAX_LEN) data[len++] = c;
         }
@@ -82,12 +83,29 @@ public:
     std::u32string_view view() const {
         return std::u32string_view(data.data(), len);
     }
+
+    operator std::u32string_view() const {
+        return view();
+    }
     
     std::u32string to_u32string() const {
         return std::u32string(data.data(), len);
     }
+
+    StaticStringTemplate& operator=(const StaticStringTemplate& other) = default;
+
+    template<size_t M>
+    StaticStringTemplate& operator=(const StaticStringTemplate<M>& other) {
+        len = 0;
+        for (size_t i = 0; i < other.size(); ++i) {
+            if (len < MAX_LEN) data[len++] = other[i];
+            else break;
+        }
+        return *this;
+    }
     
-    bool operator==(const StaticString& other) const {
+    template<size_t M>
+    bool operator==(const StaticStringTemplate<M>& other) const {
         return view() == other.view();
     }
     
@@ -99,6 +117,8 @@ private:
     std::array<char32_t, MAX_LEN> data;
     size_t len;
 };
+
+using StaticString = StaticStringTemplate<128>;
 
 /**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.

@@ -18,7 +18,7 @@ bool CompositionBuffer::append_key(char32_t key, size_t commit_threshold) {
     if (key != 0) {
         buffer.push_back(key);
     }
-    return buffer.size() >= commit_threshold || buffer.size() >= StaticString::MAX_LEN;
+    return buffer.size() >= commit_threshold || buffer.size() >= StaticString::MAX_LEN_CONST;
 }
 
 void CompositionBuffer::clear() {
@@ -87,9 +87,9 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
 
     // Tracker for single-character indices
     struct CharTracker {
-        std::array<size_t, StaticString::MAX_LEN> data{};
+        std::array<size_t, StaticString::MAX_LEN_CONST> data{};
         size_t count = 0;
-        void push_back(size_t val) { if (count < StaticString::MAX_LEN) data[count++] = val; }
+        void push_back(size_t val) { if (count < StaticString::MAX_LEN_CONST) data[count++] = val; }
         bool empty() const { return count == 0; }
         size_t back() const { return data[count - 1]; }
         size_t operator[](size_t i) const { return data[i]; }
@@ -224,7 +224,7 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
 
     // Stage 5: Tone Marks
     if (!tone_indices.empty()) {
-        std::array<bool, StaticString::MAX_LEN> is_literal_marker{};
+        std::array<bool, StaticString::MAX_LEN_CONST> is_literal_marker{};
         CharTracker potential_active_indices;
 
         for (size_t i = 0; i < tone_indices.size(); ++i) {
