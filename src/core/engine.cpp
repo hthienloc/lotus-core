@@ -323,7 +323,7 @@ bool Engine::reclaim_from_history(InputMethod method) {
         // Re-parse the word string into canonical keys
         Syllable s = SyllableParser::parse(recovered);
         StaticString keys = s.to_keys(method);
-        composition_buffer.set_raw(keys.to_u32string());
+        composition_buffer.set_raw(keys.view());
         state.last_committed_text = recovered;
         LOTUS_LOG_DEBUG(format_log_message("BACKSPACE", "Reclaimed word: '" + unicode::to_utf8(recovered) + "'"));
     }

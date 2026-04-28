@@ -62,7 +62,7 @@ inline bool is_tone_marker(char c) {
  * @param word The word to check.
  * @return True if the word is whitelisted.
  */
-bool Linguistics::is_on_whitelist(const std::string& word) {
+bool Linguistics::is_on_whitelist(std::string_view word) {
     return std::any_of(ENGLISH_WHITELIST.begin(), ENGLISH_WHITELIST.end(),
                        [&word](std::string_view w) { return word == w; });
 }
@@ -72,7 +72,7 @@ bool Linguistics::is_on_whitelist(const std::string& word) {
  * @param word The word to analyze.
  * @return True if it contains definite English clusters.
  */
-bool Linguistics::is_definite_english(const std::string& word) {
+bool Linguistics::is_definite_english(std::string_view word) {
     if (word.length() < 2)
         return false;
     std::string lower = unicode::to_lower(word);
@@ -95,7 +95,7 @@ bool Linguistics::is_definite_english(const std::string& word) {
  * @param word The word to analyze.
  * @return True if heuristics suggest it is English.
  */
-bool Linguistics::is_likely_english(const std::string& word) {
+bool Linguistics::is_likely_english(std::string_view word) {
     if (word.empty())
         return false;
 
@@ -139,7 +139,7 @@ bool Linguistics::is_likely_english(const std::string& word) {
  * @param lower The lowercased word to check.
  * @return True if it contains an English 'x' pattern.
  */
-bool Linguistics::has_english_x_pattern(const std::string& lower) {
+bool Linguistics::has_english_x_pattern(std::string_view lower) {
     if (lower.length() >= 3) {
         size_t x_pos = lower.find('x');
         if (x_pos != std::string::npos && x_pos > 0 && x_pos < lower.length() - 1) {
@@ -151,9 +151,10 @@ bool Linguistics::has_english_x_pattern(const std::string& lower) {
                 // If it does, 'x' might be a tone marker, so we bypass English detection.
                 char prev = lower[x_pos - 1];
                 if (is_vowel(prev)) {
-                    std::string copy = lower;
+                    std::string copy(lower);
                     copy.erase(x_pos, 1);
-                    Syllable s = SyllableParser::parse(unicode::to_utf32(copy));
+                    StaticString u32_copy = unicode::to_utf32_static(copy);
+                    Syllable s = SyllableParser::parse(u32_copy.view());
                     if (Validator::is_valid(s)) {
                         return false;
                     }
@@ -176,7 +177,7 @@ bool Linguistics::has_english_x_pattern(const std::string& lower) {
  * @param lower The lowercased word to check.
  * @return True if it starts with an English cluster.
  */
-bool Linguistics::has_english_start_cluster(const std::string& lower) {
+bool Linguistics::has_english_start_cluster(std::string_view lower) {
     // 2. Check for definite English clusters at the start.
     return std::any_of(ENGLISH_CLUSTERS.begin(), ENGLISH_CLUSTERS.end(),
                        [&lower](std::string_view cluster) { return lower.find(cluster) == 0; });
@@ -190,9 +191,9 @@ bool Linguistics::has_english_start_cluster(const std::string& lower) {
  * @param lower The lowercased word to check.
  * @return True if it contains an English 'y' pattern.
  */
-bool Linguistics::has_english_y_pattern(const std::string& lower) {
+bool Linguistics::has_english_y_pattern(std::string_view lower) {
     if (lower.length() >= 2 && lower[0] == 'y') {
-        if (is_vowel(lower[1]) && lower[1] != 'w' && lower.find("ê") == std::string::npos) {
+        if (is_vowel(lower[1]) && lower[1] != 'w' && lower.find("ê") == std::string_view::npos) {
             return true;
         }
     }
@@ -202,7 +203,7 @@ bool Linguistics::has_english_y_pattern(const std::string& lower) {
 /**
  * @brief Checks for non-Vietnamese consonant clusters (sh, wh, br, str, etc.)
  */
-bool Linguistics::contains_english_cluster(const std::string& lower) {
+bool Linguistics::contains_english_cluster(std::string_view lower) {
     if (lower.length() < 2)
         return false;
 
@@ -233,7 +234,7 @@ bool Linguistics::contains_english_cluster(const std::string& lower) {
  * @param lower The lowercased word to check.
  * @return True if the final sequence is invalid in Vietnamese.
  */
-bool Linguistics::has_impossible_final(const std::string& lower) {
+bool Linguistics::has_impossible_final(std::string_view lower) {
     if (lower.empty())
         return false;
     char last = lower.back();
@@ -261,9 +262,9 @@ bool Linguistics::has_impossible_final(const std::string& lower) {
             }
 
             // Allow tone markers after 'ng', 'ch', 'nh' which are valid finals
-            if (lower.ends_with("ng" + std::string(1, last)) ||
-                lower.ends_with("ch" + std::string(1, last)) ||
-                lower.ends_with("nh" + std::string(1, last))) {
+            if (lower.ends_with(std::string("ng") + std::string(1, last)) ||
+                lower.ends_with(std::string("ch") + std::string(1, last)) ||
+                lower.ends_with(std::string("nh") + std::string(1, last))) {
                 return false;
             }
 
@@ -283,7 +284,7 @@ bool Linguistics::has_impossible_final(const std::string& lower) {
  * @param lower The lowercased word to check.
  * @return True if the final sequence is a common English suffix.
  */
-bool Linguistics::has_english_suffix(const std::string& lower) {
+bool Linguistics::has_english_suffix(std::string_view lower) {
     if (lower.length() < 4) return false;
 
     return lower.ends_with("ine") || lower.ends_with("one") ||

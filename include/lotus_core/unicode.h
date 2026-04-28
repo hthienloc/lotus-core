@@ -210,6 +210,31 @@ inline Tone get_tone(char32_t cp) {
 }
 
 /**
+ * @brief Normalize Vietnamese text to NFC (Precomposed) form (Zero Allocation).
+ */
+inline StaticStringTemplate<128> normalize_nfc_static(std::u32string_view u32) {
+    StaticStringTemplate<128> res;
+
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t current = u32[i];
+        while (i + 1 < u32.size()) {
+            char32_t next = u32[i + 1];
+            if (next >= 0x0300 && next <= 0x036F) {
+                auto it = phonology::COMPOSITION_MAP.find({current, next});
+                if (it != phonology::COMPOSITION_MAP.end()) {
+                    current = it->second;
+                    i++;
+                    continue;
+                }
+            }
+            break;
+        }
+        res += current;
+    }
+    return res;
+}
+
+/**
  * @brief Normalize Vietnamese text to NFC (Precomposed) form.
  */
 inline std::u32string normalize_nfc(std::u32string_view u32) {

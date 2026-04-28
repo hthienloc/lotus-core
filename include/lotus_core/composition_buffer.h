@@ -48,7 +48,7 @@ public:
     const std::u32string& get_raw() const { return buffer; }
     
     /** @brief Directly sets the raw buffer. Used when restoring from history. */
-    void set_raw(const std::u32string& new_buffer);
+    void set_raw(std::u32string_view new_buffer);
 
     /** @brief Pops the last raw character. */
     void pop_back();

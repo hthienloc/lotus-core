@@ -26,8 +26,8 @@ void CompositionBuffer::clear() {
     last_modifier_key = 0;
 }
 
-void CompositionBuffer::set_raw(const std::u32string& new_buffer) {
-    buffer = new_buffer;
+void CompositionBuffer::set_raw(std::u32string_view new_buffer) {
+    buffer = std::u32string(new_buffer);
 }
 
 void CompositionBuffer::pop_back() {
@@ -60,7 +60,7 @@ std::optional<std::u32string> CompositionBuffer::handle_manual_tone_escape(char3
             StaticString out(buffer);
             if (!out.empty())
                 out.pop_back();
-            return out.to_u32string();
+            return std::u32string(out.view());
         }
     }
     return std::nullopt;
@@ -313,7 +313,7 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             final_u32.push_back(u32_copy[i]);
         }
     }
-    current_str = unicode::to_utf8(final_u32.to_u32string());
+    current_str = unicode::to_utf8(final_u32.view());
 }
 
 void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
@@ -403,7 +403,7 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
         }
     }
 
-    current_str = unicode::to_utf8(final_u32.to_u32string());
+    current_str = unicode::to_utf8(final_u32.view());
 }
 
 TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard) {

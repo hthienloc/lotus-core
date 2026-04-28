@@ -24,7 +24,7 @@ class SyllableParser {
      * @param allow_non_standard Whether to allow z, w, j, f.
      * @return Syllable The parsed syllable components.
      */
-    static Syllable parse(const std::u32string& input, bool allow_non_standard = false);
+    static Syllable parse(std::u32string_view input, bool allow_non_standard = false);
 
     /**
      * @brief Checks whether a UTF-32 codepoint is a Vietnamese vowel.

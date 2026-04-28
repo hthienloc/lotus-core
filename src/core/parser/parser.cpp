@@ -89,12 +89,12 @@ CodaParseResult SyllableParser::parse_coda(std::u32string_view input, size_t pos
  * @param input The raw character sequence to parse.
  * @return A Syllable object containing the identified components.
  */
-Syllable SyllableParser::parse(const std::u32string& input, bool allow_non_standard) {
+Syllable SyllableParser::parse(std::u32string_view input, bool allow_non_standard) {
     if (input.empty())
         return Syllable{};
 
-    std::u32string normalized_input = unicode::normalize_nfc(input);
-    std::u32string_view view = normalized_input;
+    StaticString normalized_input = unicode::normalize_nfc_static(input);
+    std::u32string_view view = normalized_input.view();
 
     size_t pos = 0;
     InitialParseResult init_res = parse_initial(view, allow_non_standard);
