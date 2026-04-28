@@ -27,7 +27,7 @@ bool ShortcutManager::is_trigger_key(char32_t key) const {
            key == ':' || key == ';';
 }
 
-bool ShortcutManager::handle(char32_t key, const std::u32string& buffer, EngineResult& result, MacroMode mode) {
+bool ShortcutManager::handle(char32_t key, std::u32string_view buffer, EngineResult& result, MacroMode mode) {
     // Bail out early if macro mode is off, buffer is empty, or the input key is not a valid trigger boundary
     if (mode == MacroMode::OFF || buffer.empty() || !is_trigger_key(key))
         return false;

@@ -110,7 +110,7 @@ void Engine::rebuild_from_text(const std::string& text) {
 void Engine::commit_syllable_to_history(char32_t boundary_key) {
     if (!composition_buffer.get_raw().empty()) {
         auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
-        context_tracker.push_word(transform_res.output);
+        context_tracker.push_word(std::u32string(transform_res.output.view()));
     }
     context_tracker.push_boundary(boundary_key);
 }
@@ -187,7 +187,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
                 bool forced_flush = composition_buffer.append_key(key, config.commit_threshold);
                 if (forced_flush) {
                     auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
-                    EngineResult br = build_result(transform_res.output);
+                    EngineResult br = build_result(transform_res.output.view());
                     br.diagnostic = transform_res.diagnostic;
                     br.action = EngineAction::PASS;
                     state.last_committed_text.clear();
@@ -205,21 +205,21 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     
     if (config.auto_restore && !transform_res.has_valid_initial && !transform_res.key_consumed) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
-        EngineResult br = build_result(composition_buffer.get_raw());
+        EngineResult br = build_result(composition_buffer.get_raw().view());
         br.diagnostic = DiagnosticCode::ENGLISH_RESTORED;
         return br;
     }
 
-    bool is_eng = is_likely_english(unicode::to_utf8(composition_buffer.get_raw()));
+    bool is_eng = is_likely_english(unicode::to_utf8(composition_buffer.get_raw().view()));
     if (config.auto_restore && is_eng && (!transform_res.is_valid_vn || (!transform_res.key_consumed && key != 'z' && key != 'Z'))) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: English word logic"));
-        EngineResult br = build_result(composition_buffer.get_raw());
+        EngineResult br = build_result(composition_buffer.get_raw().view());
         br.diagnostic = DiagnosticCode::ENGLISH_RESTORED;
         return br;
     }
 
-    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Final: " + unicode::to_utf8(transform_res.output)));
-    EngineResult br = build_result(transform_res.output);
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Final: " + unicode::to_utf8(transform_res.output.view())));
+    EngineResult br = build_result(transform_res.output.view());
     br.diagnostic = transform_res.diagnostic;
     return br;
 }
@@ -263,7 +263,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
         std::string word = unicode::to_utf8(state.last_committed_text);
         Syllable s = SyllableParser::parse(unicode::to_utf32(word));
         
-        bool is_english_fallback = config.auto_restore && is_likely_english(unicode::to_utf8(composition_buffer.get_raw()));
+        bool is_english_fallback = config.auto_restore && is_likely_english(unicode::to_utf8(composition_buffer.get_raw().view()));
 
         if (config.backspace_style == BackspaceStyle::KEYSTROKE || is_english_fallback) {
             composition_buffer.pop_back();
@@ -277,7 +277,7 @@ bool Engine::handle_backspace(char32_t key, const Modifiers& mods, EngineResult&
             composition_buffer.pop_back();
         }
         if (composition_buffer.get_raw().empty()) {
-            result = build_result(U"");
+            result = build_result(std::u32string_view(U""));
             reclaim_from_history(config.method);
             return true;
         }
@@ -343,11 +343,11 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
     if (!InputDispatcher::is_word_boundary(key))
         return false;
 
-    std::string raw_word = unicode::to_utf8(composition_buffer.get_raw());
+    std::string raw_word = unicode::to_utf8(composition_buffer.get_raw().view());
     if (is_likely_english(raw_word)) {
-        std::u32string output = composition_buffer.get_raw();
+        StaticString output = composition_buffer.get_raw();
         output.push_back(key);
-        result = build_result(output);
+        result = build_result(output.view());
         result.action = EngineAction::RESTORE;
         reset();
         state.last_boundary_key = key;
@@ -395,7 +395,7 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
  * @return True if a shortcut was matched and expanded.
  */
 bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
-    if (shortcut_manager.handle(key, composition_buffer.get_raw(), result, config.macro_mode)) {
+    if (shortcut_manager.handle(key, composition_buffer.get_raw().view(), result, config.macro_mode)) {
         reset();
         state.last_boundary_key = key;
         state.last_committed_text.clear();
@@ -415,7 +415,7 @@ bool Engine::handle_shortcuts(char32_t key, EngineResult& result) {
  */
 bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineResult& result) {
     (void)mods;
-    bool handled = SmartTyping::handle(key, config.double_space_to_period, config.auto_capitalize, state.last_boundary_key, context_tracker.is_at_sentence_start(), composition_buffer.get_raw(), result, state.last_committed_text);
+    bool handled = SmartTyping::handle(key, config.double_space_to_period, config.auto_capitalize, state.last_boundary_key, context_tracker.is_at_sentence_start(), composition_buffer.get_raw().view(), result, state.last_committed_text);
     if (handled) {
         state.last_boundary_key = ' ';
         context_tracker.set_at_sentence_start(true);
@@ -433,7 +433,7 @@ bool Engine::handle_smart_typing(char32_t& key, const Modifiers& mods, EngineRes
  * @param final_u32 The final transformed character sequence.
  * @return EngineResult indicating a replacement action.
  */
-EngineResult Engine::build_result(const std::u32string& final_u32) {
+EngineResult Engine::build_result(std::u32string_view final_u32) {
     EngineResult result{};
     result.action = EngineAction::TRANSFORM;
     result.backspace = (uint8_t)state.last_committed_text.size();
@@ -445,7 +445,7 @@ EngineResult Engine::build_result(const std::u32string& final_u32) {
                     ", Count=" + std::to_string((int)result.count) + ", PrevText='" +
                     unicode::to_utf8(state.last_committed_text) + "'"));
 
-    state.last_committed_text = final_u32;
+    state.last_committed_text = std::u32string(final_u32);
     return result;
 }
 
@@ -456,7 +456,7 @@ EngineResult Engine::build_result(const std::u32string& final_u32) {
  * @return True if the word should be preserved as English.
  */
 bool Engine::is_likely_english(const std::string& word) const {
-    bool is_valid_vn = composition_buffer.is_likely_english(word, config.method, config.free_w, config.allow_non_standard_initials);
+    bool is_valid_vn = composition_buffer.is_likely_english(unicode::to_utf32_static(word).view(), config.method, config.free_w, config.allow_non_standard_initials);
     return context_tracker.is_likely_english(word, is_valid_vn);
 }
 

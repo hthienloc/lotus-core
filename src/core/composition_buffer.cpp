@@ -27,7 +27,7 @@ void CompositionBuffer::clear() {
 }
 
 void CompositionBuffer::set_raw(std::u32string_view new_buffer) {
-    buffer = std::u32string(new_buffer);
+    buffer = new_buffer;
 }
 
 void CompositionBuffer::pop_back() {
@@ -49,7 +49,7 @@ void CompositionBuffer::handle_hook_key_shortcuts(char32_t& key, bool std_uo) {
         key = U'Ơ';
 }
 
-std::optional<std::u32string> CompositionBuffer::handle_manual_tone_escape(char32_t key) {
+std::optional<StaticString> CompositionBuffer::handle_manual_tone_escape(char32_t key) {
     if (key != 0 && key == last_modifier_key && !buffer.empty()) {
         char32_t lk = unicode::to_lower(key);
         bool revertible =
@@ -57,29 +57,28 @@ std::optional<std::u32string> CompositionBuffer::handle_manual_tone_escape(char3
         if (revertible) {
             buffer.push_back(key);
             last_modifier_key = 0;
-            StaticString out(buffer);
+            StaticString out = buffer;
             if (!out.empty())
                 out.pop_back();
-            return std::u32string(out.view());
+            return out;
         }
     }
     return std::nullopt;
 }
 
-void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key, bool& key_consumed,
+void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed,
                                    Tone& tone_state, FreeWOption free_w) const {
-    const std::u32string& u32 = buffer;
+    const StaticString& u32 = buffer;
     if (u32.empty())
         return;
 
-    const std::string raw_str = unicode::to_utf8(u32);
-    if (Linguistics::is_definite_english(raw_str)) {
-        current_str = raw_str;
+    if (Linguistics::is_definite_english(unicode::to_utf8(u32.view()))) {
+        current_str = u32;
         return;
     }
 
     if (unicode::to_lower(u32[0]) == 'w' && free_w != FreeWOption::ALWAYS) {
-        current_str = raw_str;
+        current_str = u32;
         return;
     }
 
@@ -313,18 +312,19 @@ void CompositionBuffer::apply_telex_rules(std::string& current_str, char32_t key
             final_u32.push_back(u32_copy[i]);
         }
     }
-    current_str = unicode::to_utf8(final_u32.view());
+    current_str = final_u32;
 }
 
-void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed,
+void CompositionBuffer::apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed,
                                  Tone& tone_state) const {
-    const std::u32string& u32 = buffer;
+    const StaticString& u32 = buffer;
     if (u32.empty())
         return;
 
-    const std::string raw_str = unicode::to_utf8(u32);
-    if (Linguistics::is_definite_english(raw_str))
+    if (Linguistics::is_definite_english(unicode::to_utf8(u32.view()))) {
+        current_str = u32;
         return;
+    }
 
     StaticString u32_copy(u32);
 
@@ -403,15 +403,15 @@ void CompositionBuffer::apply_vni_rules(std::string& current_str, char32_t key, 
         }
     }
 
-    current_str = unicode::to_utf8(final_u32.view());
+    current_str = final_u32;
 }
 
 TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard) {
     if (buffer.empty()) {
-        return TransformationResult{U"", false, false, false};
+        return TransformationResult{StaticString(std::u32string(U"")), false, false, false};
     }
 
-    std::string current_str = unicode::to_utf8(buffer);
+    StaticString current_str = buffer;
     Tone tone_state = Tone::NONE;
     bool key_consumed = (key == 0); 
     
@@ -421,15 +421,15 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
         apply_vni_rules(current_str, key, key_consumed, tone_state);
     }
 
-    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "After IM: " + current_str +
+    LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "After IM: " + unicode::to_utf8(current_str.view()) +
                     " (Tone: " + std::to_string(static_cast<int>(tone_state)) +
                     ", Consumed: " + (key_consumed ? "Y" : "N") + ")"));
 
     if (!key_consumed)
         last_modifier_key = 0;
 
-    current_str = unicode::normalize_nfc(current_str);
-    Syllable s = SyllableParser::parse(unicode::to_utf32(current_str), allow_non_standard);
+    current_str = unicode::normalize_nfc_static(current_str.view());
+    Syllable s = SyllableParser::parse(current_str.view(), allow_non_standard);
     if (tone_state != Tone::NONE)
         s.tone = tone_state;
 
@@ -437,16 +437,15 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
 
     bool has_valid_initial = true;
     if (!current_str.empty()) {
-        StaticString u32_curr = unicode::to_utf32_static(current_str);
         size_t first_vowel = std::u32string::npos;
-        for (size_t i = 0; i < u32_curr.size(); ++i) {
-            if (SyllableParser::is_vowel(u32_curr[i])) {
+        for (size_t i = 0; i < current_str.size(); ++i) {
+            if (SyllableParser::is_vowel(current_str[i])) {
                 first_vowel = i;
                 break;
             }
         }
         StaticString prefix =
-            (first_vowel == std::u32string::npos) ? u32_curr : u32_curr.substr(0, first_vowel);
+            (first_vowel == std::u32string::npos) ? current_str : current_str.substr(0, first_vowel);
         if (!prefix.empty() && !Validator::is_valid_initial(unicode::to_lower_static(prefix.view()).view(), allow_non_standard)) {
             has_valid_initial = false;
         }
@@ -462,10 +461,10 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
         }
     }
 
-    std::string final_v_word = s.to_string(style);
+    StaticString final_v_word = unicode::to_utf32_static(s.to_string(style));
 
     return TransformationResult{
-        unicode::to_utf32(final_v_word),
+        final_v_word,
         key_consumed,
         is_valid_vn,
         has_valid_initial,
@@ -473,8 +472,8 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
     };
 }
 
-bool CompositionBuffer::is_likely_english(const std::string& word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const {
-    std::string transformed = word;
+bool CompositionBuffer::is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const {
+    StaticString transformed(word);
     Tone tone = Tone::NONE;
     bool consumed = false;
     if (method == InputMethod::TELEX) {
@@ -482,7 +481,7 @@ bool CompositionBuffer::is_likely_english(const std::string& word, InputMethod m
     } else {
         apply_vni_rules(transformed, 0, consumed, tone);
     }
-    Syllable s = SyllableParser::parse(unicode::to_utf32(transformed), allow_non_standard);
+    Syllable s = SyllableParser::parse(transformed.view(), allow_non_standard);
     if (tone != Tone::NONE)
         s.tone = tone;
     bool is_valid_vn = Validator::is_valid(s, nullptr, allow_non_standard);

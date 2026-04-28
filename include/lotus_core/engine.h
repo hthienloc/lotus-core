@@ -144,7 +144,7 @@ class Engine {
     bool reclaim_from_history(InputMethod method);
     void commit_syllable_to_history(char32_t boundary_key);
 
-    EngineResult build_result(const std::u32string& final_u32);
+    EngineResult build_result(std::u32string_view final_u32);
 
     ShortcutManager shortcut_manager;
     CompositionBuffer composition_buffer;

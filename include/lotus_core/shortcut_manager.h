@@ -48,7 +48,7 @@ public:
      * @param mode The macro expansion mode (ADAPTIVE, EXACT, or FIXED) determining capitalization logic.
      * @return true if a shortcut was successfully expanded, false otherwise.
      */
-    bool handle(char32_t key, const std::u32string& buffer, EngineResult& result, MacroMode mode = MacroMode::ADAPTIVE);
+    bool handle(char32_t key, std::u32string_view buffer, EngineResult& result, MacroMode mode = MacroMode::ADAPTIVE);
 
 private:
     /**

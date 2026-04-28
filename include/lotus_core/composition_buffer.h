@@ -10,7 +10,7 @@ namespace lotus_core {
  * @brief Result of a buffer transformation.
  */
 struct TransformationResult {
-    std::u32string output;
+    StaticString output;
     bool key_consumed;
     bool is_valid_vn;
     bool has_valid_initial;
@@ -45,7 +45,7 @@ public:
     void clear();
 
     /** @brief Returns the raw buffer content. */
-    const std::u32string& get_raw() const { return buffer; }
+    const StaticString& get_raw() const { return buffer; }
     
     /** @brief Directly sets the raw buffer. Used when restoring from history. */
     void set_raw(std::u32string_view new_buffer);
@@ -54,20 +54,20 @@ public:
     void pop_back();
 
     /** @brief Handles manual tone escape (e.g., 'aaa' -> 'aa'). */
-    std::optional<std::u32string> handle_manual_tone_escape(char32_t key);
+    std::optional<StaticString> handle_manual_tone_escape(char32_t key);
 
     /** @brief Applies standard UO key mappings. */
     void handle_hook_key_shortcuts(char32_t& key, bool std_uo);
 
     /** @brief Evaluates if the given word is likely English based on rules. */
-    bool is_likely_english(const std::string& word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const;
+    bool is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const;
 
 private:
-    std::u32string buffer;
+    StaticString buffer;
     char32_t last_modifier_key = 0;
 
-    void apply_telex_rules(std::string& current_str, char32_t key, bool& key_consumed, Tone& tone_state, FreeWOption free_w) const;
-    void apply_vni_rules(std::string& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
+    void apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, FreeWOption free_w) const;
+    void apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
 };
 
 } // namespace lotus_core

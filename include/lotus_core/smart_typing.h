@@ -39,7 +39,7 @@ public:
      * @param last_committed_text Reference to the string of text just committed, updated if a transformation is applied.
      * @return true if a smart typing transformation (like double-space to period) fully consumed the event and requires immediate output, false if the key should continue being processed by the main engine (like auto-capitalized characters).
      */
-    static bool handle(char32_t& key, bool double_space_to_period, bool auto_capitalize, char32_t last_boundary_key, bool at_sentence_start, const std::u32string& buffer, EngineResult& result, std::u32string& last_committed_text);
+    static bool handle(char32_t& key, bool double_space_to_period, bool auto_capitalize, char32_t last_boundary_key, bool at_sentence_start, std::u32string_view buffer, EngineResult& result, std::u32string& last_committed_text);
 };
 
 } // namespace lotus_core

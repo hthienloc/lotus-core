@@ -5,7 +5,7 @@ using namespace lotus_core;
 
 namespace lotus_core {
 
-bool SmartTyping::handle(char32_t& key, bool double_space_to_period, bool auto_capitalize, char32_t last_boundary_key, bool at_sentence_start, const std::u32string& buffer, EngineResult& result, std::u32string& last_committed_text) {
+bool SmartTyping::handle(char32_t& key, bool double_space_to_period, bool auto_capitalize, char32_t last_boundary_key, bool at_sentence_start, std::u32string_view buffer, EngineResult& result, std::u32string& last_committed_text) {
     // Check for double-space to period formatting
     // If the user typed a space, and the last boundary recorded was also a space,
     // we backspace the previous space and replace it with a period and a new space.
