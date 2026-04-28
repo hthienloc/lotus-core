@@ -9,7 +9,7 @@
 namespace lotus_core {
 
 struct InitialParseResult {
-    StaticString initial;
+    SmallString initial;
     size_t consumed = 0;
 };
 
@@ -19,19 +19,19 @@ struct GlideParseResult {
 };
 
 struct NucleusParseResult {
-    StaticString vowel;
+    SmallString vowel;
     Tone tone = Tone::NONE;
     size_t consumed = 0;
 };
 
 struct CodaParseResult {
-    StaticString final_c;
+    TinyString final_c;
     size_t consumed = 0;
 };
 
 struct ReorderParseResult {
     std::optional<char32_t> glide;
-    StaticString vowel;
+    SmallString vowel;
     Tone tone = Tone::NONE;
 };
 

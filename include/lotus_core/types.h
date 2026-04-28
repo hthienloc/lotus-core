@@ -119,6 +119,8 @@ private:
 };
 
 using StaticString = StaticStringTemplate<128>;
+using SmallString = StaticStringTemplate<8>;
+using TinyString = StaticStringTemplate<4>;
 
 /**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
@@ -131,10 +133,10 @@ using StaticString = StaticStringTemplate<128>;
  * - T: Tone (Dấu thanh)
  */
 struct Syllable {
-    StaticString initial;         ///< Initial Consonant (e.g., b, ch, ngh)
+    SmallString initial;         ///< Initial Consonant (e.g., b, ch, ngh)
     std::optional<char32_t> glide;  ///< Glide (e.g., o, u)
-    StaticString vowel;           ///< Vowel Nucleus (e.g., a, ă, ê, iê)
-    StaticString final_c;         ///< Final Coda (e.g., n, ng, ch, i, y)
+    SmallString vowel;           ///< Vowel Nucleus (e.g., a, ă, ê, iê)
+    TinyString final_c;         ///< Final Coda (e.g., n, ng, ch, i, y)
     Tone tone = Tone::NONE;         ///< Tone mark
 
     /**
