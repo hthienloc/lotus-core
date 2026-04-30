@@ -198,6 +198,15 @@ struct Syllable {
      */
     CharStateArray to_char_states(ToneStyle style = ToneStyle::NEW) const;
 
+private:
+    /**
+     * @brief Intelligently moves the tone mark to the correct nucleus character in the CharStateArray.
+     * @param states The array of CharStates to modify in place.
+     * @param style The tone placement style to use.
+     */
+    void reposition_tone(CharStateArray& states, ToneStyle style) const;
+
+public:
     /**
      * @brief Checks if the syllable is empty (no components set).
      */

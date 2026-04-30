@@ -19,6 +19,8 @@ void test_syllable_to_string_basic();
 void test_syllable_is_empty();
 /** @brief Tests out-of-order vowel typing (Bamboo-style reordering). */
 void test_vowel_reordering();
+/** @brief Tests reposition_tone through to_char_states and to_string. */
+void test_reposition_tone();
 /** @brief Tests basic syllable validation including consonant and vowel checks. */
 void test_validator_basic();
 /** @brief Tests complex syllable validation including tones and glides. */
@@ -97,6 +99,7 @@ int main(int argc, char **argv) {
     test_syllable_to_string_basic();
     test_syllable_is_empty();
     test_vowel_reordering();
+    test_reposition_tone();
     test_validator_basic();
     test_validator_complex();
     test_parser_basic();

@@ -76,3 +76,37 @@ void test_vowel_reordering() {
 
     std::cout << "  \033[1;32m[PASS]\033[0m Syllable vowel reordering (Bamboo-style)" << std::endl;
 }
+
+/**
+ * @brief Tests reposition_tone directly through to_char_states and to_string.
+ */
+void test_reposition_tone() {
+    // 1. Diphthong (iê): Tone on second vowel
+    Syllable s1 = SyllableParser::parse(U"tiếng");
+    s1.tone = Tone::ACUTE; // tiengs -> tiếng
+    CharStateArray c1 = s1.to_char_states(ToneStyle::NEW);
+    assert(c1[1].to_unicode() == U'i'); // no tone
+    assert(c1[2].to_unicode() == U'ế'); // tone on ê
+
+    // 2. Diphthong (oa) without final: Tone on first vowel (NEW style)
+    Syllable s2 = SyllableParser::parse(U"hoa");
+    s2.tone = Tone::GRAVE; // hoaf -> hoà
+    CharStateArray c2_new = s2.to_char_states(ToneStyle::NEW);
+    assert(c2_new[1].to_unicode() == U'o'); // no tone
+    assert(c2_new[2].to_unicode() == U'à'); // tone on a
+    
+    // Tone on glide (OLD style)
+    CharStateArray c2_old = s2.to_char_states(ToneStyle::OLD);
+    assert(c2_old[1].to_unicode() == U'ò'); // tone on o
+    assert(c2_old[2].to_unicode() == U'a'); // no tone
+
+    // 3. Triphthong (iêu): Tone on middle nucleus
+    Syllable s3 = SyllableParser::parse(U"tiêu");
+    s3.tone = Tone::HOOK; // tieur -> tiểu
+    CharStateArray c3 = s3.to_char_states(ToneStyle::NEW);
+    assert(c3[1].to_unicode() == U'i'); // no tone
+    assert(c3[2].to_unicode() == U'ể'); // tone on ê
+    assert(c3[3].to_unicode() == U'u'); // no tone
+
+    std::cout << "  \033[1;32m[PASS]\033[0m Syllable tone repositioning" << std::endl;
+}

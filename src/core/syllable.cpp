@@ -97,6 +97,50 @@ char32_t CharState::to_unicode() const {
 // [ Syllable Implementation ]
 // ============================================================================
 
+void Syllable::reposition_tone(CharStateArray& states, ToneStyle style) const {
+    if (tone == Tone::NONE) return;
+
+    size_t nucleus_start = initial.size();
+    size_t nucleus_len = states.size() - nucleus_start - final_c.size();
+
+    if (nucleus_len == 0) return; // Should not happen for a valid syllable
+
+    // OLD Style Check (oa, oe, uy)
+    if (glide.has_value() && final_c.empty() && vowel.size() == 1) {
+        char32_t g = unicode::to_lower(glide.value());
+        if (style == ToneStyle::OLD && (g == 'o' || g == 'u')) {
+            states[nucleus_start].tone = tone; // Put tone on glide
+            return;
+        }
+    }
+
+    if (!vowel.empty()) {
+        size_t target_idx = 0;
+        size_t v_start = nucleus_start + (glide.has_value() ? 1 : 0);
+
+        if (vowel.size() == 2) {
+            char32_t v0 = unicode::to_lower(vowel[0]);
+            char32_t v1 = unicode::to_lower(vowel[1]);
+            // Diphthongs with 'iê', 'yê', 'uô', 'ươ': tone goes on the SECOND vowel.
+            // Or if there is a coda, the tone shifts to the second vowel in diphthongs.
+            if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
+                (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
+                (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
+                (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) || !final_c.empty()) {
+                target_idx = 1;
+            }
+        } else if (vowel.size() == 3) {
+            // Triphthongs: tone goes on the MIDDLE nucleus.
+            target_idx = 1;
+        }
+
+        states[v_start + target_idx].tone = tone;
+    } else if (glide.has_value()) {
+        // Tone on glide if no vowel
+        states[nucleus_start].tone = tone;
+    }
+}
+
 /**
  * @brief Decomposes the syllable into a sequence of CharStates.
  * @param style The tone placement style to use for determining where the tone goes.
@@ -111,71 +155,23 @@ CharStateArray Syllable::to_char_states(ToneStyle style) const {
         states.push_back(CharState::from_unicode(c));
     }
 
-    if (tone != Tone::NONE) {
-        bool tone_placed = false;
+    // 2. Glide
+    if (glide.has_value()) {
+        states.push_back(CharState::from_unicode(glide.value()));
+    }
 
-        // OLD Style Check (oa, oe, uy)
-        if (glide.has_value() && final_c.empty() && vowel.size() == 1) {
-            char32_t g = unicode::to_lower(glide.value());
-            if (style == ToneStyle::OLD && (g == 'o' || g == 'u')) {
-                CharState g_state = CharState::from_unicode(glide.value());
-                g_state.tone = tone;
-                states.push_back(g_state);
-                
-                states.push_back(CharState::from_unicode(vowel[0]));
-                
-                tone_placed = true;
-            }
-        }
-
-        if (!tone_placed) {
-            // Handle glide if not already handled
-            if (glide.has_value()) {
-                states.push_back(CharState::from_unicode(glide.value()));
-            }
-
-            if (!vowel.empty()) {
-                size_t target_idx = 0;
-                if (vowel.size() == 2) {
-                    char32_t v0 = vowel[0];
-                    char32_t v1 = vowel[1];
-                    // Centering diphthongs or coda presence
-                    if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
-                        (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
-                        (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
-                        (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) || !final_c.empty()) {
-                        target_idx = 1;
-                    }
-                } else if (vowel.size() == 3) {
-                    target_idx = 1;
-                }
-
-                for (size_t i = 0; i < vowel.size(); ++i) {
-                    CharState v_state = CharState::from_unicode(vowel[i]);
-                    if (i == target_idx) {
-                        v_state.tone = tone;
-                    }
-                    states.push_back(v_state);
-                }
-            } else if (glide.has_value()) {
-                // Tone on glide if no vowel
-                states.data[states.len - 1].tone = tone;
-            }
-            tone_placed = true;
-        }
-    } else {
-        if (glide.has_value()) {
-            states.push_back(CharState::from_unicode(glide.value()));
-        }
-        for (char32_t c : vowel) {
-            states.push_back(CharState::from_unicode(c));
-        }
+    // 3. Vowel
+    for (char32_t c : vowel) {
+        states.push_back(CharState::from_unicode(c));
     }
 
     // 4. Final Coda
     for (char32_t c : final_c) {
         states.push_back(CharState::from_unicode(c));
     }
+
+    // 5. Reposition tone
+    reposition_tone(states, style);
 
     return states;
 }
@@ -186,66 +182,16 @@ CharStateArray Syllable::to_char_states(ToneStyle style) const {
  * @return Standardized UTF-8 Vietnamese syllable string.
  */
 std::string Syllable::to_string(ToneStyle style) const {
-    if (is_empty())
-        return "";
+    if (is_empty()) return "";
 
-    std::u32string res(initial.view());
-
-    if (tone != Tone::NONE) {
-        bool tone_placed = false;
-
-        // 1. OLD Style Check (oa, oe, uy)
-        if (glide.has_value() && final_c.empty() && vowel.size() == 1) {
-            char32_t g = unicode::to_lower(glide.value());
-            if (style == ToneStyle::OLD && (g == 'o' || g == 'u')) {
-                res += glide.value();
-                res += TONE_MARKS_U32[static_cast<int>(tone)];
-                res += vowel.view();
-                tone_placed = true;
-            }
-        }
-
-        if (!tone_placed) {
-            // Handle glide if not already handled
-            if (glide.has_value())
-                res += glide.value();
-
-            if (!vowel.empty()) {
-                size_t target_idx = 0;
-                if (vowel.size() == 2) {
-                    char32_t v0 = vowel[0];
-                    char32_t v1 = vowel[1];
-                    // Centering diphthongs or coda presence
-                    if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
-                        (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
-                        (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
-                        (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) || !final_c.empty()) {
-                        target_idx = 1;
-                    }
-                } else if (vowel.size() == 3) {
-                    target_idx = 1;
-                }
-
-                for (size_t i = 0; i < vowel.size(); ++i) {
-                    res += vowel[i];
-                    if (i == target_idx)
-                        res += TONE_MARKS_U32[static_cast<int>(tone)];
-                }
-            } else if (glide.has_value()) {
-                // Tone on glide if no vowel
-                res.pop_back();  // Remove glide added above
-                res += glide.value();
-                res += TONE_MARKS_U32[static_cast<int>(tone)];
-            }
-            tone_placed = true;
-        }
-    } else {
-        if (glide.has_value())
-            res += glide.value();
-        res += vowel.view();
+    CharStateArray states = to_char_states(style);
+    std::u32string res;
+    
+    for (size_t i = 0; i < states.size(); ++i) {
+        char32_t cp = states[i].to_unicode();
+        res += cp;
     }
 
-    res += final_c.view();
     return unicode::normalize_nfc(unicode::to_utf8(res));
 }
 
