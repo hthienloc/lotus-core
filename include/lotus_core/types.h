@@ -123,6 +123,51 @@ using SmallString = StaticStringTemplate<8>;
 using TinyString = StaticStringTemplate<4>;
 
 /**
+ * @brief Character modifiers (diacritics).
+ */
+enum class Modifier : uint8_t {
+    NONE = 0,
+    HAT = 1,   // ^ (e.g., â, ê, ô)
+    HOOK = 2,  // ơ, ư
+    BREVE = 3, // ă
+    BAR = 4    // đ
+};
+
+/**
+ * @brief Semantic representation of a Vietnamese character.
+ */
+struct CharState {
+    char32_t base = 0;
+    Modifier modifier = Modifier::NONE;
+    Tone tone = Tone::NONE;
+    bool upper = false;
+
+    static CharState from_unicode(char32_t cp);
+    char32_t to_unicode() const;
+};
+
+/**
+ * @brief Fixed-size array for CharState, ensuring zero heap allocations.
+ */
+struct CharStateArray {
+    std::array<CharState, 16> data;
+    size_t len = 0;
+
+    void push_back(const CharState& state) {
+        if (len < 16) data[len++] = state;
+    }
+    
+    const CharState& operator[](size_t pos) const { return data[pos]; }
+    CharState& operator[](size_t pos) { return data[pos]; }
+    size_t size() const { return len; }
+    
+    auto begin() { return data.begin(); }
+    auto end() { return data.begin() + len; }
+    auto begin() const { return data.begin(); }
+    auto end() const { return data.begin() + len; }
+};
+
+/**
  * @brief Represents a standard Vietnamese syllable structure: (C1)(G)V(C2) + T.
  *
  * Components:
@@ -145,6 +190,13 @@ struct Syllable {
      * @return std::string UTF-8 representation of the syllable.
      */
     std::string to_string(ToneStyle style = ToneStyle::NEW) const;
+
+    /**
+     * @brief Decomposes the syllable into a sequence of CharStates.
+     * @param style The tone placement style to use for determining where the tone goes.
+     * @return CharStateArray representing the decomposed semantic units of the syllable.
+     */
+    CharStateArray to_char_states(ToneStyle style = ToneStyle::NEW) const;
 
     /**
      * @brief Checks if the syllable is empty (no components set).

@@ -26,8 +26,159 @@ static const std::u32string TONE_MARKS_U32[] = {
 };
 
 // ============================================================================
+// [ CharState Implementation ]
+// ============================================================================
+
+CharState CharState::from_unicode(char32_t cp) {
+    CharState state;
+    state.upper = (unicode::to_upper(cp) == cp && cp >= 'A' && unicode::to_lower(cp) != cp);
+    char32_t lower_cp = unicode::to_lower(cp);
+    
+    state.tone = unicode::get_tone(lower_cp);
+    char32_t stripped = unicode::strip_tone(lower_cp);
+
+    if (stripped == U'â' || stripped == U'ê' || stripped == U'ô') {
+        state.base = (stripped == U'â') ? 'a' : ((stripped == U'ê') ? 'e' : 'o');
+        state.modifier = Modifier::HAT;
+    } else if (stripped == U'ơ' || stripped == U'ư') {
+        state.base = (stripped == U'ơ') ? 'o' : 'u';
+        state.modifier = Modifier::HOOK;
+    } else if (stripped == U'ă') {
+        state.base = 'a';
+        state.modifier = Modifier::BREVE;
+    } else if (stripped == U'đ') {
+        state.base = 'd';
+        state.modifier = Modifier::BAR;
+    } else {
+        state.base = stripped;
+        state.modifier = Modifier::NONE;
+    }
+    
+    return state;
+}
+
+char32_t CharState::to_unicode() const {
+    char32_t result = base;
+    
+    // 1. Apply modifier
+    if (modifier == Modifier::HAT) {
+        if (base == 'a') result = U'â';
+        else if (base == 'e') result = U'ê';
+        else if (base == 'o') result = U'ô';
+    } else if (modifier == Modifier::HOOK) {
+        if (base == 'o') result = U'ơ';
+        else if (base == 'u') result = U'ư';
+    } else if (modifier == Modifier::BREVE) {
+        if (base == 'a') result = U'ă';
+    } else if (modifier == Modifier::BAR) {
+        if (base == 'd') result = U'đ';
+    }
+
+    // 2. Apply tone
+    if (tone != Tone::NONE) {
+        char32_t tone_mark = TONE_MARKS_U32[static_cast<int>(tone)][0];
+        if (tone_mark) {
+            auto it = phonology::COMPOSITION_MAP.find({result, tone_mark});
+            if (it != phonology::COMPOSITION_MAP.end()) {
+                result = it->second;
+            }
+        }
+    }
+
+    // 3. Apply casing
+    if (upper) {
+        result = unicode::to_upper(result);
+    }
+    
+    return result;
+}
+
+// ============================================================================
 // [ Syllable Implementation ]
 // ============================================================================
+
+/**
+ * @brief Decomposes the syllable into a sequence of CharStates.
+ * @param style The tone placement style to use for determining where the tone goes.
+ * @return CharStateArray representing the decomposed semantic units of the syllable.
+ */
+CharStateArray Syllable::to_char_states(ToneStyle style) const {
+    CharStateArray states;
+    if (is_empty()) return states;
+
+    // 1. Initial
+    for (char32_t c : initial) {
+        states.push_back(CharState::from_unicode(c));
+    }
+
+    if (tone != Tone::NONE) {
+        bool tone_placed = false;
+
+        // OLD Style Check (oa, oe, uy)
+        if (glide.has_value() && final_c.empty() && vowel.size() == 1) {
+            char32_t g = unicode::to_lower(glide.value());
+            if (style == ToneStyle::OLD && (g == 'o' || g == 'u')) {
+                CharState g_state = CharState::from_unicode(glide.value());
+                g_state.tone = tone;
+                states.push_back(g_state);
+                
+                states.push_back(CharState::from_unicode(vowel[0]));
+                
+                tone_placed = true;
+            }
+        }
+
+        if (!tone_placed) {
+            // Handle glide if not already handled
+            if (glide.has_value()) {
+                states.push_back(CharState::from_unicode(glide.value()));
+            }
+
+            if (!vowel.empty()) {
+                size_t target_idx = 0;
+                if (vowel.size() == 2) {
+                    char32_t v0 = vowel[0];
+                    char32_t v1 = vowel[1];
+                    // Centering diphthongs or coda presence
+                    if ((v0 == 'i' && (v1 == U'ê' || v1 == 'e')) ||
+                        (v0 == 'u' && (v1 == U'ô' || v1 == 'o' || v1 == U'ơ')) ||
+                        (v0 == U'ư' && (v1 == U'ơ' || v1 == 'o')) ||
+                        (v0 == 'y' && (v1 == U'ê' || v1 == 'e')) || !final_c.empty()) {
+                        target_idx = 1;
+                    }
+                } else if (vowel.size() == 3) {
+                    target_idx = 1;
+                }
+
+                for (size_t i = 0; i < vowel.size(); ++i) {
+                    CharState v_state = CharState::from_unicode(vowel[i]);
+                    if (i == target_idx) {
+                        v_state.tone = tone;
+                    }
+                    states.push_back(v_state);
+                }
+            } else if (glide.has_value()) {
+                // Tone on glide if no vowel
+                states.data[states.len - 1].tone = tone;
+            }
+            tone_placed = true;
+        }
+    } else {
+        if (glide.has_value()) {
+            states.push_back(CharState::from_unicode(glide.value()));
+        }
+        for (char32_t c : vowel) {
+            states.push_back(CharState::from_unicode(c));
+        }
+    }
+
+    // 4. Final Coda
+    for (char32_t c : final_c) {
+        states.push_back(CharState::from_unicode(c));
+    }
+
+    return states;
+}
 
 /**
  * @brief Converts the syllable structure to a UTF-8 string with Vietnamese tone placement.
