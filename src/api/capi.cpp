@@ -1,11 +1,22 @@
 #include "lotus_core/capi.h"
 #include "lotus_core/engine.h"
 #include "lotus_core/log.h"
+#include "lotus_core/charset.h"
+#include "lotus_core/unicode.h"
+
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 using namespace lotus_core;
 
 struct lotus_core_t {
     Engine core;
+};
+
+struct lotus_dict_t {
+    std::unordered_set<std::string> words;
 };
 
 static lotus_log_callback_t g_capi_callback = nullptr;
@@ -37,7 +48,7 @@ lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key, lotus_
     r.action = static_cast<uint8_t>(res.action);
     r.backspace = res.backspace;
     r.count = res.count;
-    for (size_t i = 0; i < r.count && i < 32; ++i) {
+    for (size_t i = 0; i < r.count && i < 128; ++i) {
         r.chars[i] = res.chars[i];
     }
     r.diagnostic = static_cast<uint8_t>(res.diagnostic);
@@ -105,4 +116,101 @@ void lotus_core_export_tracing(const char* filepath) {
     if (filepath) {
         export_tracing(filepath);
     }
+}
+
+/**
+ * @brief Create a dictionary from a newline-separated word list file.
+ */
+lotus_dict_t* lotus_dict_create(const char* filepath) {
+    if (!filepath) return nullptr;
+
+    std::ifstream file(filepath);
+    if (!file.is_open()) return nullptr;
+
+    auto* dict = new lotus_dict_t();
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
+        // Convert to lowercase
+        std::transform(line.begin(), line.end(), line.begin(), ::tolower);
+        dict->words.insert(line);
+    }
+    return dict;
+}
+
+void lotus_dict_destroy(lotus_dict_t* dict) {
+    delete dict;
+}
+
+bool lotus_dict_contains(lotus_dict_t* dict, const char* word) {
+    if (!dict || !word) return false;
+    std::string w = word;
+    std::transform(w.begin(), w.end(), w.begin(), ::tolower);
+    return dict->words.find(w) != dict->words.end();
+}
+
+void lotus_core_set_dictionary(lotus_core_t* engine, lotus_dict_t* dict) {
+    if (engine && dict) {
+        engine->core.set_dictionary(std::unordered_set<std::string>(dict->words));
+    }
+}
+
+void lotus_core_set_spell_check(lotus_core_t* engine, bool enabled) {
+    if (engine) engine->core.set_spell_check(enabled);
+}
+
+void lotus_core_set_charset(lotus_core_t* engine, lotus_charset_t charset) {
+    if (engine) engine->core.set_output_charset(static_cast<OutputCharset>(charset));
+}
+
+size_t lotus_charset_encode(lotus_charset_t charset, const char* input, char* output, size_t output_size) {
+    if (!input || !output || output_size == 0) return 0;
+    std::string encoded = charset_encode(static_cast<OutputCharset>(charset), input);
+    size_t len = std::min(encoded.size(), output_size - 1);
+    std::memcpy(output, encoded.c_str(), len);
+    output[len] = '\0';
+    return len;
+}
+
+int lotus_core_get_input_method_count() {
+    return 5;
+}
+
+const char* lotus_core_get_input_method_name(int index) {
+    static const char* names[] = {"Telex", "VNI", "Telex + VNI", "VIQR", "Telex + VNI + VIQR"};
+    if (index >= 0 && index < 5) return names[index];
+    return "Unknown";
+}
+
+int lotus_core_get_charset_count() {
+    return charset_get_count();
+}
+
+const char* lotus_core_get_charset_name(int index) {
+    return charset_get_name(index);
+}
+
+void lotus_core_rebuild_from_text(lotus_core_t* engine, const char* text) {
+    if (engine && text) {
+        engine->core.rebuild_from_text(text);
+    }
+}
+
+size_t lotus_core_encode_result(lotus_core_t* engine, const lotus_result_t* result, char* output, size_t output_size) {
+    if (!engine || !result || !output || output_size == 0) return 0;
+
+    std::u32string u32;
+    for (uint8_t i = 0; i < result->count && i < 128; ++i) {
+        if (result->chars[i] == 0) break;
+        u32 += result->chars[i];
+    }
+
+    std::string utf8 = unicode::to_utf8(u32);
+    OutputCharset cs = engine->core.get_output_charset();
+    std::string encoded = charset_encode(cs, utf8);
+
+    size_t len = std::min(encoded.size(), output_size - 1);
+    std::memcpy(output, encoded.c_str(), len);
+    output[len] = '\0';
+    return len;
 }

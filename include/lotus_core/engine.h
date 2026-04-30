@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lotus_core/charset.h"
 #include "lotus_core/linguistics.h"
 #include "lotus_core/types.h"
 #include "lotus_core/shortcut_manager.h"
@@ -10,6 +11,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace lotus_core {
 
@@ -28,6 +30,8 @@ struct EngineConfig {
     size_t commit_threshold = 64;
     MacroMode macro_mode = MacroMode::ADAPTIVE;
     BackspaceStyle backspace_style = BackspaceStyle::SURGICAL;
+    OutputCharset output_charset = OutputCharset::UNICODE;
+    bool spell_check = false;
 };
 
 /**
@@ -103,6 +107,20 @@ class Engine {
     /** @brief Returns the current backspace style. */
     BackspaceStyle get_backspace_style() const { return config.backspace_style; }
 
+    /** @brief Sets the output charset encoding. */
+    void set_output_charset(OutputCharset charset) { config.output_charset = charset; }
+    /** @brief Returns the current output charset encoding. */
+    OutputCharset get_output_charset() const { return config.output_charset; }
+
+    /** @brief Sets the dictionary word list for spell-check validation. */
+    void set_dictionary(std::unordered_set<std::string> words) { dictionary = std::move(words); }
+    /** @brief Returns whether spell-check with dictionary is enabled. */
+    bool get_spell_check() const { return config.spell_check; }
+    /** @brief Enables or disables spell-check with dictionary. */
+    void set_spell_check(bool enabled) { config.spell_check = enabled; }
+    /** @brief Checks if a word exists in the dictionary. */
+    bool is_in_dictionary(const std::string& word) const;
+
     /**
      * @brief Batch configuration accessors.
      */
@@ -151,6 +169,7 @@ class Engine {
     ContextTracker context_tracker;
     EngineConfig config;
     EngineState state;
+    std::unordered_set<std::string> dictionary;
 
     bool is_likely_english(const std::string& word) const;
 };

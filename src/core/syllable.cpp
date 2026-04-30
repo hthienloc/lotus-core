@@ -231,12 +231,16 @@ void Syllable::remove_last_char() {
 StaticString Syllable::to_keys(InputMethod method) const {
     StaticString keys;
 
+    bool use_telex = (method == InputMethod::TELEX ||
+                      method == InputMethod::TELEX_VNI ||
+                      method == InputMethod::TELEX_VNI_VIQR);
+
     // 1. Initial
     for (char32_t c : initial) {
         if (c == U'đ' || c == U'Đ') {
             keys.push_back((c == U'Đ') ? 'D' : 'd');
-            keys.push_back((method == InputMethod::TELEX) ? (char32_t)((c == U'Đ') ? 'D' : 'd')
-                                                          : (char32_t)'9');
+            keys.push_back(use_telex ? (char32_t)((c == U'Đ') ? 'D' : 'd')
+                                      : (char32_t)'9');
         } else
             keys.push_back(c);
     }
@@ -251,12 +255,12 @@ StaticString Syllable::to_keys(InputMethod method) const {
         char32_t base = unicode::strip_tone(l);
         if (base == U'â' || base == U'ê' || base == U'ô') {
             char32_t bk = (base == U'â') ? 'a' : (base == U'ê') ? 'e' : 'o';
-            char32_t mk = (method == InputMethod::TELEX) ? bk : '6';
+            char32_t mk = use_telex ? bk : '6';
             keys.push_back((unicode::to_upper(c) == c) ? unicode::to_upper(bk) : bk);
             keys.push_back((unicode::to_upper(c) == c) ? unicode::to_upper(mk) : mk);
         } else if (base == U'ă' || base == U'ư' || base == U'ơ') {
             char32_t bk = (base == U'ă') ? 'a' : (base == U'ư') ? 'u' : 'o';
-            char32_t mk = (method == InputMethod::TELEX) ? 'w' : (base == U'ă' ? '8' : '7');
+            char32_t mk = use_telex ? 'w' : (base == U'ă' ? '8' : '7');
             keys.push_back((unicode::to_upper(c) == c) ? unicode::to_upper(bk) : bk);
             keys.push_back((unicode::to_upper(c) == c) ? unicode::to_upper(mk) : mk);
         } else {
@@ -270,7 +274,7 @@ StaticString Syllable::to_keys(InputMethod method) const {
 
     // 5. Tone
     if (tone != Tone::NONE) {
-        if (method == InputMethod::TELEX) {
+        if (use_telex) {
             static const char tone_keys[] = "\0sfrxj";
             keys.push_back((char32_t)tone_keys[static_cast<int>(tone)]);
         } else {

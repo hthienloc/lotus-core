@@ -406,6 +406,157 @@ void CompositionBuffer::apply_vni_rules(StaticString& current_str, char32_t key,
     current_str = final_u32;
 }
 
+void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key, bool& key_consumed,
+                                  Tone& tone_state) const {
+    const StaticString& u32 = buffer;
+    if (u32.empty())
+        return;
+
+    if (Linguistics::is_definite_english(unicode::to_utf8(u32.view()))) {
+        current_str = u32;
+        return;
+    }
+
+    StaticString u32_copy(u32);
+    auto* self = const_cast<CompositionBuffer*>(this);
+
+    bool has_mod = false;
+    bool has_circumflex = false;
+    bool has_plus = false;
+    bool has_lparen = false;
+    bool has_rparen = false;
+    bool has_dd = false;
+
+    struct CharTracker {
+        std::array<size_t, StaticString::MAX_LEN_CONST> data{};
+        size_t count = 0;
+        void push_back(size_t val) { if (count < StaticString::MAX_LEN_CONST) data[count++] = val; }
+        bool empty() const { return count == 0; }
+        size_t back() const { return data[count - 1]; }
+        size_t operator[](size_t i) const { return data[i]; }
+        size_t size() const { return count; }
+        auto begin() const { return data.begin(); }
+        auto end() const { return data.begin() + count; }
+    };
+
+    std::array<CharTracker, 26> trackers;
+
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t k = u32[i];
+        char32_t l = unicode::to_lower(k);
+        if (l >= 'a' && l <= 'z') {
+            trackers[l - 'a'].push_back(i);
+        }
+    }
+
+    if (trackers['d' - 'a'].size() >= 2) {
+        size_t first = trackers['d' - 'a'][0];
+        size_t last = trackers['d' - 'a'].back();
+        if (last == u32.size() - 1) {
+            has_dd = true;
+            u32_copy[first] = (u32[first] == 'D') ? U'Đ' : U'đ';
+            u32_copy[last] = 0;
+            if (key == 'd' && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t k = u32[i];
+        if (k == '^') {
+            has_mod = true;
+            has_circumflex = true;
+            u32_copy[i] = 0;
+            if (key == '^' && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        } else if (k == '+') {
+            has_mod = true;
+            has_plus = true;
+            u32_copy[i] = 0;
+            if (key == '+' && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        } else if (k == '(') {
+            has_mod = true;
+            has_lparen = true;
+            u32_copy[i] = 0;
+            if (key == '(' && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        } else if (k == ')') {
+            has_mod = true;
+            has_rparen = true;
+            u32_copy[i] = 0;
+            if (key == ')' && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        } else if (k == '\'' || k == '`' || k == '?' || k == '~' || k == '.' || k == '-') {
+            has_mod = true;
+            u32_copy[i] = 0;
+            if (key == k && !key_consumed) {
+                self->last_modifier_key = key;
+                key_consumed = true;
+            }
+        }
+    }
+
+    if (!has_mod && !has_dd) return;
+
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t c = u32_copy[i];
+        if (c == 0) continue;
+
+        if (has_lparen) {
+            if (c == 'u') c = U'ư';
+            else if (c == 'U') c = U'Ư';
+        }
+        if (has_rparen) {
+            if (c == 'o') c = U'ơ';
+            else if (c == 'O') c = U'Ơ';
+        }
+        if (has_plus) {
+            if (c == 'a') c = U'ă';
+            else if (c == 'A') c = U'Ă';
+        }
+        if (has_circumflex) {
+            if (c == 'a' || c == U'ă') c = U'â';
+            else if (c == 'A' || c == U'Ă') c = U'Â';
+            else if (c == 'e') c = U'ê';
+            else if (c == 'E') c = U'Ê';
+            else if (c == 'o' || c == U'ơ') c = U'ô';
+            else if (c == 'O' || c == U'Ơ') c = U'Ô';
+        }
+
+        u32_copy[i] = c;
+    }
+
+    for (size_t i = 0; i < u32.size(); ++i) {
+        char32_t k = u32[i];
+        if (k == '\'') tone_state = Tone::ACUTE;
+        else if (k == '`') tone_state = Tone::GRAVE;
+        else if (k == '?') tone_state = Tone::HOOK;
+        else if (k == '~') tone_state = Tone::TILDE;
+        else if (k == '.') tone_state = Tone::DOT;
+        else if (k == '-') tone_state = Tone::NONE;
+    }
+
+    StaticString final_u32;
+    for (size_t i = 0; i < u32.size(); ++i) {
+        if (u32_copy[i] != 0) {
+            final_u32.push_back(u32_copy[i]);
+        }
+    }
+
+    current_str = final_u32;
+}
+
 TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard) {
     if (buffer.empty()) {
         return TransformationResult{StaticString(std::u32string(U"")), false, false, false};
@@ -413,12 +564,33 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
 
     StaticString current_str = buffer;
     Tone tone_state = Tone::NONE;
-    bool key_consumed = (key == 0); 
+    bool key_consumed = (key == 0);
     
-    if (method == InputMethod::TELEX) {
-        apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
-    } else {
-        apply_vni_rules(current_str, key, key_consumed, tone_state);
+    switch (method) {
+        case InputMethod::TELEX:
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            break;
+        case InputMethod::VNI:
+            apply_vni_rules(current_str, key, key_consumed, tone_state);
+            break;
+        case InputMethod::TELEX_VNI:
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            if (!key_consumed && key != 0) {
+                apply_vni_rules(current_str, key, key_consumed, tone_state);
+            }
+            break;
+        case InputMethod::VIQR:
+            apply_viqr_rules(current_str, key, key_consumed, tone_state);
+            break;
+        case InputMethod::TELEX_VNI_VIQR:
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            if (!key_consumed && key != 0) {
+                apply_vni_rules(current_str, key, key_consumed, tone_state);
+            }
+            if (!key_consumed && key != 0) {
+                apply_viqr_rules(current_str, key, key_consumed, tone_state);
+            }
+            break;
     }
 
     LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "After IM: " + unicode::to_utf8(current_str.view()) +
@@ -476,10 +648,25 @@ bool CompositionBuffer::is_likely_english(std::u32string_view word, InputMethod 
     StaticString transformed(word);
     Tone tone = Tone::NONE;
     bool consumed = false;
-    if (method == InputMethod::TELEX) {
-        apply_telex_rules(transformed, 0, consumed, tone, free_w);
-    } else {
-        apply_vni_rules(transformed, 0, consumed, tone);
+    switch (method) {
+        case InputMethod::TELEX:
+            apply_telex_rules(transformed, 0, consumed, tone, free_w);
+            break;
+        case InputMethod::VNI:
+            apply_vni_rules(transformed, 0, consumed, tone);
+            break;
+        case InputMethod::TELEX_VNI:
+            apply_telex_rules(transformed, 0, consumed, tone, free_w);
+            apply_vni_rules(transformed, 0, consumed, tone);
+            break;
+        case InputMethod::VIQR:
+            apply_viqr_rules(transformed, 0, consumed, tone);
+            break;
+        case InputMethod::TELEX_VNI_VIQR:
+            apply_telex_rules(transformed, 0, consumed, tone, free_w);
+            apply_vni_rules(transformed, 0, consumed, tone);
+            apply_viqr_rules(transformed, 0, consumed, tone);
+            break;
     }
     Syllable s = SyllableParser::parse(transformed.view(), allow_non_standard);
     if (tone != Tone::NONE)

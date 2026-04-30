@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 /**
  * @brief Opaque handle to a Vietnamese Engine instance.
@@ -16,7 +17,13 @@ typedef struct lotus_core_t lotus_core_t;
 /**
  * @brief Input methods.
  */
-typedef enum { LOTUS_METHOD_TELEX = 0, LOTUS_METHOD_VNI = 1 } lotus_method_t;
+typedef enum {
+    LOTUS_METHOD_TELEX = 0,
+    LOTUS_METHOD_VNI = 1,
+    LOTUS_METHOD_TELEX_VNI = 2,
+    LOTUS_METHOD_VIQR = 3,
+    LOTUS_METHOD_TELEX_VNI_VIQR = 4
+} lotus_method_t;
 
 /**
  * @brief Tone placement styles.
@@ -197,6 +204,115 @@ void lotus_core_set_backspace_style(lotus_core_t* engine, lotus_backspace_style_
  * @param filepath The output path.
  */
 void lotus_core_export_tracing(const char* filepath);
+
+/**
+ * @brief Opaque handle to a dictionary word list.
+ */
+typedef struct lotus_dict_t lotus_dict_t;
+
+/**
+ * @brief Create a dictionary from a newline-separated word list file.
+ * @param filepath Path to the dictionary file (one word per line).
+ * @return Dictionary handle or NULL on failure.
+ */
+lotus_dict_t* lotus_dict_create(const char* filepath);
+
+/**
+ * @brief Destroy a dictionary handle.
+ */
+void lotus_dict_destroy(lotus_dict_t* dict);
+
+/**
+ * @brief Check if a word exists in the dictionary.
+ * @param dict Dictionary handle.
+ * @param word UTF-8 word to check.
+ * @return True if word is found.
+ */
+bool lotus_dict_contains(lotus_dict_t* dict, const char* word);
+
+/**
+ * @brief Set the dictionary for spell-check validation.
+ * @param engine Engine handle.
+ * @param dict Dictionary handle (NULL to disable spell-check).
+ */
+void lotus_core_set_dictionary(lotus_core_t* engine, lotus_dict_t* dict);
+
+/**
+ * @brief Enable or disable spell-check with dictionary.
+ * @param engine Engine handle.
+ * @param enabled Whether to use dictionary for validation.
+ */
+void lotus_core_set_spell_check(lotus_core_t* engine, bool enabled);
+
+/**
+ * @brief Output charset encodings.
+ */
+typedef enum {
+    LOTUS_CHARSET_UNICODE = 0,
+    LOTUS_CHARSET_TCVN3   = 1,
+    LOTUS_CHARSET_VNI     = 2,
+    LOTUS_CHARSET_VISCII  = 3
+} lotus_charset_t;
+
+/**
+ * @brief Set the output charset encoding for commit text.
+ * @param engine Engine handle.
+ * @param charset Output charset encoding.
+ */
+void lotus_core_set_charset(lotus_core_t* engine, lotus_charset_t charset);
+
+/**
+ * @brief Encode a UTF-8 string to the target charset.
+ * @param charset Target charset encoding.
+ * @param input UTF-8 input string.
+ * @param output Output buffer for encoded string.
+ * @param output_size Size of the output buffer.
+ * @return Number of bytes written (excluding null terminator).
+ */
+size_t lotus_charset_encode(lotus_charset_t charset, const char* input, char* output, size_t output_size);
+
+/**
+ * @brief Get the number of available input methods.
+ * @return Count of input methods.
+ */
+int lotus_core_get_input_method_count();
+
+/**
+ * @brief Get the name of an input method by index.
+ * @param index Zero-based index.
+ * @return Input method name string (static, do not free).
+ */
+const char* lotus_core_get_input_method_name(int index);
+
+/**
+ * @brief Get the number of available charset encodings.
+ * @return Count of charset encodings.
+ */
+int lotus_core_get_charset_count();
+
+/**
+ * @brief Get the name of a charset encoding by index.
+ * @param index Zero-based index.
+ * @return Charset name string (static, do not free).
+ */
+const char* lotus_core_get_charset_name(int index);
+
+/**
+ * @brief Rebuild engine state from existing committed text.
+ * @param engine Engine handle.
+ * @param text UTF-8 text to rebuild from (surrounding text).
+ */
+void lotus_core_rebuild_from_text(lotus_core_t* engine, const char* text);
+
+/**
+ * @brief Encode the result output to the configured charset.
+ * @param engine Engine handle (for charset config).
+ * @param result The result to encode.
+ * @param output Output buffer for encoded string.
+ * @param output_size Size of the output buffer.
+ * @return Number of bytes written (excluding null terminator).
+ */
+size_t lotus_core_encode_result(lotus_core_t* engine, const lotus_result_t* result, char* output, size_t output_size);
 
 #ifdef __cplusplus
 }

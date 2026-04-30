@@ -9,7 +9,13 @@ namespace lotus_core {
 /**
  * @brief Vietnamese input method types.
  */
-enum class InputMethod : uint8_t { TELEX, VNI };
+enum class InputMethod : uint8_t {
+    TELEX,
+    VNI,
+    TELEX_VNI,
+    VIQR,
+    TELEX_VNI_VIQR
+};
 
 /**
  * @brief Vietnamese tone marks.

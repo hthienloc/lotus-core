@@ -22,6 +22,7 @@ add_library(lotus_core_core STATIC
     src/core/input_dispatcher.cpp
     src/features/shortcut_manager.cpp
     src/features/smart_typing.cpp
+    src/features/charset.cpp
     src/linguistics/linguistics.cpp
     src/core/log.cpp
     src/api/capi.cpp
@@ -43,6 +44,7 @@ add_library(lotus_core_core_shared SHARED
     src/core/input_dispatcher.cpp
     src/features/shortcut_manager.cpp
     src/features/smart_typing.cpp
+    src/features/charset.cpp
     src/linguistics/linguistics.cpp
     src/core/log.cpp
     src/api/capi.cpp

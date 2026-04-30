@@ -68,6 +68,7 @@ private:
 
     void apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, FreeWOption free_w) const;
     void apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
+    void apply_viqr_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
 };
 
 } // namespace lotus_core

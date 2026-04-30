@@ -456,6 +456,14 @@ EngineResult Engine::build_result(std::u32string_view final_u32) {
  * @return True if the word should be preserved as English.
  */
 bool Engine::is_likely_english(const std::string& word) const {
+    if (config.spell_check && !dictionary.empty()) {
+        std::string lower = word;
+        std::transform(lower.begin(), lower.end(), lower.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if (dictionary.find(lower) == dictionary.end()) {
+            return true;
+        }
+    }
     bool is_valid_vn = composition_buffer.is_likely_english(unicode::to_utf32_static(word).view(), config.method, config.free_w, config.allow_non_standard_initials);
     return context_tracker.is_likely_english(word, is_valid_vn);
 }
