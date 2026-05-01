@@ -55,6 +55,38 @@ lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key, lotus_
     return r;
 }
 
+lotus_result_t lotus_core_process_string(lotus_core_t* engine, const char* str) {
+    if (!engine || !str) return {0, 0, 0, {0}, 0};
+    
+    EngineResult res = engine->core.process_string(str);
+    
+    lotus_result_t r;
+    r.action = static_cast<uint8_t>(res.action);
+    r.backspace = res.backspace;
+    r.count = res.count;
+    for (size_t i = 0; i < r.count && i < 128; ++i) {
+        r.chars[i] = res.chars[i];
+    }
+    r.diagnostic = static_cast<uint8_t>(res.diagnostic);
+    return r;
+}
+
+lotus_result_t lotus_core_reclaim_last_word(lotus_core_t* engine) {
+    if (!engine) return {0, 0, 0, {0}, 0};
+    
+    EngineResult res = engine->core.reclaim_last_word();
+    
+    lotus_result_t r;
+    r.action = static_cast<uint8_t>(res.action);
+    r.backspace = res.backspace;
+    r.count = res.count;
+    for (size_t i = 0; i < r.count && i < 128; ++i) {
+        r.chars[i] = res.chars[i];
+    }
+    r.diagnostic = static_cast<uint8_t>(res.diagnostic);
+    return r;
+}
+
 void lotus_core_reset(lotus_core_t* engine) {
     if (engine) engine->core.reset();
 }
@@ -77,6 +109,10 @@ void lotus_core_set_std_uo(lotus_core_t* engine, bool enabled) {
 
 void lotus_core_add_shortcut(lotus_core_t* engine, const char* trigger, const char* replacement) {
     if (engine) engine->core.add_shortcut(trigger, replacement);
+}
+
+void lotus_core_clear_shortcuts(lotus_core_t* engine) {
+    if (engine) engine->core.clear_shortcuts();
 }
 
 void lotus_core_set_log_callback(lotus_log_callback_t callback) {
@@ -110,6 +146,14 @@ void lotus_core_set_macro_mode(lotus_core_t* engine, lotus_macro_mode_t mode) {
 
 void lotus_core_set_backspace_style(lotus_core_t* engine, lotus_backspace_style_t style) {
     if (engine) engine->core.set_backspace_style(static_cast<BackspaceStyle>(style));
+}
+
+void lotus_core_set_tone_less(lotus_core_t* engine, bool enabled) {
+    if (engine) engine->core.set_tone_less(enabled);
+}
+
+void lotus_core_set_mark_less(lotus_core_t* engine, bool enabled) {
+    if (engine) engine->core.set_mark_less(enabled);
 }
 
 void lotus_core_export_tracing(const char* filepath) {

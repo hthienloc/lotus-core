@@ -62,6 +62,13 @@ void Engine::add_shortcut(const std::string& trigger, const std::string& replace
 }
 
 /**
+ * @brief Clears all registered text expansion shortcuts.
+ */
+void Engine::clear_shortcuts() {
+    shortcut_manager.clear();
+}
+
+/**
  * @brief Resets the internal engine state (composition_buffer.get_raw(), markers, committed text).
  * Does NOT clear the word history.
  */
@@ -109,7 +116,7 @@ void Engine::rebuild_from_text(const std::string& text) {
  */
 void Engine::commit_syllable_to_history(char32_t boundary_key) {
     if (!composition_buffer.get_raw().empty()) {
-        auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+        auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials, config.tone_less, config.mark_less);
         context_tracker.push_word(std::u32string(transform_res.output.view()));
     }
     context_tracker.push_boundary(boundary_key);
@@ -137,7 +144,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     if (composition_buffer.get_raw().size() >= StaticString::MAX_LEN_CONST - 1 &&
         InputDispatcher::categorize(key, mods) == InputCategory::CHARACTER) {
         
-        auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+        auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials, config.tone_less, config.mark_less);
         res.action = EngineAction::TRANSFORM;
         res.backspace = 0;
         res.count = transform_res.output.size();
@@ -186,7 +193,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
             if (key != 0) {
                 bool forced_flush = composition_buffer.append_key(key, config.commit_threshold);
                 if (forced_flush) {
-                    auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+                    auto transform_res = composition_buffer.transform(0, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials, config.tone_less, config.mark_less);
                     EngineResult br = build_result(transform_res.output.view());
                     br.diagnostic = transform_res.diagnostic;
                     br.action = EngineAction::PASS;
@@ -201,7 +208,7 @@ EngineResult Engine::process_key(char32_t original_key, const Modifiers& mods) {
     }
 
 
-    auto transform_res = composition_buffer.transform(key, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials);
+    auto transform_res = composition_buffer.transform(key, config.method, config.free_w, config.tone_style, config.allow_non_standard_initials, config.tone_less, config.mark_less);
     
     if (config.auto_restore && !transform_res.has_valid_initial && !transform_res.key_consumed) {
         LOTUS_LOG_DEBUG(format_log_message("PIPELINE", "Restore: Invalid initial prefix"));
@@ -388,6 +395,56 @@ bool Engine::handle_boundary(char32_t key, EngineResult& result) {
 }
 
 /**
+ * @brief Pops the last word from ContextTracker, uses Syllable::to_keys() to reverse it back to raw keys, and populates CompositionBuffer.
+ * @return EngineResult indicating the transformation to restore the text to the UI.
+ */
+EngineResult Engine::reclaim_last_word() {
+    auto recovered_opt = context_tracker.reclaim_last_word();
+    if (!recovered_opt.has_value()) {
+        return EngineResult{};
+    }
+
+    std::u32string recovered = recovered_opt.value();
+    char32_t rc = recovered[0];
+    bool is_boundary = (recovered.size() == 1 && InputDispatcher::is_word_boundary(rc));
+
+    if (is_boundary) {
+        composition_buffer.set_raw(recovered);
+        state.last_committed_text = recovered;
+        state.last_boundary_key = rc;
+    } else {
+        Syllable s = SyllableParser::parse(recovered);
+        StaticString keys = s.to_keys(config.method);
+        composition_buffer.set_raw(keys.view());
+        state.last_committed_text = recovered;
+    }
+
+    EngineResult result{};
+    result.action = EngineAction::TRANSFORM;
+    result.backspace = 0; // We assume the caller handles UI backspacing or this is used in a specific API context
+    result.count = state.last_committed_text.size();
+    for (size_t i = 0; i < result.count && i < 128; i++) {
+        result.chars[i] = state.last_committed_text[i];
+    }
+    return result;
+}
+
+/**
+ * @brief Processes a sequence of characters.
+ * @param utf8_str The UTF-8 encoded string to process.
+ * @return EngineResult the final result of processing the string.
+ */
+EngineResult Engine::process_string(const std::string& utf8_str) {
+    EngineResult result{};
+    std::u32string u32_str = unicode::to_utf32(utf8_str);
+    for (char32_t c : u32_str) {
+        Modifiers mods; // Default modifiers
+        result = process_key(c, mods);
+    }
+    return result;
+}
+
+/**
  * @brief Checks and expands text shortcuts.
  *
  * @param key The boundary key that triggered expansion.
@@ -464,7 +521,7 @@ bool Engine::is_likely_english(const std::string& word) const {
             return true;
         }
     }
-    bool is_valid_vn = composition_buffer.is_likely_english(unicode::to_utf32_static(word).view(), config.method, config.free_w, config.allow_non_standard_initials);
+    bool is_valid_vn = composition_buffer.is_likely_english(unicode::to_utf32_static(word).view(), config.method, config.free_w, config.allow_non_standard_initials, config.tone_less, config.mark_less);
     return context_tracker.is_likely_english(word, is_valid_vn);
 }
 

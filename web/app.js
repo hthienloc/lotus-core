@@ -11,10 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const doubleSpaceCheckbox = document.getElementById('double-space-checkbox');
     const autoCapitalizeCheckbox = document.getElementById('auto-capitalize-checkbox');
     const nonStandardInitialsCheckbox = document.getElementById('non-standard-initials-checkbox');
+    const toneLessCheckbox = document.getElementById('tone-less-checkbox');
+    const markLessCheckbox = document.getElementById('mark-less-checkbox');
     const macroModeSelect = document.getElementById('macro-mode-select');
     const backspaceStyleSelect = document.getElementById('backspace-style-select');
     const showDebugCheckbox = document.getElementById('show-debug-checkbox');
     const resetBtn = document.getElementById('reset-btn');
+    const reclaimBtn = document.getElementById('reclaim-btn');
+    const clearShortcutsBtn = document.getElementById('clear-shortcuts-btn');
+    const bulkBtn = document.getElementById('bulk-btn');
+    const bulkInput = document.getElementById('bulk-input');
 
     let engine = null;
     let resultPtr = null;
@@ -94,22 +100,22 @@ document.addEventListener("DOMContentLoaded", () => {
         Module._lotus_core_set_double_space_to_period(engine, doubleSpaceCheckbox.checked ? 1 : 0);
         Module._lotus_core_set_auto_capitalize(engine, autoCapitalizeCheckbox.checked ? 1 : 0);
         Module._lotus_core_set_allow_non_standard_initials(engine, nonStandardInitialsCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_tone_less(engine, toneLessCheckbox.checked ? 1 : 0);
+        Module._lotus_core_set_mark_less(engine, markLessCheckbox.checked ? 1 : 0);
         Module._lotus_core_set_macro_mode(engine, parseInt(macroModeSelect.value));
         Module._lotus_core_set_backspace_style(engine, parseInt(backspaceStyleSelect.value));
         uiLog('info', 'Engine configuration updated.');
         editor.focus();
     }
 
-    methodSelect.addEventListener('change', updateConfig);
-    toneStyleSelect.addEventListener('change', updateConfig);
-    freeWSelect.addEventListener('change', updateConfig);
-    stdUoCheckbox.addEventListener('change', updateConfig);
-    autoRestoreCheckbox.addEventListener('change', updateConfig);
-    doubleSpaceCheckbox.addEventListener('change', updateConfig);
-    autoCapitalizeCheckbox.addEventListener('change', updateConfig);
-    nonStandardInitialsCheckbox.addEventListener('change', updateConfig);
-    macroModeSelect.addEventListener('change', updateConfig);
-    backspaceStyleSelect.addEventListener('change', updateConfig);
+    [methodSelect, toneStyleSelect, freeWSelect, macroModeSelect, backspaceStyleSelect].forEach(el => {
+        el.addEventListener('change', updateConfig);
+    });
+
+    [stdUoCheckbox, autoRestoreCheckbox, doubleSpaceCheckbox, autoCapitalizeCheckbox, 
+     nonStandardInitialsCheckbox, toneLessCheckbox, markLessCheckbox].forEach(el => {
+        el.addEventListener('change', updateConfig);
+    });
 
     resetBtn.addEventListener('click', () => {
         if (engine) {
@@ -119,6 +125,61 @@ document.addEventListener("DOMContentLoaded", () => {
             editor.focus();
         }
     });
+
+    reclaimBtn.addEventListener('click', () => {
+        if (!engine || !resultPtr) return;
+        const res = Module._lotus_core_reclaim_last_word(engine);
+        processResult(res);
+        uiLog('info', 'Reclaim last word triggered.');
+    });
+
+    clearShortcutsBtn.addEventListener('click', () => {
+        if (!engine) return;
+        Module._lotus_core_clear_shortcuts(engine);
+        uiLog('info', 'Shortcuts cleared.');
+    });
+
+    bulkBtn.addEventListener('click', () => {
+        if (!engine || !bulkInput.value) return;
+        const text = bulkInput.value;
+        const res = Module._lotus_core_process_string(engine, text);
+        processResult(res);
+        uiLog('info', `Bulk processed: ${text}`);
+        bulkInput.value = '';
+    });
+
+    function processResult(res) {
+        const action = Module.HEAPU8[res];
+        const backspace = Module.HEAPU8[res + 1];
+        const count = Module.HEAPU8[res + 2];
+        const diagnostic = Module.HEAPU8[res + 516];
+
+        if (action === 1 || action === 2) {
+            const text = editor.value;
+            const pos = editor.selectionStart;
+            
+            const before = text.substring(0, pos - backspace);
+            const after = text.substring(pos);
+            
+            let newChars = "";
+            for (let i = 0; i < count; i++) {
+                const cp = Module.HEAPU32[(res + 4) / 4 + i];
+                newChars += String.fromCodePoint(cp);
+            }
+            
+            editor.value = before + newChars + after;
+            editor.selectionStart = editor.selectionEnd = before.length + newChars.length;
+        }
+
+        if (diagnostic > 0) {
+            const diagMsgs = [
+                "Success", "Invalid Initial", "Invalid Glide", "Invalid Nucleus",
+                "Invalid Coda", "Tone Placement Error", "English Restored",
+                "Macro Expanded", "Internal Error"
+            ];
+            uiLog('debug', `Diagnostic: ${diagMsgs[diagnostic]}`);
+        }
+    }
 
     // Handle typing
     editor.addEventListener('keydown', (e) => {

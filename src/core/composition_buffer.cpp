@@ -67,7 +67,7 @@ std::optional<StaticString> CompositionBuffer::handle_manual_tone_escape(char32_
 }
 
 void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed,
-                                   Tone& tone_state, FreeWOption free_w) const {
+                                   Tone& tone_state, FreeWOption free_w, bool tone_less, bool mark_less) const {
     const StaticString& u32 = buffer;
     if (u32.empty())
         return;
@@ -119,7 +119,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
     auto* self = const_cast<CompositionBuffer*>(this);
 
     // Stage 1: Flexible Consonants (dd -> đ)
-    if ((!key_consumed || key == 0) && trackers['d' - 'a'].size() >= 2) {
+    if (!mark_less && (!key_consumed || key == 0) && trackers['d' - 'a'].size() >= 2) {
         size_t first = trackers['d' - 'a'][0], last = trackers['d' - 'a'].back();
         u32_copy[first] = (u32[first] == 'D') ? U'Đ' : U'đ';
         u32_copy[last] = 0; // Mark for stripping
@@ -130,7 +130,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
     }
 
     // Stage 2: Flexible Vowels (aa -> â, ee -> ê, oo -> ô)
-    if (!key_consumed || key == 0) {
+    if (!mark_less && (!key_consumed || key == 0)) {
         struct FlexRule {
             char32_t base;
             char32_t target_l;
@@ -158,7 +158,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
     }
 
     // Stage 3: Combined Hooks (uo, uaw, aw, ow, uw)
-    if (!trackers['w' - 'a'].empty()) {
+    if (!mark_less && !trackers['w' - 'a'].empty()) {
         size_t u_pos = trackers['u' - 'a'].empty() ? std::u32string::npos : trackers['u' - 'a'][0];
         size_t o_pos = trackers['o' - 'a'].empty() ? std::u32string::npos : trackers['o' - 'a'][0];
         size_t a_pos = trackers['a' - 'a'].empty() ? std::u32string::npos : trackers['a' - 'a'][0];
@@ -205,7 +205,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
     }
 
     // Stage 4: Standalone W -> ư
-    if (!key_consumed && lk == 'w' && free_w != FreeWOption::OFF) {
+    if (!mark_less && !key_consumed && lk == 'w' && free_w != FreeWOption::OFF) {
         bool can_transform = (free_w == FreeWOption::ALWAYS) || (u32.size() > 1);
         if (can_transform) {
             bool has_real_v = false;
@@ -222,7 +222,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
     }
 
     // Stage 5: Tone Marks
-    if (!tone_indices.empty()) {
+    if (!tone_less && !tone_indices.empty()) {
         std::array<bool, StaticString::MAX_LEN_CONST> is_literal_marker{};
         CharTracker potential_active_indices;
 
@@ -316,7 +316,7 @@ void CompositionBuffer::apply_telex_rules(StaticString& current_str, char32_t ke
 }
 
 void CompositionBuffer::apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed,
-                                 Tone& tone_state) const {
+                                 Tone& tone_state, bool tone_less, bool mark_less) const {
     const StaticString& u32 = buffer;
     if (u32.empty())
         return;
@@ -343,16 +343,19 @@ void CompositionBuffer::apply_vni_rules(StaticString& current_str, char32_t key,
         char32_t k = u32[i];
         if (k == 'a' || k == 'A' || k == U'ă' || k == U'Ă' || k == U'â' || k == U'Â') has_a = true;
 
-        if (k >= '0' && k <= '9') {
+        bool is_tone = (k >= '1' && k <= '5') || k == '0';
+        bool is_mark = (k >= '6' && k <= '9');
+
+        if ((is_tone && !tone_less) || (is_mark && !mark_less)) {
             has_mod = true;
             u32_copy[i] = 0; // Mark for stripping
 
-            if (k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
-            else if (k == '0') tone_state = Tone::NONE;
-            else if (k == '6') has_6 = true;
-            else if (k == '7') has_7 = true;
-            else if (k == '8') has_8 = true;
-            else if (k == '9') has_9 = true;
+            if (!tone_less && k >= '1' && k <= '5') tone_state = static_cast<Tone>(k - '0');
+            else if (!tone_less && k == '0') tone_state = Tone::NONE;
+            else if (!mark_less && k == '6') has_6 = true;
+            else if (!mark_less && k == '7') has_7 = true;
+            else if (!mark_less && k == '8') has_8 = true;
+            else if (!mark_less && k == '9') has_9 = true;
 
             if (k == lk && !key_consumed) {
                 self->last_modifier_key = key;
@@ -407,7 +410,7 @@ void CompositionBuffer::apply_vni_rules(StaticString& current_str, char32_t key,
 }
 
 void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key, bool& key_consumed,
-                                  Tone& tone_state) const {
+                                  Tone& tone_state, bool tone_less, bool mark_less) const {
     const StaticString& u32 = buffer;
     if (u32.empty())
         return;
@@ -449,7 +452,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
         }
     }
 
-    if (trackers['d' - 'a'].size() >= 2) {
+    if (!mark_less && trackers['d' - 'a'].size() >= 2) {
         size_t first = trackers['d' - 'a'][0];
         size_t last = trackers['d' - 'a'].back();
         if (last == u32.size() - 1) {
@@ -465,7 +468,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
 
     for (size_t i = 0; i < u32.size(); ++i) {
         char32_t k = u32[i];
-        if (k == '^') {
+        if (!mark_less && k == '^') {
             has_mod = true;
             has_circumflex = true;
             u32_copy[i] = 0;
@@ -473,7 +476,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
                 self->last_modifier_key = key;
                 key_consumed = true;
             }
-        } else if (k == '+') {
+        } else if (!mark_less && k == '+') {
             has_mod = true;
             has_plus = true;
             u32_copy[i] = 0;
@@ -481,7 +484,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
                 self->last_modifier_key = key;
                 key_consumed = true;
             }
-        } else if (k == '(') {
+        } else if (!mark_less && k == '(') {
             has_mod = true;
             has_lparen = true;
             u32_copy[i] = 0;
@@ -489,7 +492,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
                 self->last_modifier_key = key;
                 key_consumed = true;
             }
-        } else if (k == ')') {
+        } else if (!mark_less && k == ')') {
             has_mod = true;
             has_rparen = true;
             u32_copy[i] = 0;
@@ -497,7 +500,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
                 self->last_modifier_key = key;
                 key_consumed = true;
             }
-        } else if (k == '\'' || k == '`' || k == '?' || k == '~' || k == '.' || k == '-') {
+        } else if (!tone_less && (k == '\'' || k == '`' || k == '?' || k == '~' || k == '.' || k == '-')) {
             has_mod = true;
             u32_copy[i] = 0;
             if (key == k && !key_consumed) {
@@ -537,14 +540,16 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
         u32_copy[i] = c;
     }
 
-    for (size_t i = 0; i < u32.size(); ++i) {
-        char32_t k = u32[i];
-        if (k == '\'') tone_state = Tone::ACUTE;
-        else if (k == '`') tone_state = Tone::GRAVE;
-        else if (k == '?') tone_state = Tone::HOOK;
-        else if (k == '~') tone_state = Tone::TILDE;
-        else if (k == '.') tone_state = Tone::DOT;
-        else if (k == '-') tone_state = Tone::NONE;
+    if (!tone_less) {
+        for (size_t i = 0; i < u32.size(); ++i) {
+            char32_t k = u32[i];
+            if (k == '\'') tone_state = Tone::ACUTE;
+            else if (k == '`') tone_state = Tone::GRAVE;
+            else if (k == '?') tone_state = Tone::HOOK;
+            else if (k == '~') tone_state = Tone::TILDE;
+            else if (k == '.') tone_state = Tone::DOT;
+            else if (k == '-') tone_state = Tone::NONE;
+        }
     }
 
     StaticString final_u32;
@@ -557,7 +562,7 @@ void CompositionBuffer::apply_viqr_rules(StaticString& current_str, char32_t key
     current_str = final_u32;
 }
 
-TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard) {
+TransformationResult CompositionBuffer::transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard, bool tone_less, bool mark_less) {
     if (buffer.empty()) {
         return TransformationResult{StaticString(std::u32string(U"")), false, false, false};
     }
@@ -568,27 +573,27 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
     
     switch (method) {
         case InputMethod::TELEX:
-            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w, tone_less, mark_less);
             break;
         case InputMethod::VNI:
-            apply_vni_rules(current_str, key, key_consumed, tone_state);
+            apply_vni_rules(current_str, key, key_consumed, tone_state, tone_less, mark_less);
             break;
         case InputMethod::TELEX_VNI:
-            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w, tone_less, mark_less);
             if (!key_consumed && key != 0) {
-                apply_vni_rules(current_str, key, key_consumed, tone_state);
+                apply_vni_rules(current_str, key, key_consumed, tone_state, tone_less, mark_less);
             }
             break;
         case InputMethod::VIQR:
-            apply_viqr_rules(current_str, key, key_consumed, tone_state);
+            apply_viqr_rules(current_str, key, key_consumed, tone_state, tone_less, mark_less);
             break;
         case InputMethod::TELEX_VNI_VIQR:
-            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w);
+            apply_telex_rules(current_str, key, key_consumed, tone_state, free_w, tone_less, mark_less);
             if (!key_consumed && key != 0) {
-                apply_vni_rules(current_str, key, key_consumed, tone_state);
+                apply_vni_rules(current_str, key, key_consumed, tone_state, tone_less, mark_less);
             }
             if (!key_consumed && key != 0) {
-                apply_viqr_rules(current_str, key, key_consumed, tone_state);
+                apply_viqr_rules(current_str, key, key_consumed, tone_state, tone_less, mark_less);
             }
             break;
     }
@@ -644,28 +649,28 @@ TransformationResult CompositionBuffer::transform(char32_t key, InputMethod meth
     };
 }
 
-bool CompositionBuffer::is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const {
+bool CompositionBuffer::is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard, bool tone_less, bool mark_less) const {
     StaticString transformed(word);
     Tone tone = Tone::NONE;
     bool consumed = false;
     switch (method) {
         case InputMethod::TELEX:
-            apply_telex_rules(transformed, 0, consumed, tone, free_w);
+            apply_telex_rules(transformed, 0, consumed, tone, free_w, tone_less, mark_less);
             break;
         case InputMethod::VNI:
-            apply_vni_rules(transformed, 0, consumed, tone);
+            apply_vni_rules(transformed, 0, consumed, tone, tone_less, mark_less);
             break;
         case InputMethod::TELEX_VNI:
-            apply_telex_rules(transformed, 0, consumed, tone, free_w);
-            apply_vni_rules(transformed, 0, consumed, tone);
+            apply_telex_rules(transformed, 0, consumed, tone, free_w, tone_less, mark_less);
+            apply_vni_rules(transformed, 0, consumed, tone, tone_less, mark_less);
             break;
         case InputMethod::VIQR:
-            apply_viqr_rules(transformed, 0, consumed, tone);
+            apply_viqr_rules(transformed, 0, consumed, tone, tone_less, mark_less);
             break;
         case InputMethod::TELEX_VNI_VIQR:
-            apply_telex_rules(transformed, 0, consumed, tone, free_w);
-            apply_vni_rules(transformed, 0, consumed, tone);
-            apply_viqr_rules(transformed, 0, consumed, tone);
+            apply_telex_rules(transformed, 0, consumed, tone, free_w, tone_less, mark_less);
+            apply_vni_rules(transformed, 0, consumed, tone, tone_less, mark_less);
+            apply_viqr_rules(transformed, 0, consumed, tone, tone_less, mark_less);
             break;
     }
     Syllable s = SyllableParser::parse(transformed.view(), allow_non_standard);

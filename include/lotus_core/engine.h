@@ -32,6 +32,8 @@ struct EngineConfig {
     BackspaceStyle backspace_style = BackspaceStyle::SURGICAL;
     OutputCharset output_charset = OutputCharset::UNICODE;
     bool spell_check = false;
+    bool tone_less = false;
+    bool mark_less = false;
 };
 
 /**
@@ -121,6 +123,16 @@ class Engine {
     /** @brief Checks if a word exists in the dictionary. */
     bool is_in_dictionary(const std::string& word) const;
 
+    /** @brief Disables tone mark rules. */
+    void set_tone_less(bool enabled) { config.tone_less = enabled; }
+    /** @brief Returns whether tone marks are disabled. */
+    bool get_tone_less() const { return config.tone_less; }
+
+    /** @brief Disables diacritic mark rules. */
+    void set_mark_less(bool enabled) { config.mark_less = enabled; }
+    /** @brief Returns whether diacritic marks are disabled. */
+    bool get_mark_less() const { return config.mark_less; }
+
     /**
      * @brief Batch configuration accessors.
      */
@@ -146,6 +158,24 @@ class Engine {
      * @brief Registers a text expansion shortcut.
      */
     void add_shortcut(const std::string& trigger, const std::string& replacement);
+
+    /**
+     * @brief Clears all registered text expansion shortcuts.
+     */
+    void clear_shortcuts();
+
+    /**
+     * @brief Pops the last word from ContextTracker, uses Syllable::to_keys() to reverse it back to raw keys, and populates CompositionBuffer.
+     * @return EngineResult indicating the transformation to restore the text to the UI.
+     */
+    EngineResult reclaim_last_word();
+
+    /**
+     * @brief Processes a sequence of characters.
+     * @param utf8_str The UTF-8 encoded string to process.
+     * @return EngineResult the final result of processing the string.
+     */
+    EngineResult process_string(const std::string& utf8_str);
 
     /**
      * @brief Reconstructs engine state from an existing committed text string.

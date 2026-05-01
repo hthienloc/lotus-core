@@ -85,9 +85,67 @@ void test_capi_tone_style() {
 }
 
 /**
+ * @brief Tests reclaim_last_word through the C-API.
+ */
+void test_capi_reclaim_last_word() {
+    lotus_core_t* engine = lotus_core_create();
+    
+    // Type 'xin chao '
+    lotus_core_process_string(engine, "xin chao ");
+    
+    // Attempt to reclaim
+    lotus_result_t res = lotus_core_reclaim_last_word(engine);
+    // Should return 'chao' or ' ' depending on how boundaries are handled.
+    // Our implementation pops the space first.
+    assert(res.action == 1);
+    assert(res.count == 1);
+    assert(res.chars[0] == ' ');
+    
+    res = lotus_core_reclaim_last_word(engine);
+    assert(res.count == 4);
+    assert(res.chars[0] == 'c');
+    assert(res.chars[1] == 'h');
+    assert(res.chars[2] == 'a');
+    assert(res.chars[3] == 'o');
+    
+    lotus_core_destroy(engine);
+    printf("  \033[1;32m[PASS]\033[0m C-API reclaim last word\n");
+}
+
+/**
+ * @brief Tests mark_less and tone_less flags.
+ */
+void test_capi_flags() {
+    lotus_core_t* engine = lotus_core_create();
+    lotus_modifiers_t mods = {false, false};
+
+    lotus_core_set_tone_less(engine, true);
+    lotus_core_set_mark_less(engine, true);
+
+    lotus_result_t res = lotus_core_process_string(engine, "awf");
+    // Since flags are true, 'a', 'w', 'f' should just output 'awf' without transformation
+    // Wait, the process_string method returns the last result. 
+    // Let's test with process_key instead to be precise.
+    lotus_core_reset(engine);
+    lotus_core_process_key(engine, 'a', mods);
+    lotus_core_process_key(engine, 'w', mods);
+    res = lotus_core_process_key(engine, 'f', mods);
+    
+    assert(res.count == 3);
+    assert(res.chars[0] == 'a');
+    assert(res.chars[1] == 'w');
+    assert(res.chars[2] == 'f');
+
+    lotus_core_destroy(engine);
+    printf("  \033[1;32m[PASS]\033[0m C-API tone_less and mark_less flags\n");
+}
+
+/**
  * @brief Entry point for the C-API unit test suite.
  */
 void test_capi_run_all() {
     test_capi_basic();
     test_capi_tone_style();
+    test_capi_reclaim_last_word();
+    test_capi_flags();
 }

@@ -130,6 +130,21 @@ lotus_result_t lotus_core_process_key(lotus_core_t* engine, uint32_t key,
                                         lotus_modifiers_t mods);
 
 /**
+ * @brief Processes a sequence of characters.
+ * @param engine Engine handle.
+ * @param str The UTF-8 string to process.
+ * @return lotus_result_t the final result of processing the string.
+ */
+lotus_result_t lotus_core_process_string(lotus_core_t* engine, const char* str);
+
+/**
+ * @brief Reclaims the last committed word/boundary from history.
+ * @param engine Engine handle.
+ * @return lotus_result_t indicating the transformation to restore the text.
+ */
+lotus_result_t lotus_core_reclaim_last_word(lotus_core_t* engine);
+
+/**
  * @brief Reset engine state.
  * 
  * Implementers should call this function when the user's cursor moves non-linearly
@@ -165,6 +180,11 @@ void lotus_core_add_shortcut(lotus_core_t* engine, const char* trigger,
                                const char* replacement);
 
 /**
+ * @brief Clears all registered text expansion shortcuts.
+ */
+void lotus_core_clear_shortcuts(lotus_core_t* engine);
+
+/**
  * @brief Set the global logging callback.
  */
 void lotus_core_set_log_callback(lotus_log_callback_t callback);
@@ -198,6 +218,16 @@ void lotus_core_set_macro_mode(lotus_core_t* engine, lotus_macro_mode_t mode);
  * @brief Configures the backspace style.
  */
 void lotus_core_set_backspace_style(lotus_core_t* engine, lotus_backspace_style_t style);
+
+/**
+ * @brief Enables or disables tone marks.
+ */
+void lotus_core_set_tone_less(lotus_core_t* engine, bool enabled);
+
+/**
+ * @brief Enables or disables diacritic marks.
+ */
+void lotus_core_set_mark_less(lotus_core_t* engine, bool enabled);
 
 /**
  * @brief Export current tracing buffer to a JSON file.

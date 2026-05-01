@@ -37,9 +37,11 @@ public:
      * @param free_w The FreeWOption for TELEX.
      * @param style The tone placement style.
      * @param allow_non_standard Whether non-standard initials are allowed.
+     * @param tone_less Whether to disable tone marks.
+     * @param mark_less Whether to disable diacritic marks.
      * @return TransformationResult containing the output string and metadata.
      */
-    TransformationResult transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard);
+    TransformationResult transform(char32_t key, InputMethod method, FreeWOption free_w, ToneStyle style, bool allow_non_standard, bool tone_less = false, bool mark_less = false);
 
     /** @brief Clears the raw buffer and internal state. */
     void clear();
@@ -60,15 +62,15 @@ public:
     void handle_hook_key_shortcuts(char32_t& key, bool std_uo);
 
     /** @brief Evaluates if the given word is likely English based on rules. */
-    bool is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard) const;
+    bool is_likely_english(std::u32string_view word, InputMethod method, FreeWOption free_w, bool allow_non_standard, bool tone_less = false, bool mark_less = false) const;
 
 private:
     StaticString buffer;
     char32_t last_modifier_key = 0;
 
-    void apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, FreeWOption free_w) const;
-    void apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
-    void apply_viqr_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state) const;
+    void apply_telex_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, FreeWOption free_w, bool tone_less, bool mark_less) const;
+    void apply_vni_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, bool tone_less, bool mark_less) const;
+    void apply_viqr_rules(StaticString& current_str, char32_t key, bool& key_consumed, Tone& tone_state, bool tone_less, bool mark_less) const;
 };
 
 } // namespace lotus_core
