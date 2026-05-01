@@ -70,6 +70,18 @@
                             Allow Non-Standard Initials (z, w, j, f)
                         </label>
                     </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="tone-less-checkbox">
+                            Tone-less Mode
+                        </label>
+                    </div>
+                    <div class="setting-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="mark-less-checkbox">
+                            Mark-less Mode
+                        </label>
+                    </div>
                 </section>
 
                 <!--! @brief Advanced Settings Section -->
@@ -102,6 +114,21 @@
                             <input type="checkbox" id="show-debug-checkbox">
                             Show Debug Logs
                         </label>
+                    </div>
+                </section>
+
+                <!--! @brief Utility Actions Section -->
+                <section class="settings-section">
+                    <h2>Utility Actions</h2>
+                    <div class="setting-group">
+                        <button id="reclaim-btn">Reclaim Last Word</button>
+                    </div>
+                    <div class="setting-group">
+                        <button id="clear-shortcuts-btn">Clear Shortcuts</button>
+                    </div>
+                    <div class="setting-group">
+                        <input type="text" id="bulk-input" placeholder="Bulk text...">
+                        <button id="bulk-btn" style="margin-top: 5px;">Process Bulk</button>
                     </div>
                 </section>
 
